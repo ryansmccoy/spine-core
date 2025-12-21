@@ -1,0 +1,3329 @@
+﻿{
+  "config": {
+    "configFile": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\playwright.config.ts",
+    "rootDir": "B:/github/py-sec-edgar/spine-core/frontend/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 12
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "B:/github/py-sec-edgar/spine-core/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 12
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "B:/github/py-sec-edgar/spine-core/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 12,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:12001",
+      "reuseExistingServer": true,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "api-health.spec.ts",
+      "file": "api-health.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Health endpoints (direct API)",
+          "file": "api-health.spec.ts",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "GET /health returns healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 48,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.200Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-0699ef975a7f3fea771e",
+              "file": "api-health.spec.ts",
+              "line": 17,
+              "column": 3
+            },
+            {
+              "title": "GET /health/live returns 200",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 51,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.230Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-3b5a9e4991a1b5e8d074",
+              "file": "api-health.spec.ts",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "GET /health/ready returns 200",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 70,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.230Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-cfc6d2c526c1ad87347e",
+              "file": "api-health.spec.ts",
+              "line": 35,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "API discovery endpoint (via proxy)",
+          "file": "api-health.spec.ts",
+          "line": 44,
+          "column": 6,
+          "specs": [
+            {
+              "title": "GET /api/v1/discover returns capabilities",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 239,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.130Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-bba39139684761b3fdf1",
+              "file": "api-health.spec.ts",
+              "line": 45,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "API data endpoints (via proxy)",
+          "file": "api-health.spec.ts",
+          "line": 56,
+          "column": 6,
+          "specs": [
+            {
+              "title": "GET /api/v1/runs returns run list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 78,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-6b30d261a933e83e89ee",
+              "file": "api-health.spec.ts",
+              "line": 57,
+              "column": 3
+            },
+            {
+              "title": "GET /api/v1/workflows returns workflow list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 59,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.165Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-1f9d394ccc3f6be92772",
+              "file": "api-health.spec.ts",
+              "line": 66,
+              "column": 3
+            },
+            {
+              "title": "GET /api/v1/schedules returns schedule list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 69,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-cf26296500647618454e",
+              "file": "api-health.spec.ts",
+              "line": 74,
+              "column": 3
+            },
+            {
+              "title": "GET /api/v1/stats/runs returns run stats",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 68,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.265Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ae946921bd1fde7b4bfb-c2e80f69154cee887450",
+              "file": "api-health.spec.ts",
+              "line": 82,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "dashboard.spec.ts",
+      "file": "dashboard.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard",
+          "file": "dashboard.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows health cards",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 628,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.247Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-0dafb84b398d1a0a2356",
+              "file": "dashboard.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "shows capabilities section when backend is available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 9,
+                      "status": "passed",
+                      "duration": 602,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.281Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-8c8081a3015e211e3734",
+              "file": "dashboard.spec.ts",
+              "line": 23,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "enhanced-components.spec.ts",
+      "file": "enhanced-components.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Pagination on Runs page",
+          "file": "enhanced-components.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "pagination controls appear when enough runs exist",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 10,
+                      "status": "passed",
+                      "duration": 1937,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.247Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-3bb7e06b425e6b81a2d2",
+              "file": "enhanced-components.spec.ts",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "workflow filter dropdown appears on Runs page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 11,
+                      "status": "passed",
+                      "duration": 1949,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.245Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-e9f8be7abb645ca4cf45",
+              "file": "enhanced-components.spec.ts",
+              "line": 23,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Confirm dialogs on Schedules page",
+          "file": "enhanced-components.spec.ts",
+          "line": 39,
+          "column": 6,
+          "specs": [
+            {
+              "title": "delete button opens confirm dialog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 1925,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.289Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-2108d9e03fdfd8bab656",
+              "file": "enhanced-components.spec.ts",
+              "line": 40,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "DLQ page — pipeline filter and confirm replay",
+          "file": "enhanced-components.spec.ts",
+          "line": 61,
+          "column": 6,
+          "specs": [
+            {
+              "title": "replay button opens confirm dialog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1894,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.305Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-63b0747fa919d805f3b1",
+              "file": "enhanced-components.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "expandable error column works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2045,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.354Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-bd6ecfaa0d4aae147d58",
+              "file": "enhanced-components.spec.ts",
+              "line": 81,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Dashboard — linked recent runs",
+          "file": "enhanced-components.spec.ts",
+          "line": 99,
+          "column": 6,
+          "specs": [
+            {
+              "title": "recent run IDs link to run detail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 2009,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.354Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-c9a2c166a18d2f8e99a1",
+              "file": "enhanced-components.spec.ts",
+              "line": 100,
+              "column": 3
+            },
+            {
+              "title": "DLQ count card is visible",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "failed",
+                      "duration": 1882,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Dead Letters')\nExpected: visible\nError: strict mode violation: getByText('Dead Letters') resolved to 2 elements:\n    1) <a href=\"/dlq\" data-discover=\"true\" class=\"flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-spine-300 hover:bg-spine-800 hover:text-white\">…</a> aka getByRole('link', { name: '✗ Dead Letters' })\n    2) <p class=\"text-xs font-medium text-gray-500 uppercase tracking-wide\">Dead Letters</p> aka getByText('Dead Letters', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Dead Letters')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Dead Letters')\nExpected: visible\nError: strict mode violation: getByText('Dead Letters') resolved to 2 elements:\n    1) <a href=\"/dlq\" data-discover=\"true\" class=\"flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-spine-300 hover:bg-spine-800 hover:text-white\">…</a> aka getByRole('link', { name: '✗ Dead Letters' })\n    2) <p class=\"text-xs font-medium text-gray-500 uppercase tracking-wide\">Dead Letters</p> aka getByText('Dead Letters', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Dead Letters')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts:117:50",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                          "column": 50,
+                          "line": 117
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 115 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m1500\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 116 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 117 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Dead Letters'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 118 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 119 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 120 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                            "column": 50,
+                            "line": 117
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Dead Letters')\nExpected: visible\nError: strict mode violation: getByText('Dead Letters') resolved to 2 elements:\n    1) <a href=\"/dlq\" data-discover=\"true\" class=\"flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-spine-300 hover:bg-spine-800 hover:text-white\">…</a> aka getByRole('link', { name: '✗ Dead Letters' })\n    2) <p class=\"text-xs font-medium text-gray-500 uppercase tracking-wide\">Dead Letters</p> aka getByText('Dead Letters', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Dead Letters')\u001b[22m\n\n\n  115 |     await page.waitForTimeout(1500);\n  116 |\n> 117 |     await expect(page.getByText('Dead Letters')).toBeVisible();\n      |                                                  ^\n  118 |   });\n  119 | });\n  120 |\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts:117:50"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.362Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\enhanced-components-Dashbo-21208-s-DLQ-count-card-is-visible-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\enhanced-components-Dashbo-21208-s-DLQ-count-card-is-visible-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                        "column": 50,
+                        "line": 117
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-0497cac262353806e69c",
+              "file": "enhanced-components.spec.ts",
+              "line": 113,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Stats page — TanStack Query hooks",
+          "file": "enhanced-components.spec.ts",
+          "line": 121,
+          "column": 6,
+          "specs": [
+            {
+              "title": "stats page renders with proper sections",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 1941,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Execution Counts')\nExpected: visible\nError: strict mode violation: getByText('Execution Counts') resolved to 2 elements:\n    1) <p class=\"mt-1 text-sm text-gray-500\">Execution counts, queue depths, and worker status…</p> aka getByText('Execution counts, queue')\n    2) <h3 class=\"text-sm font-medium text-gray-500 uppercase tracking-wide mb-3\">Execution Counts</h3> aka getByRole('heading', { name: 'Execution Counts' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Execution Counts')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Execution Counts')\nExpected: visible\nError: strict mode violation: getByText('Execution Counts') resolved to 2 elements:\n    1) <p class=\"mt-1 text-sm text-gray-500\">Execution counts, queue depths, and worker status…</p> aka getByText('Execution counts, queue')\n    2) <h3 class=\"text-sm font-medium text-gray-500 uppercase tracking-wide mb-3\">Execution Counts</h3> aka getByRole('heading', { name: 'Execution Counts' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Execution Counts')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts:126:54",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                          "column": 54,
+                          "line": 126
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 124 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m1500\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 125 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 126 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Execution Counts'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 127 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Queue Depths'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 128 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Workers'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 129 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                            "column": 54,
+                            "line": 126
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Execution Counts')\nExpected: visible\nError: strict mode violation: getByText('Execution Counts') resolved to 2 elements:\n    1) <p class=\"mt-1 text-sm text-gray-500\">Execution counts, queue depths, and worker status…</p> aka getByText('Execution counts, queue')\n    2) <h3 class=\"text-sm font-medium text-gray-500 uppercase tracking-wide mb-3\">Execution Counts</h3> aka getByRole('heading', { name: 'Execution Counts' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Execution Counts')\u001b[22m\n\n\n  124 |     await page.waitForTimeout(1500);\n  125 |\n> 126 |     await expect(page.getByText('Execution Counts')).toBeVisible();\n      |                                                      ^\n  127 |     await expect(page.getByText('Queue Depths')).toBeVisible();\n  128 |     await expect(page.getByText('Workers')).toBeVisible();\n  129 |   });\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts:126:54"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.361Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\enhanced-components-Stats--31065-enders-with-proper-sections-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\enhanced-components-Stats--31065-enders-with-proper-sections-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                        "column": 54,
+                        "line": 126
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-1b54fe0c5a0c164360e6",
+              "file": "enhanced-components.spec.ts",
+              "line": 122,
+              "column": 3
+            },
+            {
+              "title": "refresh button is available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 1259,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.389Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-21d234ad80f294e9ed34",
+              "file": "enhanced-components.spec.ts",
+              "line": 131,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Quality page — pipeline filter",
+          "file": "enhanced-components.spec.ts",
+          "line": 139,
+          "column": 6,
+          "specs": [
+            {
+              "title": "quality page loads with sections",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 1897,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Quality Results')\nExpected: visible\nError: strict mode violation: getByText('Quality Results') resolved to 2 elements:\n    1) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Quality Results</h3> aka getByRole('heading', { name: 'Quality Results' })\n    2) <div class=\"text-center py-12 text-gray-400 text-sm\">No quality results yet</div> aka getByText('No quality results yet')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Quality Results')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Quality Results')\nExpected: visible\nError: strict mode violation: getByText('Quality Results') resolved to 2 elements:\n    1) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Quality Results</h3> aka getByRole('heading', { name: 'Quality Results' })\n    2) <div class=\"text-center py-12 text-gray-400 text-sm\">No quality results yet</div> aka getByText('No quality results yet')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Quality Results')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts:144:53",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                          "column": 53,
+                          "line": 144
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 142 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m1500\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 143 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 144 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Quality Results'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 145 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Anomalies'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 146 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 147 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                            "column": 53,
+                            "line": 144
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Quality Results')\nExpected: visible\nError: strict mode violation: getByText('Quality Results') resolved to 2 elements:\n    1) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Quality Results</h3> aka getByRole('heading', { name: 'Quality Results' })\n    2) <div class=\"text-center py-12 text-gray-400 text-sm\">No quality results yet</div> aka getByText('No quality results yet')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Quality Results')\u001b[22m\n\n\n  142 |     await page.waitForTimeout(1500);\n  143 |\n> 144 |     await expect(page.getByText('Quality Results')).toBeVisible();\n      |                                                     ^\n  145 |     await expect(page.getByText('Anomalies')).toBeVisible();\n  146 |   });\n  147 | });\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts:144:53"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:39.532Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\enhanced-components-Qualit-fa9fa-ty-page-loads-with-sections-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\enhanced-components-Qualit-fa9fa-ty-page-loads-with-sections-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\enhanced-components.spec.ts",
+                        "column": 53,
+                        "line": 144
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "92d2284dd17720b6dc76-b7d515970d001dce8b08",
+              "file": "enhanced-components.spec.ts",
+              "line": 140,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "navigation.spec.ts",
+      "file": "navigation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Layout & Navigation",
+          "file": "navigation.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders the sidebar with all nav links",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 271,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:40.097Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-171a35b6b464726bb358",
+              "file": "navigation.spec.ts",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "root \"/\" redirects to /dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 9,
+                      "status": "passed",
+                      "duration": 190,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:40.111Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-9fe41258dfc20e082b94",
+              "file": "navigation.spec.ts",
+              "line": 36,
+              "column": 3
+            },
+            {
+              "title": "navigates to each page via sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 9,
+                      "status": "passed",
+                      "duration": 1119,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:40.315Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-46eea165d00e35fea6e1",
+              "file": "navigation.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "active nav item is highlighted",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 238,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:40.382Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-3ffd00554bea46eb5ea9",
+              "file": "navigation.spec.ts",
+              "line": 63,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "pages.spec.ts",
+      "file": "pages.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Runs page",
+          "file": "pages.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders heading and submit button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 177,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:40.642Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-955def99c91b0a8a77c4",
+              "file": "pages.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "submit dialog opens and closes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 276,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:40.830Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-c7b522300e8376d5a14e",
+              "file": "pages.spec.ts",
+              "line": 20,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Workflows page",
+          "file": "pages.spec.ts",
+          "line": 36,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders heading and shows empty or data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 232,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.074Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-db0ee8814e62b31aa8fa",
+              "file": "pages.spec.ts",
+              "line": 37,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Schedules page",
+          "file": "pages.spec.ts",
+          "line": 50,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders heading and create button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 224,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.118Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-38afd07ec7dad1595f89",
+              "file": "pages.spec.ts",
+              "line": 51,
+              "column": 3
+            },
+            {
+              "title": "create schedule dialog opens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 395,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.326Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-876fd845847b5e6b5468",
+              "file": "pages.spec.ts",
+              "line": 58,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "DLQ page",
+          "file": "pages.spec.ts",
+          "line": 67,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders heading and shows empty or data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 312,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.353Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-7b184786d82a92453f12",
+              "file": "pages.spec.ts",
+              "line": 68,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Quality page",
+          "file": "pages.spec.ts",
+          "line": 86,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders heading and both sections",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 336,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.382Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-e69f23201f5d89a4b74c",
+              "file": "pages.spec.ts",
+              "line": 87,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Stats page",
+          "file": "pages.spec.ts",
+          "line": 94,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders heading and refresh button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 10,
+                      "status": "passed",
+                      "duration": 329,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.398Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-e7360301ff03499f68c2",
+              "file": "pages.spec.ts",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "shows execution counts section",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "failed",
+                      "duration": 339,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Execution Counts')\nExpected: visible\nError: strict mode violation: getByText('Execution Counts') resolved to 2 elements:\n    1) <p class=\"mt-1 text-sm text-gray-500\">Execution counts, queue depths, and worker status…</p> aka getByText('Execution counts, queue')\n    2) <h3 class=\"text-sm font-medium text-gray-500 uppercase tracking-wide mb-3\">Execution Counts</h3> aka getByRole('heading', { name: 'Execution Counts' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Execution Counts')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Execution Counts')\nExpected: visible\nError: strict mode violation: getByText('Execution Counts') resolved to 2 elements:\n    1) <p class=\"mt-1 text-sm text-gray-500\">Execution counts, queue depths, and worker status…</p> aka getByText('Execution counts, queue')\n    2) <h3 class=\"text-sm font-medium text-gray-500 uppercase tracking-wide mb-3\">Execution Counts</h3> aka getByRole('heading', { name: 'Execution Counts' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Execution Counts')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\pages.spec.ts:104:54",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\pages.spec.ts",
+                          "column": 54,
+                          "line": 104
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 102 |\u001b[39m   test(\u001b[32m'shows execution counts section'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/stats'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 104 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Execution Counts'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 105 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 106 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 107 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\pages.spec.ts",
+                            "column": 54,
+                            "line": 104
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Execution Counts')\nExpected: visible\nError: strict mode violation: getByText('Execution Counts') resolved to 2 elements:\n    1) <p class=\"mt-1 text-sm text-gray-500\">Execution counts, queue depths, and worker status…</p> aka getByText('Execution counts, queue')\n    2) <h3 class=\"text-sm font-medium text-gray-500 uppercase tracking-wide mb-3\">Execution Counts</h3> aka getByRole('heading', { name: 'Execution Counts' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Execution Counts')\u001b[22m\n\n\n  102 |   test('shows execution counts section', async ({ page }) => {\n  103 |     await page.goto('/stats');\n> 104 |     await expect(page.getByText('Execution Counts')).toBeVisible();\n      |                                                      ^\n  105 |   });\n  106 | });\n  107 |\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\pages.spec.ts:104:54"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.405Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\pages-Stats-page-shows-execution-counts-section-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\pages-Stats-page-shows-execution-counts-section-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\pages.spec.ts",
+                        "column": 54,
+                        "line": 104
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "9bb6bb2ed574bebb3c58-e523233051c1111168c2",
+              "file": "pages.spec.ts",
+              "line": 102,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "run-detail-enhanced.spec.ts",
+      "file": "run-detail-enhanced.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Run Detail — tabs and interactions",
+          "file": "run-detail-enhanced.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "run detail page shows tab navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 11,
+                      "status": "passed",
+                      "duration": 1241,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.411Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9aeca74c36d7838b0174-8a819a570628d02c6885",
+              "file": "run-detail-enhanced.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "switching tabs changes visible content",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 9,
+                      "status": "passed",
+                      "duration": 1253,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.469Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9aeca74c36d7838b0174-d1821bd1666c42e39983",
+              "file": "run-detail-enhanced.spec.ts",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "cancel button shows confirmation dialog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1191,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.307Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9aeca74c36d7838b0174-e9ae568ad6cadbc38bce",
+              "file": "run-detail-enhanced.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "status bar shows run metadata",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1238,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.616Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9aeca74c36d7838b0174-c0f27400fa91b1cb19b7",
+              "file": "run-detail-enhanced.spec.ts",
+              "line": 93,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "run-detail.spec.ts",
+      "file": "run-detail.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "RunDetail page",
+          "file": "run-detail.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows error state for non-existent run",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 2153,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.711Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ffd517dd4f62558df06a-2c5b54e1760a3154f7f6",
+              "file": "run-detail.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "back button navigates to runs list from error state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 264,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.418Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ffd517dd4f62558df06a-0c8d62551abe90660c0a",
+              "file": "run-detail.spec.ts",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "run detail page renders with correct structure from runs list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 308,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.757Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ffd517dd4f62558df06a-9f9674c4faca4840639c",
+              "file": "run-detail.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "cancel button appears for running status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 273,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.757Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ffd517dd4f62558df06a-6ec4d0ea3590524ebcfe",
+              "file": "run-detail.spec.ts",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "retry button appears for failed status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 10,
+                      "status": "passed",
+                      "duration": 272,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.773Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ffd517dd4f62558df06a-715f47ab2ad3cb1cd97d",
+              "file": "run-detail.spec.ts",
+              "line": 79,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "scenarios.spec.ts",
+      "file": "scenarios.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Scenario: Runs page rendering",
+          "file": "scenarios.spec.ts",
+          "line": 89,
+          "column": 6,
+          "specs": [
+            {
+              "title": "empty state shows \"No runs found\" message",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 2158,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.478Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-c608e44273500368fb8e",
+              "file": "scenarios.spec.ts",
+              "line": 90,
+              "column": 3
+            },
+            {
+              "title": "seeded run appears in table with correct status badge",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 2244,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:41.812Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-99f2d99901db785cee9a",
+              "file": "scenarios.spec.ts",
+              "line": 100,
+              "column": 3
+            },
+            {
+              "title": "status filter tabs work",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 979,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.558Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-a472b080f6a8262dcbda",
+              "file": "scenarios.spec.ts",
+              "line": 123,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: Run detail page",
+          "file": "scenarios.spec.ts",
+          "line": 151,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows all detail fields for a seeded run",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1726,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:42.066Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-f72993da151fbc908969",
+              "file": "scenarios.spec.ts",
+              "line": 152,
+              "column": 3
+            },
+            {
+              "title": "event timeline shows submitted event",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 10,
+                      "status": "failed",
+                      "duration": 6276,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Event Timeline')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Event Timeline')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Event Timeline')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Event Timeline')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:187:28",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 28,
+                          "line": 187
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 185 |\u001b[39m     \u001b[90m// Event timeline should show at least \"submitted\"\u001b[39m\n \u001b[90m 186 |\u001b[39m     \u001b[36mconst\u001b[39m timeline \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Event Timeline'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 187 |\u001b[39m     \u001b[36mawait\u001b[39m expect(timeline)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 188 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\n \u001b[90m 189 |\u001b[39m       page\u001b[33m.\u001b[39mgetByText(\u001b[32m'submitted'\u001b[39m)\u001b[33m.\u001b[39mor(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'No events'\u001b[39m))\u001b[33m.\u001b[39mfirst()\u001b[33m,\u001b[39m\n \u001b[90m 190 |\u001b[39m     )\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 28,
+                            "line": 187
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Event Timeline')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Event Timeline')\u001b[22m\n\n\n  185 |     // Event timeline should show at least \"submitted\"\n  186 |     const timeline = page.getByText('Event Timeline');\n> 187 |     await expect(timeline).toBeVisible();\n      |                            ^\n  188 |     await expect(\n  189 |       page.getByText('submitted').or(page.getByText('No events')).first(),\n  190 |     ).toBeVisible({ timeout: 5000 });\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:187:28"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:42.097Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Run-det-670f2-eline-shows-submitted-event-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Run-det-670f2-eline-shows-submitted-event-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 28,
+                        "line": 187
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-a4ac90fa902b71f1264a",
+              "file": "scenarios.spec.ts",
+              "line": 174,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: Workflows page",
+          "file": "scenarios.spec.ts",
+          "line": 194,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows registered workflow cards",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "failed",
+                      "duration": 5270,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:199:11",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 5,
+                          "line": 84
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 82 |\u001b[39m       \u001b[33m.\u001b[39mlocator(\u001b[32m'table, [class*=\"empty\"], [class*=\"error\"]'\u001b[39m)\n \u001b[90m 83 |\u001b[39m       \u001b[33m.\u001b[39mfirst()\u001b[33m,\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 84 |\u001b[39m   )\u001b[33m.\u001b[39mtoBeVisible({ timeout })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 85 |\u001b[39m }\n \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m \u001b[90m// ── Tests ───────────────────────────────────────────────────────────\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 5,
+                            "line": 84
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n\n  82 |       .locator('table, [class*=\"empty\"], [class*=\"error\"]')\n  83 |       .first(),\n> 84 |   ).toBeVisible({ timeout });\n     |     ^\n  85 | }\n  86 |\n  87 | // ── Tests ───────────────────────────────────────────────────────────\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:199:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:42.113Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Workflo-40e8d-s-registered-workflow-cards-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Workflo-40e8d-s-registered-workflow-cards-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 5,
+                        "line": 84
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-023558c1f709192d3aad",
+              "file": "scenarios.spec.ts",
+              "line": 195,
+              "column": 3
+            },
+            {
+              "title": "workflow card has run button",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 11,
+                      "status": "failed",
+                      "duration": 5172,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:211:11",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 5,
+                          "line": 84
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 82 |\u001b[39m       \u001b[33m.\u001b[39mlocator(\u001b[32m'table, [class*=\"empty\"], [class*=\"error\"]'\u001b[39m)\n \u001b[90m 83 |\u001b[39m       \u001b[33m.\u001b[39mfirst()\u001b[33m,\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 84 |\u001b[39m   )\u001b[33m.\u001b[39mtoBeVisible({ timeout })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 85 |\u001b[39m }\n \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m \u001b[90m// ── Tests ───────────────────────────────────────────────────────────\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 5,
+                            "line": 84
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n\n  82 |       .locator('table, [class*=\"empty\"], [class*=\"error\"]')\n  83 |       .first(),\n> 84 |   ).toBeVisible({ timeout });\n     |     ^\n  85 | }\n  86 |\n  87 | // ── Tests ───────────────────────────────────────────────────────────\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:211:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:42.727Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Workflo-2966b-orkflow-card-has-run-button-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Workflo-2966b-orkflow-card-has-run-button-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 5,
+                        "line": 84
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-4433e468fdd2e0557576",
+              "file": "scenarios.spec.ts",
+              "line": 209,
+              "column": 3
+            },
+            {
+              "title": "trigger workflow via modal executes successfully",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 9,
+                      "status": "failed",
+                      "duration": 5177,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:228:11",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 5,
+                          "line": 84
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 82 |\u001b[39m       \u001b[33m.\u001b[39mlocator(\u001b[32m'table, [class*=\"empty\"], [class*=\"error\"]'\u001b[39m)\n \u001b[90m 83 |\u001b[39m       \u001b[33m.\u001b[39mfirst()\u001b[33m,\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 84 |\u001b[39m   )\u001b[33m.\u001b[39mtoBeVisible({ timeout })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 85 |\u001b[39m }\n \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m \u001b[90m// ── Tests ───────────────────────────────────────────────────────────\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 5,
+                            "line": 84
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n\n  82 |       .locator('table, [class*=\"empty\"], [class*=\"error\"]')\n  83 |       .first(),\n> 84 |   ).toBeVisible({ timeout });\n     |     ^\n  85 | }\n  86 |\n  87 | // ── Tests ───────────────────────────────────────────────────────────\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:228:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:42.759Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Workflo-596ef-modal-executes-successfully-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Workflo-596ef-modal-executes-successfully-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 5,
+                        "line": 84
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-add63781db624e8bb0b5",
+              "file": "scenarios.spec.ts",
+              "line": 226,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: Schedules page",
+          "file": "scenarios.spec.ts",
+          "line": 246,
+          "column": 6,
+          "specs": [
+            {
+              "title": "create schedule dialog has dynamic workflow picker",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 305,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:42.897Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-25bfdbd5ec25bd382173",
+              "file": "scenarios.spec.ts",
+              "line": 247,
+              "column": 3
+            },
+            {
+              "title": "full schedule CRUD via UI",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 6354,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table').getByText('0 * * * *')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table').getByText('0 * * * *')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table').getByText('0 * * * *')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table').getByText('0 * * * *')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:296:50",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 50,
+                          "line": 296
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 294 |\u001b[39m     \u001b[36mconst\u001b[39m hasTable \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m table\u001b[33m.\u001b[39misVisible()\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m \u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 295 |\u001b[39m     \u001b[36mif\u001b[39m (hasTable) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 296 |\u001b[39m       \u001b[36mawait\u001b[39m expect(table\u001b[33m.\u001b[39mgetByText(\u001b[32m'0 * * * *'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 297 |\u001b[39m     }\n \u001b[90m 298 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 299 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 50,
+                            "line": 296
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table').getByText('0 * * * *')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table').getByText('0 * * * *')\u001b[22m\n\n\n  294 |     const hasTable = await table.isVisible().catch(() => false);\n  295 |     if (hasTable) {\n> 296 |       await expect(table.getByText('0 * * * *')).toBeVisible();\n      |                                                  ^\n  297 |     }\n  298 |   });\n  299 | });\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:296:50"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.214Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Schedules-page-full-schedule-CRUD-via-UI-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Schedules-page-full-schedule-CRUD-via-UI-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 50,
+                        "line": 296
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-e5fd8674667b89661262",
+              "file": "scenarios.spec.ts",
+              "line": 265,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: DLQ page",
+          "file": "scenarios.spec.ts",
+          "line": 301,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows empty state on fresh database",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 5152,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:304:11",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 5,
+                          "line": 84
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 82 |\u001b[39m       \u001b[33m.\u001b[39mlocator(\u001b[32m'table, [class*=\"empty\"], [class*=\"error\"]'\u001b[39m)\n \u001b[90m 83 |\u001b[39m       \u001b[33m.\u001b[39mfirst()\u001b[33m,\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 84 |\u001b[39m   )\u001b[33m.\u001b[39mtoBeVisible({ timeout })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 85 |\u001b[39m }\n \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m \u001b[90m// ── Tests ───────────────────────────────────────────────────────────\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 5,
+                            "line": 84
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table, [class*=\"empty\"], [class*=\"error\"]').first()\u001b[22m\n\n\n  82 |       .locator('table, [class*=\"empty\"], [class*=\"error\"]')\n  83 |       .first(),\n> 84 |   ).toBeVisible({ timeout });\n     |     ^\n  85 | }\n  86 |\n  87 | // ── Tests ───────────────────────────────────────────────────────────\n    at waitForDataOrEmpty (B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:84:5)\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:304:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.825Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-DLQ-pag-70873-pty-state-on-fresh-database-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-DLQ-pag-70873-pty-state-on-fresh-database-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 5,
+                        "line": 84
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-1dafe7b75d5814620acf",
+              "file": "scenarios.spec.ts",
+              "line": 302,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: Quality page",
+          "file": "scenarios.spec.ts",
+          "line": 316,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders both quality and anomaly sections",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 218,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Anomalies')\nExpected: visible\nError: strict mode violation: getByText('Anomalies') resolved to 2 elements:\n    1) <h2 class=\"text-2xl font-bold text-gray-900\">Quality & Anomalies</h2> aka getByRole('heading', { name: 'Quality & Anomalies' })\n    2) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Anomalies</h3> aka getByRole('heading', { name: 'Anomalies', exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Anomalies')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Anomalies')\nExpected: visible\nError: strict mode violation: getByText('Anomalies') resolved to 2 elements:\n    1) <h2 class=\"text-2xl font-bold text-gray-900\">Quality & Anomalies</h2> aka getByRole('heading', { name: 'Quality & Anomalies' })\n    2) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Anomalies</h3> aka getByRole('heading', { name: 'Anomalies', exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Anomalies')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:321:47",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                          "column": 47,
+                          "line": 321
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 319 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Quality & Anomalies'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 320 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Quality Results'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 321 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Anomalies'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 322 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 323 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 324 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                            "column": 47,
+                            "line": 321
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Anomalies')\nExpected: visible\nError: strict mode violation: getByText('Anomalies') resolved to 2 elements:\n    1) <h2 class=\"text-2xl font-bold text-gray-900\">Quality & Anomalies</h2> aka getByRole('heading', { name: 'Quality & Anomalies' })\n    2) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Anomalies</h3> aka getByRole('heading', { name: 'Anomalies', exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Anomalies')\u001b[22m\n\n\n  319 |     await expect(page.getByText('Quality & Anomalies')).toBeVisible();\n  320 |     await expect(page.getByText('Quality Results')).toBeVisible();\n> 321 |     await expect(page.getByText('Anomalies')).toBeVisible();\n      |                                               ^\n  322 |   });\n  323 | });\n  324 |\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts:321:47"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.807Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Quality-cea87-uality-and-anomaly-sections-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\scenarios-Scenario-Quality-cea87-uality-and-anomaly-sections-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\scenarios.spec.ts",
+                        "column": 47,
+                        "line": 321
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-9a947a8848e6300d0af5",
+              "file": "scenarios.spec.ts",
+              "line": 317,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: Response contract validation",
+          "file": "scenarios.spec.ts",
+          "line": 325,
+          "column": 6,
+          "specs": [
+            {
+              "title": "paginated endpoints return correct envelope shape",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 260,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:43.909Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-47432af2443d767f8deb",
+              "file": "scenarios.spec.ts",
+              "line": 326,
+              "column": 3
+            },
+            {
+              "title": "success endpoints return correct envelope",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 192,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:44.072Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-f1024cc1be33f9dbdc2a",
+              "file": "scenarios.spec.ts",
+              "line": 346,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Scenario: Search and sort",
+          "file": "scenarios.spec.ts",
+          "line": 356,
+          "column": 6,
+          "specs": [
+            {
+              "title": "runs table is sortable by clicking column headers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 314,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:45.335Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "228c869e2a0e583b8177-6861c47054ded53e1c40",
+              "file": "scenarios.spec.ts",
+              "line": 357,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "workflow-detail.spec.ts",
+      "file": "workflow-detail.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Workflow Detail page",
+          "file": "workflow-detail.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "navigates from workflows list via View Details link",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 1218,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:44.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c9a3ab8fbf2d702a5625-ba5aab497e2ce11db2b7",
+              "file": "workflow-detail.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "renders metadata cards for a known workflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1673,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:44.296Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c9a3ab8fbf2d702a5625-2da80449f2ea2fccde56",
+              "file": "workflow-detail.spec.ts",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "shows Step Graph component",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1647,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:44.640Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c9a3ab8fbf2d702a5625-6fa97fbf2a5aa4c02eb8",
+              "file": "workflow-detail.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "shows steps table with columns",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 5,
+                      "status": "failed",
+                      "duration": 6688,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table').first().getByText('Step')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table').first().getByText('Step')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table').first().getByText('Step')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table').first().getByText('Step')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflow-detail.spec.ts:66:45",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflow-detail.spec.ts",
+                          "column": 45,
+                          "line": 66
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 64 |\u001b[39m\n \u001b[90m 65 |\u001b[39m     \u001b[36mif\u001b[39m (hasTable) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 66 |\u001b[39m       \u001b[36mawait\u001b[39m expect(table\u001b[33m.\u001b[39mgetByText(\u001b[32m'Step'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 67 |\u001b[39m     }\n \u001b[90m 68 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 69 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflow-detail.spec.ts",
+                            "column": 45,
+                            "line": 66
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('table').first().getByText('Step')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('table').first().getByText('Step')\u001b[22m\n\n\n  64 |\n  65 |     if (hasTable) {\n> 66 |       await expect(table.getByText('Step')).toBeVisible();\n     |                                             ^\n  67 |     }\n  68 |   });\n  69 |\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflow-detail.spec.ts:66:45"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:44.717Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflow-detail-Workflow-D-13981-ws-steps-table-with-columns-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflow-detail-Workflow-D-13981-ws-steps-table-with-columns-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflow-detail.spec.ts",
+                        "column": 45,
+                        "line": 66
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "c9a3ab8fbf2d702a5625-32778c8d5b78e446c181",
+              "file": "workflow-detail.spec.ts",
+              "line": 57,
+              "column": 3
+            },
+            {
+              "title": "back button returns to workflows list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "passed",
+                      "duration": 1233,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:45.435Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c9a3ab8fbf2d702a5625-a7a89bf1e503b4582449",
+              "file": "workflow-detail.spec.ts",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "run modal opens from workflow detail page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 1742,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:45.774Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c9a3ab8fbf2d702a5625-e554961852b31209dd69",
+              "file": "workflow-detail.spec.ts",
+              "line": 83,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "workflows-schedules.spec.ts",
+      "file": "workflows-schedules.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Workflows page — cards and run modal",
+          "file": "workflows-schedules.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders workflow cards when workflows are registered",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 207,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:45.774Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d722921af63548baeca6-78900669a3be1b313eec",
+              "file": "workflows-schedules.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "workflow run modal opens and shows params field",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1235,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:46.000Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d722921af63548baeca6-80b93129279997fde56a",
+              "file": "workflows-schedules.spec.ts",
+              "line": 23,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Schedules page — dynamic workflow picker",
+          "file": "workflows-schedules.spec.ts",
+          "line": 48,
+          "column": 6,
+          "specs": [
+            {
+              "title": "create dialog loads workflow dropdown dynamically",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 289,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:45.992Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d722921af63548baeca6-0bf48e0c324c452cd0b7",
+              "file": "workflows-schedules.spec.ts",
+              "line": 49,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Runs page — enhanced submit dialog",
+          "file": "workflows-schedules.spec.ts",
+          "line": 72,
+          "column": 6,
+          "specs": [
+            {
+              "title": "submit dialog has kind, name, priority, and params fields",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 306,
+                      "error": {
+                        "message": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Cancel' }) resolved to 2 elements:\n    1) <button class=\"text-xs px-3 py-1.5 rounded-full transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200\">cancelled</button> aka getByRole('button', { name: 'cancelled' })\n    2) <button type=\"button\" class=\"inline-flex items-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400\">Cancel</button> aka getByRole('button', { name: 'Cancel', exact: true })\n\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Cancel' })\u001b[22m\n",
+                        "stack": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Cancel' }) resolved to 2 elements:\n    1) <button class=\"text-xs px-3 py-1.5 rounded-full transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200\">cancelled</button> aka getByRole('button', { name: 'cancelled' })\n    2) <button type=\"button\" class=\"inline-flex items-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400\">Cancel</button> aka getByRole('button', { name: 'Cancel', exact: true })\n\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Cancel' })\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts:93:56",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                          "column": 56,
+                          "line": 93
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 91 |\u001b[39m\n \u001b[90m 92 |\u001b[39m     \u001b[90m// Cancel\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 93 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[32m'Cancel'\u001b[39m })\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 94 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Submit New Run'\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 95 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 96 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                            "column": 56,
+                            "line": 93
+                          },
+                          "message": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Cancel' }) resolved to 2 elements:\n    1) <button class=\"text-xs px-3 py-1.5 rounded-full transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200\">cancelled</button> aka getByRole('button', { name: 'cancelled' })\n    2) <button type=\"button\" class=\"inline-flex items-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400\">Cancel</button> aka getByRole('button', { name: 'Cancel', exact: true })\n\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Cancel' })\u001b[22m\n\n\n  91 |\n  92 |     // Cancel\n> 93 |     await page.getByRole('button', { name: 'Cancel' }).click();\n     |                                                        ^\n  94 |     await expect(page.getByText('Submit New Run')).not.toBeVisible();\n  95 |   });\n  96 |\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts:93:56"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:46.291Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflows-schedules-Runs-p-3ec44--priority-and-params-fields-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflows-schedules-Runs-p-3ec44--priority-and-params-fields-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                        "column": 56,
+                        "line": 93
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d722921af63548baeca6-dc97a5fafd14758518b3",
+              "file": "workflows-schedules.spec.ts",
+              "line": 73,
+              "column": 3
+            },
+            {
+              "title": "runs table shows workflow and finished columns",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1191,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:46.314Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d722921af63548baeca6-836df6310e7484515533",
+              "file": "workflows-schedules.spec.ts",
+              "line": 97,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Run detail page — enhanced display",
+          "file": "workflows-schedules.spec.ts",
+          "line": 111,
+          "column": 6,
+          "specs": [
+            {
+              "title": "run detail shows all fields",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2121,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Workflow')\nExpected: visible\nError: strict mode violation: getByText('Workflow') resolved to 2 elements:\n    1) <a href=\"/workflows\" data-discover=\"true\" class=\"flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-spine-300 hover:bg-spine-800 hover:text-white\">…</a> aka getByRole('link', { name: '⥤ Workflows' })\n    2) <span class=\"text-xs font-medium text-gray-500 uppercase tracking-wide w-32 shrink-0 pt-0.5\">Workflow</span> aka getByText('Workflow', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Workflow')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Workflow')\nExpected: visible\nError: strict mode violation: getByText('Workflow') resolved to 2 elements:\n    1) <a href=\"/workflows\" data-discover=\"true\" class=\"flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-spine-300 hover:bg-spine-800 hover:text-white\">…</a> aka getByRole('link', { name: '⥤ Workflows' })\n    2) <span class=\"text-xs font-medium text-gray-500 uppercase tracking-wide w-32 shrink-0 pt-0.5\">Workflow</span> aka getByText('Workflow', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Workflow')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts:129:48",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                          "column": 48,
+                          "line": 129
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 127 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Status'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 128 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Pipeline'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 129 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Workflow'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 130 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Started'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 131 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Finished'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 132 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Duration'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                            "column": 48,
+                            "line": 129
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Workflow')\nExpected: visible\nError: strict mode violation: getByText('Workflow') resolved to 2 elements:\n    1) <a href=\"/workflows\" data-discover=\"true\" class=\"flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-spine-300 hover:bg-spine-800 hover:text-white\">…</a> aka getByRole('link', { name: '⥤ Workflows' })\n    2) <span class=\"text-xs font-medium text-gray-500 uppercase tracking-wide w-32 shrink-0 pt-0.5\">Workflow</span> aka getByText('Workflow', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Workflow')\u001b[22m\n\n\n  127 |       await expect(page.getByText('Status')).toBeVisible();\n  128 |       await expect(page.getByText('Pipeline')).toBeVisible();\n> 129 |       await expect(page.getByText('Workflow')).toBeVisible();\n      |                                                ^\n  130 |       await expect(page.getByText('Started')).toBeVisible();\n  131 |       await expect(page.getByText('Finished')).toBeVisible();\n  132 |       await expect(page.getByText('Duration')).toBeVisible();\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts:129:48"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:48.126Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflows-schedules-Run-de-d79f9-run-detail-shows-all-fields-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflows-schedules-Run-de-d79f9-run-detail-shows-all-fields-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                        "column": 48,
+                        "line": 129
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d722921af63548baeca6-2182e869488dea69a12e",
+              "file": "workflows-schedules.spec.ts",
+              "line": 112,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Quality page — bug fix verification",
+          "file": "workflows-schedules.spec.ts",
+          "line": 143,
+          "column": 6,
+          "specs": [
+            {
+              "title": "quality page loads without 500 error",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 8,
+                      "status": "failed",
+                      "duration": 294,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Quality Results')\nExpected: visible\nError: strict mode violation: getByText('Quality Results') resolved to 2 elements:\n    1) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Quality Results</h3> aka getByRole('heading', { name: 'Quality Results' })\n    2) <div class=\"text-center py-12 text-gray-400 text-sm\">No quality results yet</div> aka getByText('No quality results yet')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Quality Results')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Quality Results')\nExpected: visible\nError: strict mode violation: getByText('Quality Results') resolved to 2 elements:\n    1) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Quality Results</h3> aka getByRole('heading', { name: 'Quality Results' })\n    2) <div class=\"text-center py-12 text-gray-400 text-sm\">No quality results yet</div> aka getByText('No quality results yet')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Quality Results')\u001b[22m\n\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts:147:53",
+                        "location": {
+                          "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                          "column": 53,
+                          "line": 147
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 145 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/quality'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 146 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Quality & Anomalies'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 147 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Quality Results'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 148 |\u001b[39m\n \u001b[90m 149 |\u001b[39m     \u001b[90m// Wait for data load — should show empty state or data, NOT error\u001b[39m\n \u001b[90m 150 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m2000\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                            "column": 53,
+                            "line": 147
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Quality Results')\nExpected: visible\nError: strict mode violation: getByText('Quality Results') resolved to 2 elements:\n    1) <h3 class=\"text-lg font-semibold text-gray-800 mb-3\">Quality Results</h3> aka getByRole('heading', { name: 'Quality Results' })\n    2) <div class=\"text-center py-12 text-gray-400 text-sm\">No quality results yet</div> aka getByText('No quality results yet')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Quality Results')\u001b[22m\n\n\n  145 |     await page.goto('/quality');\n  146 |     await expect(page.getByText('Quality & Anomalies')).toBeVisible();\n> 147 |     await expect(page.getByText('Quality Results')).toBeVisible();\n      |                                                     ^\n  148 |\n  149 |     // Wait for data load — should show empty state or data, NOT error\n  150 |     await page.waitForTimeout(2000);\n    at B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts:147:53"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-13T20:36:46.712Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflows-schedules-Qualit-c8c80-age-loads-without-500-error-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\test-results\\workflows-schedules-Qualit-c8c80-age-loads-without-500-error-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "B:\\github\\py-sec-edgar\\spine-core\\frontend\\e2e\\workflows-schedules.spec.ts",
+                        "column": 53,
+                        "line": 147
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d722921af63548baeca6-14a02d546242598f6ee7",
+              "file": "workflows-schedules.spec.ts",
+              "line": 144,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-02-13T20:36:37.107Z",
+    "duration": 14382.153,
+    "expected": 55,
+    "skipped": 0,
+    "unexpected": 15,
+    "flaky": 0
+  }
+}
