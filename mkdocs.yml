@@ -1,0 +1,88 @@
+site_name: spine-core
+site_description: Platform primitives and framework for temporal data processing
+site_author: Ryan McCoy
+repo_url: https://github.com/mccoy-lab/py-sec-edgar
+repo_name: py-sec-edgar/spine-core
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+  - Core Concepts:
+      - Overview: concepts/overview.md
+      - Protocols: concepts/protocols.md
+      - Error Handling: concepts/errors.md
+  - Packages:
+      - spine.core: packages/core.md
+      - spine.execution: packages/execution.md
+      - spine.framework: packages/framework.md
+      - spine.orchestration: packages/orchestration.md
+      - spine.observability: packages/observability.md
+  - Architecture:
+      - Core Primitives: architecture/CORE_PRIMITIVES.md
+      - Database Architecture: architecture/DATABASE_ARCHITECTURE.md
+  - Guides:
+      - Pipeline vs Workflow: guides/pipeline_vs_workflow.md
+  - API Reference:
+      - Core: api/core.md
+      - Execution: api/execution.md
+      - Framework: api/framework.md
+      - Orchestration: api/orchestration.md
+  - LLM Integration:
+      - Start Here: llm/LLM_START_HERE.md
+      - Capabilities: llm/capability_inventory.md
+      - Do Not Reimplement: llm/do_not_reimplement.md
+
+extra:
+  version:
+    provider: mike
