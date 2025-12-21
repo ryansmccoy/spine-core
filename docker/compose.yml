@@ -1,0 +1,305 @@
+# ================================================================
+# spine-core Docker Compose — Unified Tiered Architecture
+# ================================================================
+#
+#   Tier 1 — MINIMAL (default):  API + Frontend + SQLite
+#     docker compose up
+#
+#   Tier 2 — STANDARD:  API + Frontend + PostgreSQL + Worker + Docs
+#     docker compose --profile standard up
+#
+#   Tier 3 — FULL:  Everything + Redis + Celery + Prometheus + Grafana
+#     docker compose --profile full up
+#
+# ================================================================
+# Port Allocation (spine-core block: 12000–12099)
+#
+#   12000  API (FastAPI + uvicorn)
+#   12001  Frontend (React dashboard)
+#   12002  Documentation (MkDocs)
+#   12004  Dev docs (hot-reload)
+#   10432  PostgreSQL            [standard, full]
+#   10379  Redis                 [full]
+#   12500  Prometheus            [full]
+#   12501  Grafana               [full]
+# ================================================================
+
+name: spine-core
+
+# ────────────────────────────────────────────────────
+# Shared network
+# ────────────────────────────────────────────────────
+networks:
+  spine-net:
+    name: spine-core-net
+    driver: bridge
+
+# ────────────────────────────────────────────────────
+# Volumes
+# ────────────────────────────────────────────────────
+volumes:
+  spine-data:
+  postgres-data:
+  timescaledb-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+# ────────────────────────────────────────────────────
+services:
+
+  # ==================================================
+  # TIER 1: MINIMAL — always started
+  # ==================================================
+
+  # ── API Backend ──────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: spine-core-api
+    ports:
+      - "${SPINE_API_PORT:-12000}:80"
+    env_file:
+      - ../.env.base
+    environment:
+      SPINE_DATABASE_URL: "${SPINE_DATABASE_URL:-sqlite:////app/data/spine.db}"
+    volumes:
+      - spine-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── Frontend Dashboard ───────────────────────────
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: spine-core-frontend
+    ports:
+      - "${SPINE_FRONTEND_PORT:-12001}:80"
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ==================================================
+  # TIER 2: STANDARD — add --profile standard
+  # ==================================================
+
+  # ── PostgreSQL ───────────────────────────────────
+  # NOTE: standard only — full tier uses TimescaleDB instead
+  postgres:
+    image: postgres:16-alpine
+    container_name: spine-core-postgres
+    profiles: ["standard"]
+    ports:
+      - "${SPINE_POSTGRES_PORT:-10432}:5432"
+    environment:
+      POSTGRES_DB: spine
+      POSTGRES_USER: ${POSTGRES_USER:-spine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spine}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spine}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── In-Process Worker ────────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: spine-core-worker
+    profiles: ["standard"]
+    command: ["spine-core", "worker", "start", "--poll-interval", "2", "--workers", "4"]
+    env_file:
+      - ../.env.base
+      - ../.env.standard
+      - .env.standard
+    volumes:
+      - spine-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── Documentation (MkDocs) ──────────────────────
+  docs:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.docs
+    container_name: spine-core-docs
+    profiles: ["standard", "full"]
+    ports:
+      - "${SPINE_DOCS_PORT:-12002}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - spine-net
+
+  # ── Docs Dev (Hot Reload) ────────────────────────
+  docs-dev:
+    image: python:3.12-slim
+    container_name: spine-core-docs-dev
+    profiles: ["dev"]
+    working_dir: /docs
+    command: >
+      bash -c "pip install mkdocs-material mkdocstrings[python] &&
+               mkdocs serve --dev-addr 0.0.0.0:8000"
+    volumes:
+      - ../src:/docs/src:ro
+      - ../docs:/docs/docs:ro
+      - ../mkdocs.yml:/docs/mkdocs.yml:ro
+      - ../README.md:/docs/README.md:ro
+    ports:
+      - "${SPINE_DOCS_DEV_PORT:-12004}:8000"
+    networks:
+      - spine-net
+
+  # ==================================================
+  # TIER 3: FULL — add --profile full
+  # ==================================================
+
+  # ── Redis (Cache + Celery Broker) ────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: spine-core-redis
+    profiles: ["full"]
+    ports:
+      - "${SPINE_REDIS_PORT:-10379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── Celery Worker ────────────────────────────────
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: spine-core-celery-worker
+    profiles: ["full"]
+    command:
+      - python
+      - -c
+      - |
+        from spine.execution.tasks import celery_app
+        celery_app.worker_main(['worker', '--loglevel=INFO', '-c', '4'])
+    env_file:
+      - ../.env.base
+      - ../.env.full
+      - .env.full
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── Celery Beat (Scheduler) ─────────────────────
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: spine-core-celery-beat
+    profiles: ["full"]
+    command:
+      - python
+      - -c
+      - |
+        from spine.execution.tasks import celery_app
+        celery_app.worker_main(['beat', '--loglevel=INFO'])
+    env_file:
+      - ../.env.base
+      - ../.env.full
+      - .env.full
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── TimescaleDB (replaces Postgres in full) ─────
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: spine-core-timescaledb
+    profiles: ["full"]
+    ports:
+      - "${SPINE_POSTGRES_PORT:-10432}:5432"
+    environment:
+      POSTGRES_DB: spine
+      POSTGRES_USER: ${POSTGRES_USER:-spine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spine}
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spine}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── Prometheus ───────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: spine-core-prometheus
+    profiles: ["full"]
+    ports:
+      - "${SPINE_PROMETHEUS_PORT:-12500}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+    networks:
+      - spine-net
+
+  # ── Grafana ──────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: spine-core-grafana
+    profiles: ["full"]
+    ports:
+      - "${SPINE_GRAFANA_PORT:-12501}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - spine-net

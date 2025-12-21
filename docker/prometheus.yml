@@ -1,0 +1,21 @@
+# spine-core Prometheus scrape configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "spine-core-api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["spine-core-api:80"]
+        labels:
+          app: spine-core
+          component: api
+
+  - job_name: "spine-core-worker"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["spine-core-worker:80"]
+        labels:
+          app: spine-core
+          component: worker
