@@ -33,7 +33,7 @@ test.describe('Examples page — layout', () => {
 
   test('renders page header with title and description', async ({ page }) => {
     await page.goto('/examples');
-    await expect(page.getByRole('heading', { name: 'Examples' }).or(page.getByText('Examples').first())).toBeVisible();
+    await expect(page.locator('main').getByRole('heading', { name: 'Examples' })).toBeVisible();
     await expect(page.getByText(/Browse and run/).or(page.getByText(/spine-core examples/)).first()).toBeVisible({ timeout: 5_000 });
   });
 

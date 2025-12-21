@@ -16,7 +16,7 @@ test.describe('Layout & Navigation', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/dashboard/);
 
-    const sidebar = page.locator('nav');
+    const sidebar = page.locator('nav').first();
     await expect(sidebar).toBeVisible();
 
     // App title
@@ -44,13 +44,13 @@ test.describe('Layout & Navigation', () => {
 
   test('sidebar shows section headers', async ({ page }) => {
     await page.goto('/dashboard');
-    const sidebar = page.locator('nav');
+    const sidebar = page.locator('nav').first();
 
     // 4 section labels
-    await expect(sidebar.getByText('OVERVIEW')).toBeVisible();
-    await expect(sidebar.getByText('EXECUTION')).toBeVisible();
-    await expect(sidebar.getByText('OPERATIONS')).toBeVisible();
-    await expect(sidebar.getByText('DEVELOP')).toBeVisible();
+    await expect(sidebar.getByText('OVERVIEW', { exact: true })).toBeVisible();
+    await expect(sidebar.getByText('EXECUTION', { exact: true })).toBeVisible();
+    await expect(sidebar.getByText('OPERATIONS', { exact: true })).toBeVisible();
+    await expect(sidebar.getByText('DEVELOP', { exact: true })).toBeVisible();
   });
 
   test('root "/" redirects to /dashboard', async ({ page }) => {
@@ -62,11 +62,11 @@ test.describe('Layout & Navigation', () => {
     await page.goto('/dashboard');
 
     const routes: Array<{ link: string; url: RegExp; heading: string | RegExp }> = [
-      { link: 'Runs', url: /\/runs$/, heading: 'Execution Runs' },
+      { link: 'Runs', url: /\/runs$/, heading: 'Runs' },
       { link: 'Workflows', url: /\/workflows/, heading: 'Workflows' },
       { link: 'Schedules', url: /\/schedules/, heading: 'Schedules' },
       { link: 'Dead Letters', url: /\/dlq/, heading: 'Dead Letter Queue' },
-      { link: 'Quality', url: /\/quality/, heading: /Quality/ },
+      { link: 'Quality', url: /\/quality/, heading: 'Quality & Anomalies' },
       { link: 'Stats & Workers', url: /\/stats/, heading: /Stats/ },
       { link: 'Database', url: /\/database/, heading: 'Database' },
       { link: 'Functions', url: /\/functions/, heading: 'Functions' },
@@ -79,7 +79,7 @@ test.describe('Layout & Navigation', () => {
       await page.getByRole('link', { name: link }).click();
       await expect(page).toHaveURL(url);
       await expect(
-        page.getByRole('heading', { name: heading }).or(page.getByText(heading).first())
+        page.locator('main').getByRole('heading', { name: heading })
       ).toBeVisible({ timeout: 5_000 });
     }
   });
@@ -97,7 +97,7 @@ test.describe('Layout & Navigation', () => {
   test('sidebar collapse/expand toggle works', async ({ page }) => {
     await page.goto('/dashboard');
 
-    const sidebar = page.locator('nav');
+    const sidebar = page.locator('nav').first();
     // Initially expanded — labels visible
     await expect(sidebar.getByText('Dashboard')).toBeVisible();
 
@@ -131,7 +131,7 @@ test.describe('Layout & Navigation', () => {
 
   test('version badge shows in sidebar footer', async ({ page }) => {
     await page.goto('/dashboard');
-    const sidebar = page.locator('nav');
+    const sidebar = page.locator('nav').first();
     await expect(sidebar.getByText(/v\d+\.\d+\.\d+/)).toBeVisible();
     await expect(sidebar.getByText('API connected')).toBeVisible();
   });

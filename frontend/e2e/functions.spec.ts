@@ -148,10 +148,12 @@ test.describe('Functions page — Code tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFunction = await page.locator('h2').first().isVisible().catch(() => false);
     if (hasFunction) {
       // Code tab should be active by default
-      const codeTab = page.getByRole('button', { name: 'Code' });
+      const codeTab = tabBar.getByRole('button', { name: 'Code' });
       await expect(codeTab).toBeVisible();
 
       // Monaco editor container
@@ -166,9 +168,10 @@ test.describe('Functions page — Code tab', () => {
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (hasFn) {
       // File header shows "{name}.py"
-      await expect(page.getByText(/\.py/)).toBeVisible();
+      const main = page.locator('main');
+      await expect(main.getByText(/\.py/).first()).toBeVisible();
       // Shows line count
-      await expect(page.getByText(/\d+ lines/)).toBeVisible();
+      await expect(main.getByText(/\d+ lines/).first()).toBeVisible();
     }
   });
 
@@ -194,12 +197,14 @@ test.describe('Functions page — tab navigation', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (hasFn) {
-      await expect(page.getByRole('button', { name: 'Code' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Test' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Configuration' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Invocations' })).toBeVisible();
+      await expect(tabBar.getByRole('button', { name: 'Code' })).toBeVisible();
+      await expect(tabBar.getByRole('button', { name: 'Test' })).toBeVisible();
+      await expect(tabBar.getByRole('button', { name: 'Configuration' })).toBeVisible();
+      await expect(tabBar.getByRole('button', { name: 'Invocations' })).toBeVisible();
     }
   });
 
@@ -207,23 +212,25 @@ test.describe('Functions page — tab navigation', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
     // Click Test tab
-    await page.getByRole('button', { name: 'Test' }).click();
+    await tabBar.getByRole('button', { name: 'Test' }).click();
     await expect(page.getByText('Test Event (JSON)')).toBeVisible();
 
     // Click Configuration tab
-    await page.getByRole('button', { name: 'Configuration' }).click();
+    await tabBar.getByRole('button', { name: 'Configuration' }).click();
     await expect(page.getByText('General Configuration')).toBeVisible();
 
     // Click Invocations tab
-    await page.getByRole('button', { name: 'Invocations' }).click();
+    await tabBar.getByRole('button', { name: 'Invocations' }).click();
     await expect(page.getByText('Recent Invocations')).toBeVisible();
 
     // Click Code tab back
-    await page.getByRole('button', { name: 'Code' }).click();
+    await tabBar.getByRole('button', { name: 'Code' }).click();
     await expect(page.locator('.monaco-editor, [data-keybinding-context]').first()).toBeVisible({ timeout: 5_000 });
   });
 });
@@ -239,26 +246,30 @@ test.describe('Functions page — Test tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Test' }).click();
+    await tabBar.getByRole('button', { name: 'Test' }).click();
 
     // Event JSON editor header
     await expect(page.getByText('Test Event (JSON)')).toBeVisible();
 
     // Test button in the tab
-    await expect(page.getByRole('button', { name: 'Test' }).nth(1)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Test', exact: true }).first()).toBeVisible();
   });
 
   test('shows prompt text when no result', async ({ page }) => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Test' }).click();
+    await tabBar.getByRole('button', { name: 'Test' }).click();
     await expect(page.getByText('Configure a test event above and click')).toBeVisible();
   });
 
@@ -329,25 +340,29 @@ test.describe('Functions page — Configuration tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Configuration' }).click();
+    await tabBar.getByRole('button', { name: 'Configuration' }).click();
 
     await expect(page.getByText('Timeout (seconds)')).toBeVisible();
     await expect(page.getByText('Memory (MB)')).toBeVisible();
     await expect(page.getByText('Runtime')).toBeVisible();
-    await expect(page.getByText('Handler')).toBeVisible();
+    await expect(page.getByText('Handler', { exact: true })).toBeVisible();
   });
 
   test('shows environment variables section', async ({ page }) => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Configuration' }).click();
+    await tabBar.getByRole('button', { name: 'Configuration' }).click();
     await expect(page.getByText('Environment Variables')).toBeVisible();
   });
 
@@ -355,10 +370,12 @@ test.describe('Functions page — Configuration tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main2 = page.locator('main');
+    const tabBar2 = main2.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Configuration' }).click();
+    await tabBar2.getByRole('button', { name: 'Configuration' }).click();
     await expect(page.getByText('Function Info')).toBeVisible();
     await expect(page.getByText('ID:')).toBeVisible();
     await expect(page.getByText('Created:')).toBeVisible();
@@ -368,10 +385,12 @@ test.describe('Functions page — Configuration tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Configuration' }).click();
+    await tabBar.getByRole('button', { name: 'Configuration' }).click();
 
     // Memory select should have MB options
     const memSelect = page.locator('select').first();
@@ -394,10 +413,12 @@ test.describe('Functions page — Invocations tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Invocations' }).click();
+    await tabBar.getByRole('button', { name: 'Invocations' }).click();
 
     await expect(
       page.getByText('Request ID').or(page.getByText('No invocation history yet')).first(),
@@ -408,10 +429,12 @@ test.describe('Functions page — Invocations tab', () => {
     await page.goto('/functions');
     await page.waitForTimeout(3000);
 
+    const main = page.locator('main');
+    const tabBar = main.locator('[data-testid="tab-bar"]');
     const hasFn = await page.locator('h2').first().isVisible().catch(() => false);
     if (!hasFn) return;
 
-    await page.getByRole('button', { name: 'Invocations' }).click();
+    await tabBar.getByRole('button', { name: 'Invocations' }).click();
     await page.waitForTimeout(1000);
 
     const table = page.locator('table');
@@ -492,9 +515,10 @@ test.describe('Functions page — Create Function', () => {
 
   test('Create Function button opens modal', async ({ page }) => {
     await page.goto('/functions');
-    await page.getByRole('button', { name: /Create Function/ }).click();
+    const main = page.locator('main');
+    await main.getByRole('button', { name: /Create Function/ }).click();
 
-    await expect(page.getByText('Create Function')).toBeVisible();
+    await expect(page.locator('.fixed').getByText('Create Function')).toBeVisible();
     await expect(page.getByLabel('Function Name')).toBeVisible();
     await expect(page.getByLabel('Description')).toBeVisible();
     await expect(page.getByLabel('Tags (comma-separated)')).toBeVisible();
@@ -502,7 +526,8 @@ test.describe('Functions page — Create Function', () => {
 
   test('Create button is disabled when name is empty', async ({ page }) => {
     await page.goto('/functions');
-    await page.getByRole('button', { name: /Create Function/ }).click();
+    const main = page.locator('main');
+    await main.getByRole('button', { name: /Create Function/ }).click();
 
     const createBtn = page.locator('.fixed').getByRole('button', { name: 'Create' });
     await expect(createBtn).toBeDisabled();
@@ -510,7 +535,8 @@ test.describe('Functions page — Create Function', () => {
 
   test('Create button is enabled when name is filled', async ({ page }) => {
     await page.goto('/functions');
-    await page.getByRole('button', { name: /Create Function/ }).click();
+    const main = page.locator('main');
+    await main.getByRole('button', { name: /Create Function/ }).click();
 
     await page.getByLabel('Function Name').fill('test_e2e_func');
     const createBtn = page.locator('.fixed').getByRole('button', { name: 'Create' });
@@ -519,18 +545,20 @@ test.describe('Functions page — Create Function', () => {
 
   test('Cancel button closes the modal', async ({ page }) => {
     await page.goto('/functions');
-    await page.getByRole('button', { name: /Create Function/ }).click();
-    await expect(page.getByText('Create Function')).toBeVisible();
+    const main = page.locator('main');
+    await main.getByRole('button', { name: /Create Function/ }).click();
+    await expect(page.locator('.fixed').getByText('Create Function')).toBeVisible();
 
     await page.locator('.fixed').getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByText('Create Function').first()).not.toBeVisible();
+    await expect(page.locator('.fixed').getByText('Create Function')).not.toBeVisible();
   });
 
   test('creating a function adds it to the list', async ({ page }) => {
     await page.goto('/functions');
+    const main = page.locator('main');
     const uniqueName = `e2e_test_${Date.now()}`;
 
-    await page.getByRole('button', { name: /Create Function/ }).click();
+    await main.getByRole('button', { name: /Create Function/ }).click();
     await page.getByLabel('Function Name').fill(uniqueName);
     await page.getByLabel('Description').fill('E2E test function');
     await page.getByLabel('Tags (comma-separated)').fill('e2e, test');
@@ -541,7 +569,7 @@ test.describe('Functions page — Create Function', () => {
     await page.waitForTimeout(2000);
 
     // New function should be in the list
-    await expect(page.getByText(uniqueName)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(uniqueName).first()).toBeVisible({ timeout: 5_000 });
   });
 });
 

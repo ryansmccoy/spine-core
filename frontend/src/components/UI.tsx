@@ -1,4 +1,5 @@
 import { AlertCircle, RefreshCw, Inbox, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 export function Card({
   title,
@@ -143,6 +144,14 @@ export function Modal({
   onClose: () => void;
   maxWidth?: string;
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`bg-white rounded-xl shadow-xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto`}>

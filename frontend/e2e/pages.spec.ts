@@ -10,16 +10,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Runs page', () => {
   test('renders heading and submit button', async ({ page }) => {
     await page.goto('/runs');
-    await expect(page.getByRole('heading', { name: 'Execution Runs' })).toBeVisible();
+    const main = page.locator('main');
+    await expect(main.getByRole('heading', { name: 'Runs' })).toBeVisible();
 
     // Submit button exists
-    const submitBtn = page.getByRole('button', { name: /submit/i });
+    const submitBtn = page.getByRole('button', { name: /new run/i });
     await expect(submitBtn).toBeVisible();
   });
 
   test('submit dialog opens and closes', async ({ page }) => {
     await page.goto('/runs');
-    await page.getByRole('button', { name: /submit/i }).click();
+    await page.getByRole('button', { name: /new run/i }).click();
 
     // Dialog opens
     const dialog = page.locator('.fixed.inset-0');

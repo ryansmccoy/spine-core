@@ -399,8 +399,9 @@ function CreateFunctionModal({
     <Modal title="Create Function" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Function Name</label>
+          <label htmlFor="fn-name" className="block text-xs font-medium text-gray-600 mb-1">Function Name</label>
           <input
+            id="fn-name"
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -409,8 +410,9 @@ function CreateFunctionModal({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+          <label htmlFor="fn-desc" className="block text-xs font-medium text-gray-600 mb-1">Description</label>
           <input
+            id="fn-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What does this function do?"
@@ -418,8 +420,9 @@ function CreateFunctionModal({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Tags (comma-separated)</label>
+          <label htmlFor="fn-tags" className="block text-xs font-medium text-gray-600 mb-1">Tags (comma-separated)</label>
           <input
+            id="fn-tags"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="etl, data, example"
@@ -694,7 +697,7 @@ export default function Functions() {
 
               {/* Tab bar */}
               <div className="px-6 bg-white border-b border-gray-200">
-                <div className="flex gap-0">
+                <div className="flex gap-0" data-testid="tab-bar">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}

@@ -34,7 +34,8 @@ test.describe('RunDetail page', () => {
   }) => {
     // Go to runs page first
     await page.goto('/runs');
-    await expect(page.getByRole('heading', { name: 'Execution Runs' })).toBeVisible();
+    const main = page.locator('main');
+    await expect(main.getByRole('heading', { name: 'Runs' })).toBeVisible();
 
     // If there's a run link, click on it to navigate to detail
     const runLink = page.locator('a[href*="/runs/"]').first();
@@ -51,8 +52,8 @@ test.describe('RunDetail page', () => {
       // Status badge should exist
       await expect(page.getByText(/Status/i).first()).toBeVisible();
 
-      // Event history section should exist
-      await expect(page.getByText('Event History')).toBeVisible();
+      // Tab navigation should exist
+      await expect(page.getByRole('button', { name: 'Overview' })).toBeVisible();
     }
   });
 

@@ -61,7 +61,7 @@ test.describe('Keyboard — modal interactions', () => {
     await page.waitForTimeout(1500);
 
     // Open submit dialog
-    const submitBtn = page.getByRole('button', { name: /submit/i });
+    const submitBtn = page.getByRole('button', { name: /new run/i });
     await submitBtn.click();
     await expect(page.getByText('Submit New Run')).toBeVisible();
 
@@ -77,7 +77,7 @@ test.describe('Keyboard — modal interactions', () => {
     await page.goto('/runs');
     await page.waitForTimeout(1500);
 
-    const submitBtn = page.getByRole('button', { name: /submit/i });
+    const submitBtn = page.getByRole('button', { name: /new run/i });
     await submitBtn.click();
     await page.waitForTimeout(500);
 

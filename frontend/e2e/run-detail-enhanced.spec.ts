@@ -22,8 +22,8 @@ test.describe('Run Detail — tabs and interactions', () => {
 
       // Tab buttons should be visible
       await expect(page.getByRole('button', { name: 'Overview' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Events' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Params & Result' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Timeline' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Parameters' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Errors' })).toBeVisible();
     }
   });
@@ -39,8 +39,8 @@ test.describe('Run Detail — tabs and interactions', () => {
       await runLink.click();
       await page.waitForTimeout(500);
 
-      // Click Events tab
-      await page.getByRole('button', { name: 'Events' }).click();
+      // Click Timeline tab
+      await page.getByRole('button', { name: 'Timeline' }).click();
       await page.waitForTimeout(500);
       // Should show either events, empty state, or loading indicator
       const hasTimeline = await page.getByText('No events recorded').isVisible().catch(() => false);
@@ -48,10 +48,9 @@ test.describe('Run Detail — tabs and interactions', () => {
       const hasLoading = await page.getByText('Loading events').isVisible().catch(() => false);
       expect(hasTimeline || hasEvents || hasLoading).toBeTruthy();
 
-      // Click Params tab
-      await page.getByRole('button', { name: 'Params & Result' }).click();
+      // Click Parameters tab
+      await page.getByRole('button', { name: 'Parameters' }).click();
       await expect(page.getByRole('heading', { name: 'Parameters' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Result' })).toBeVisible();
 
       // Click Errors tab
       await page.getByRole('button', { name: 'Errors' }).click();
@@ -104,7 +103,7 @@ test.describe('Run Detail — tabs and interactions', () => {
       await page.waitForTimeout(500);
 
       // Status badge and duration should be visible in the status bar
-      const statusBar = page.locator('.bg-white.rounded-lg.shadow-sm').first();
+      const statusBar = page.locator('.bg-white.rounded-xl.shadow-sm').first();
       await expect(statusBar).toBeVisible();
     }
   });

@@ -313,7 +313,7 @@ export default function DatabasePage() {
       )}
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-gray-200 mb-6">
+      <div className="flex items-center gap-1 border-b border-gray-200 mb-6" data-testid="tab-bar">
         {tabs.map((tab) => (
           <button
             key={tab.id}
