@@ -1,0 +1,20 @@
+# Spine-Core Documentation - Development Mode
+# Live reload for docs development
+FROM python:3.12-slim
+
+WORKDIR /docs
+
+# Install mkdocs and plugins
+RUN pip install --no-cache-dir \
+    mkdocs-material \
+    mkdocs-awesome-pages-plugin \
+    mkdocstrings[python] \
+    mkdocs-gen-files \
+    mkdocs-literate-nav
+
+# Copy mkdocs config (docs mounted as volume)
+COPY mkdocs.yml /docs/
+
+# Serve with live reload
+EXPOSE 8000
+CMD ["mkdocs", "serve", "-a", "0.0.0.0:8000"]

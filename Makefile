@@ -90,8 +90,15 @@ clean:
 
 # Build documentation
 docs:
-	@echo "Documentation is in docs/ directory"
-	@echo "To serve locally: uv run mkdocs serve (requires mkdocs)"
+	uv run python -m mkdocs build
+
+# Serve documentation locally
+docs-serve:
+	uv run mkdocs serve
+
+# Export OpenAPI schema
+openapi:
+	uv run python scripts/export_openapi.py
 
 # Generate changelog, review, and API index
 changelog:

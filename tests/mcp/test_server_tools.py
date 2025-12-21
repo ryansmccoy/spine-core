@@ -1,4 +1,4 @@
-"""Tests for spine.mcp.server — MCP tool function coverage.
+﻿"""Tests for spine.mcp.server â€” MCP tool function coverage.
 
 Tests the MCP tools by calling the underlying async functions directly
 with a mocked AppContext / connection.
@@ -82,11 +82,11 @@ class TestGetContext:
         assert ctx.conn is None
 
 
-# ── MCP Tool Tests (async) ───────────────────────────────────────────────
+# â”€â”€ MCP Tool Tests (async) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class TestHealthCheckTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_health_not_initialized(self, mock_ctx):
         from spine.mcp.server import health_check
 
@@ -97,7 +97,7 @@ class TestHealthCheckTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.database.check_database_health")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_health_healthy(self, mock_ctx, mock_check):
         from spine.mcp.server import health_check
 
@@ -120,7 +120,7 @@ class TestHealthCheckTool:
 
 class TestListRunsTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import list_runs
 
@@ -131,7 +131,7 @@ class TestListRunsTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.runs.list_runs")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_returns_runs(self, mock_ctx, mock_list):
         from spine.mcp.server import list_runs
 
@@ -154,7 +154,7 @@ class TestListRunsTool:
 
 class TestSubmitRunTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import submit_run
 
@@ -164,7 +164,7 @@ class TestSubmitRunTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.runs.submit_run")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_submit_success(self, mock_ctx, mock_submit):
         from spine.mcp.server import submit_run
 
@@ -181,7 +181,7 @@ class TestSubmitRunTool:
 
 class TestCancelRunTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import cancel_run
 
@@ -191,7 +191,7 @@ class TestCancelRunTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.runs.cancel_run")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_cancel_success(self, mock_ctx, mock_cancel):
         from spine.mcp.server import cancel_run
 
@@ -206,7 +206,7 @@ class TestCancelRunTool:
 
 class TestListWorkflowsTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import list_workflows
 
@@ -216,7 +216,7 @@ class TestListWorkflowsTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.workflows.list_workflows")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_returns_workflows(self, mock_ctx, mock_list):
         from spine.mcp.server import list_workflows
 
@@ -237,7 +237,7 @@ class TestListWorkflowsTool:
 
 class TestListSchedulesTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import list_schedules
 
@@ -247,7 +247,7 @@ class TestListSchedulesTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.schedules.list_schedules")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_returns_schedules(self, mock_ctx, mock_list):
         from spine.mcp.server import list_schedules
 
@@ -272,7 +272,7 @@ class TestListSchedulesTool:
 
 class TestListAlertsTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import list_alerts
 
@@ -282,7 +282,7 @@ class TestListAlertsTool:
 
     @pytest.mark.asyncio
     @patch("spine.ops.alerts.list_alerts")
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_returns_alerts(self, mock_ctx, mock_list):
         from spine.mcp.server import list_alerts
 
@@ -306,7 +306,7 @@ class TestListAlertsTool:
 
 class TestListQualityResultsTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import list_quality_results
 
@@ -317,7 +317,7 @@ class TestListQualityResultsTool:
 
 class TestListAnomaliesTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import list_anomalies
 
@@ -328,7 +328,7 @@ class TestListAnomaliesTool:
 
 class TestGetRunTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import get_run
 
@@ -339,7 +339,7 @@ class TestGetRunTool:
 
 class TestGetWorkflowTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import get_workflow
 
@@ -350,7 +350,7 @@ class TestGetWorkflowTool:
 
 class TestRunWorkflowTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import run_workflow
 
@@ -361,7 +361,7 @@ class TestRunWorkflowTool:
 
 class TestCreateScheduleTool:
     @pytest.mark.asyncio
-    @patch("spine.mcp.server._get_context")
+    @patch("spine.mcp._app._get_context")
     async def test_not_initialized(self, mock_ctx):
         from spine.mcp.server import create_schedule
 

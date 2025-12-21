@@ -10,7 +10,7 @@ This is a namespace package that can be extended by:
 # Declare this as a namespace package
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
-__version__ = "0.1.0"
+__version__ = "0.4.0"
 
 # Re-export everything from the actual implementation
 from spine.core import *  # noqa
