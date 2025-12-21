@@ -1,8 +1,8 @@
-"""Runnable protocol — unified interface for submitting pipeline work.
+"""Runnable protocol — unified interface for submitting operation work.
 
 ``EventDispatcher`` (execution layer) is the canonical implementation.
 ``WorkflowRunner`` depends on ``Runnable`` rather than a concrete
-dispatcher class, so any backend that can execute a pipeline by name
+dispatcher class, so any backend that can execute a operation by name
 is interchangeable.
 
 Usage::
@@ -14,6 +14,17 @@ Usage::
     dispatcher = EventDispatcher(executor=MemoryExecutor())
     runner = WorkflowRunner(runnable=dispatcher)   # ← accepts any Runnable
     result = runner.execute(workflow, params={...})
+
+Manifesto:
+    Any object that can "run" should expose a single interface.
+    The Runnable protocol unifies tasks, workflows, and dispatchers
+    so runners and executors accept them interchangeably.
+
+Tags:
+    spine-core, execution, runnable, protocol, interface
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -26,8 +37,8 @@ from typing import Any, Protocol, runtime_checkable
 
 
 @dataclass
-class PipelineRunResult:
-    """Concrete result returned by ``Runnable.submit_pipeline_sync``."""
+class OperationRunResult:
+    """Concrete result returned by ``Runnable.submit_operation_sync``."""
 
     status: str
     """``'completed'``, ``'failed'``, ``'cancelled'``."""
@@ -60,38 +71,38 @@ class PipelineRunResult:
 
 @runtime_checkable
 class Runnable(Protocol):
-    """Unified protocol for submitting pipeline work.
+    """Unified protocol for submitting operation work.
 
-    Any object that can run a pipeline by name and return a result
+    Any object that can run a operation by name and return a result
     satisfies this protocol.  ``WorkflowRunner`` depends on this
     rather than a concrete dispatcher class.
 
     Implementors
     ------------
     * ``EventDispatcher`` — canonical, full tracking via ``RunRecord``
-    * Custom backends — just implement ``submit_pipeline_sync()``
+    * Custom backends — just implement ``submit_operation_sync()``
     """
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> PipelineRunResult:
-        """Run a pipeline synchronously and return the result.
+    ) -> OperationRunResult:
+        """Run a operation synchronously and return the result.
 
         This is the synchronous entry point used by ``WorkflowRunner``
         (which is itself synchronous).
 
         Args:
-            pipeline_name: Registered pipeline name.
-            params: Parameters to pass to the pipeline.
-            parent_run_id: If this pipeline is a step in a workflow.
+            operation_name: Registered operation name.
+            params: Parameters to pass to the operation.
+            parent_run_id: If this operation is a step in a workflow.
             correlation_id: Shared ID linking related runs.
 
         Returns:
-            ``PipelineRunResult`` with status, error, and metrics.
+            ``OperationRunResult`` with status, error, and metrics.
         """
         ...

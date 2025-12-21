@@ -7,6 +7,13 @@ Quality checks validate data completeness, freshness, and correctness.
 Endpoints:
     GET /quality    List quality check results with filtering
 
+Manifesto:
+    Data quality metrics should be accessible via API so dashboards
+    can display freshness, completeness, and accuracy scores.
+
+Tags:
+    spine-core, api, quality, metrics, data-freshness
+
 Doc-Types: API_REFERENCE
 """
 

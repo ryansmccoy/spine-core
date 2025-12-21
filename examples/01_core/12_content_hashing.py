@@ -5,7 +5,7 @@ Hashing — Deterministic Record Hashing for Deduplication.
 WHY DETERMINISTIC HASHING?
 ================================================================================
 
-Data pipelines need to answer:
+Data operations need to answer:
 - "Have I seen this record before?"
 - "Did this record's content change?"
 - "Is this a duplicate from another source?"

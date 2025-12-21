@@ -9,7 +9,7 @@
 CREATE TABLE core_schedules (
     id VARCHAR2(255) PRIMARY KEY,
     name VARCHAR2(255) NOT NULL UNIQUE,
-    target_type VARCHAR2(100) DEFAULT 'pipeline' NOT NULL,
+    target_type VARCHAR2(100) DEFAULT 'operation' NOT NULL,
     target_name VARCHAR2(255) NOT NULL,
     params CLOB,
     schedule_type VARCHAR2(50) DEFAULT 'cron' NOT NULL,

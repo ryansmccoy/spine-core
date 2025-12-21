@@ -1,9 +1,8 @@
 """Step Types — definitions for workflow step variants.
 
-WHY
-───
+Manifesto:
 A Workflow is a list of Steps, but steps come in different flavours:
-lambda (inline function), pipeline (registered Pipeline), choice
+lambda (inline function), operation (registered Operation), choice
 (conditional branch), wait (pause), and map (fan-out/fan-in).  This
 module defines the ``Step`` dataclass and its factory methods so that
 workflow authors never deal with raw internals.
@@ -13,14 +12,14 @@ ARCHITECTURE
 ::
 
     Step
-      ├── .pipeline(name, pipeline_name)     ── wraps a registered Pipeline
+      ├── .operation(name, operation_name)     ── wraps a registered Operation
       ├── .lambda_(name, handler)             ── inline function
       ├── .from_function(name, fn)            ── plain Python → adapted handler
       ├── .choice(name, condition, then/else) ── conditional branch
       ├── .wait(name, seconds)                ── pause execution
       └── .map(name, items, iterator)          ── fan-out/fan-in
 
-    StepType      ── enum: LAMBDA, PIPELINE, CHOICE, WAIT, MAP
+    StepType      ── enum: LAMBDA, operation, CHOICE, WAIT, MAP
     ErrorPolicy   ── STOP or CONTINUE on step failure
     RetryPolicy   ── max_retries + backoff configuration
 
@@ -36,7 +35,7 @@ Example::
     workflow = Workflow(
         name="my.workflow",
         steps=[
-            Step.pipeline("ingest", "my.ingest_pipeline"),
+            Step.operation("ingest", "my.ingest_operation"),
             Step.lambda_("validate", validate_fn),
             Step.choice("route",
                 condition=lambda ctx: ctx.params.get("valid"),
@@ -45,11 +44,16 @@ Example::
             ),
         ],
     )
+
+Tags:
+    spine-core, orchestration, step-types, lambda, operation, choice, wait
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -103,7 +107,7 @@ class StepType(str, Enum):
     """Type of workflow step."""
 
     LAMBDA = "lambda"  # Inline function (Basic)
-    PIPELINE = "pipeline"  # Registered pipeline (Basic)
+    OPERATION = "operation"  # Registered operation (Basic)
     CHOICE = "choice"  # Conditional branch (Intermediate)
     WAIT = "wait"  # Pause execution (Advanced)
     MAP = "map"  # Fan-out/fan-in (Advanced)
@@ -176,7 +180,7 @@ class Step:
     This is the base class for all step types. Use the factory methods
     to create specific step types:
     - Step.lambda_() for inline functions
-    - Step.pipeline() for registered pipelines
+    - Step.operation() for registered operations
     - Step.choice() for conditional branching (Intermediate)
     """
 
@@ -188,7 +192,7 @@ class Step:
 
     # Type-specific fields (only some apply per type)
     handler: StepHandlerFn | None = None  # Lambda
-    pipeline_name: str | None = None  # Pipeline
+    operation_name: str | None = None  # Operation
     condition: ConditionFn | None = None  # Choice
     then_step: str | None = None  # Choice
     else_step: str | None = None  # Choice
@@ -235,30 +239,30 @@ class Step:
         )
 
     @classmethod
-    def pipeline(
+    def operation(
         cls,
         name: str,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         on_error: ErrorPolicy = ErrorPolicy.STOP,
         depends_on: list[str] | tuple[str, ...] | None = None,
     ) -> Step:
         """
-        Create a pipeline step (wraps registered pipeline).
+        Create a operation step (wraps registered operation).
 
         Tier: Basic
 
         Args:
             name: Unique step name within workflow
-            pipeline_name: Registered pipeline name (e.g., "finra.otc.ingest")
+            operation_name: Registered operation name (e.g., "finra.otc.ingest")
             params: Additional params to merge with context params
             on_error: Error handling policy
             depends_on: Step names this step depends on
         """
         return cls(
             name=name,
-            step_type=StepType.PIPELINE,
-            pipeline_name=pipeline_name,
+            step_type=StepType.OPERATION,
+            operation_name=operation_name,
             config=params or {},
             on_error=on_error,
             depends_on=tuple(depends_on or ()),
@@ -409,7 +413,7 @@ class Step:
 
     def is_basic_tier(self) -> bool:
         """Check if this step type is available in Basic tier."""
-        return self.step_type in (StepType.LAMBDA, StepType.PIPELINE)
+        return self.step_type in (StepType.LAMBDA, StepType.OPERATION)
 
     def is_intermediate_tier(self) -> bool:
         """Check if this step type requires Intermediate tier."""
@@ -432,8 +436,8 @@ class Step:
             result["on_error"] = self.on_error.value
 
         # Type-specific fields
-        if self.step_type == StepType.PIPELINE:
-            result["pipeline"] = self.pipeline_name
+        if self.step_type == StepType.OPERATION:
+            result["operation"] = self.operation_name
         elif self.step_type == StepType.LAMBDA:
             ref = self._handler_ref()
             if ref:
@@ -468,8 +472,8 @@ class Step:
         return _callable_ref(self.condition)
 
     def __repr__(self) -> str:
-        if self.step_type == StepType.PIPELINE:
-            return f"Step.pipeline({self.name!r}, {self.pipeline_name!r})"
+        if self.step_type == StepType.OPERATION:
+            return f"Step.operation({self.name!r}, {self.operation_name!r})"
         elif self.step_type == StepType.LAMBDA:
             return f"Step.lambda_({self.name!r}, <handler>)"
         elif self.step_type == StepType.CHOICE:

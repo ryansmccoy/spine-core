@@ -1,8 +1,7 @@
 """Workflow Templates — pre-built patterns for common workflow shapes.
 
-WHY
-───
-Many workflows follow the same shape: ETL pipelines, fan-out/fan-in,
+Manifesto:
+Many workflows follow the same shape: ETL operations, fan-out/fan-in,
 conditional routing, retry wrappers, scheduled batches.  Instead of
 re-inventing these each time, templates provide factory functions that
 produce a fully-wired ``Workflow`` you can customise and register.
@@ -12,11 +11,11 @@ ARCHITECTURE
 ::
 
     Built-in templates:
-      etl_pipeline(name, extract, transform, load)      → 3-step ETL
+      etl_operation(name, extract, transform, load)      → 3-step ETL
       fan_out_fan_in(name, items, iterator, merge)      → scatter/gather
       conditional_branch(name, condition, then, else_)  → if/else routing
-      retry_wrapper(name, pipeline, max_retries)        → retry + fallback
-      scheduled_batch(name, pipeline)                   → wait → run → notify
+      retry_wrapper(name, operation, max_retries)        → retry + fallback
+      scheduled_batch(name, operation)                   → wait → run → notify
 
     Template registry:
       register_template(name, factory)   → add custom template
@@ -36,14 +35,21 @@ Related modules:
 
 Example::
 
-    from spine.orchestration.templates import etl_pipeline
+    from spine.orchestration.templates import etl_operation
 
-    wf = etl_pipeline(
+    wf = etl_operation(
         name="finra.daily_etl",
-        extract_pipeline="finra.fetch_data",
-        transform_pipeline="finra.normalize",
-        load_pipeline="finra.store",
+        extract_operation="finra.fetch_data",
+        transform_operation="finra.normalize",
+        load_operation="finra.store",
     )
+
+Tags:
+    spine-core, orchestration, templates, ETL, fan-out,
+    pipeline, pre-built-patterns
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -51,15 +57,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from spine.orchestration.step_result import StepResult
-from spine.orchestration.step_types import ErrorPolicy, Step, StepType
+from spine.orchestration.step_types import ErrorPolicy, Step
 from spine.orchestration.workflow import (
-    ExecutionMode,
     FailurePolicy,
     Workflow,
     WorkflowExecutionPolicy,
 )
-
 
 # ---------------------------------------------------------------------------
 # Template registry
@@ -74,7 +77,7 @@ def register_template(name: str, factory: Callable[..., Workflow]) -> None:
     Parameters
     ----------
     name
-        Template name (e.g., ``"etl_pipeline"``).
+        Template name (e.g., ``"etl_operation"``).
     factory
         Callable that returns a ``Workflow``.
     """
@@ -103,12 +106,12 @@ def list_templates() -> list[str]:
 # Built-in templates
 # ---------------------------------------------------------------------------
 
-def etl_pipeline(
+def etl_operation(
     *,
     name: str,
-    extract_pipeline: str,
-    transform_pipeline: str,
-    load_pipeline: str,
+    extract_operation: str,
+    transform_operation: str,
+    load_operation: str,
     domain: str = "",
     validate_handler: Callable[..., Any] | None = None,
     description: str = "",
@@ -121,12 +124,12 @@ def etl_pipeline(
     ----------
     name
         Workflow name.
-    extract_pipeline
-        Pipeline name for extraction.
-    transform_pipeline
-        Pipeline name for transformation.
-    load_pipeline
-        Pipeline name for loading.
+    extract_operation
+        Operation name for extraction.
+    transform_operation
+        Operation name for transformation.
+    load_operation
+        Operation name for loading.
     domain
         Optional domain classification.
     validate_handler
@@ -144,7 +147,7 @@ def etl_pipeline(
         A 3-4 step ETL workflow.
     """
     steps: list[Step] = [
-        Step.pipeline("extract", extract_pipeline),
+        Step.operation("extract", extract_operation),
     ]
 
     if validate_handler:
@@ -156,15 +159,15 @@ def etl_pipeline(
         transform_deps = ("extract",)
 
     steps.extend([
-        Step.pipeline("transform", transform_pipeline, depends_on=transform_deps),
-        Step.pipeline("load", load_pipeline, depends_on=("transform",)),
+        Step.operation("transform", transform_operation, depends_on=transform_deps),
+        Step.operation("load", load_operation, depends_on=("transform",)),
     ])
 
     return Workflow(
         name=name,
         steps=steps,
         domain=domain,
-        description=description or f"ETL: {extract_pipeline} → {transform_pipeline} → {load_pipeline}",
+        description=description or f"ETL: {extract_operation} → {transform_operation} → {load_operation}",
         tags=tags or ["etl"],
         execution_policy=WorkflowExecutionPolicy(
             on_failure=FailurePolicy(on_failure),
@@ -176,7 +179,7 @@ def fan_out_fan_in(
     *,
     name: str,
     items_path: str,
-    iterator_pipeline: str,
+    iterator_operation: str,
     merge_handler: Callable[..., Any] | None = None,
     max_concurrency: int = 8,
     domain: str = "",
@@ -191,8 +194,8 @@ def fan_out_fan_in(
         Workflow name.
     items_path
         JSONPath to the items collection in context.
-    iterator_pipeline
-        Pipeline to run for each item.
+    iterator_operation
+        Operation to run for each item.
     merge_handler
         Optional handler to merge results after fan-in.
     max_concurrency
@@ -213,7 +216,7 @@ def fan_out_fan_in(
         Step.map(
             "scatter",
             items_path=items_path,
-            iterator_workflow=iterator_pipeline,
+            iterator_workflow=iterator_operation,
             max_concurrency=max_concurrency,
         ),
     ]
@@ -227,7 +230,7 @@ def fan_out_fan_in(
         name=name,
         steps=steps,
         domain=domain,
-        description=description or f"Fan-out: {items_path} × {iterator_pipeline}",
+        description=description or f"Fan-out: {items_path} × {iterator_operation}",
         tags=tags or ["fan-out", "parallel"],
     )
 
@@ -236,8 +239,8 @@ def conditional_branch(
     *,
     name: str,
     condition: Callable[..., bool],
-    true_pipeline: str,
-    false_pipeline: str,
+    true_operation: str,
+    false_operation: str,
     domain: str = "",
     description: str = "",
     tags: list[str] | None = None,
@@ -250,10 +253,10 @@ def conditional_branch(
         Workflow name.
     condition
         Function that returns ``True``/``False`` given context.
-    true_pipeline
-        Pipeline to run if condition is ``True``.
-    false_pipeline
-        Pipeline to run if condition is ``False``.
+    true_operation
+        Operation to run if condition is ``True``.
+    false_operation
+        Operation to run if condition is ``False``.
     domain
         Optional domain.
     description
@@ -267,8 +270,8 @@ def conditional_branch(
         A 3-step workflow with choice routing.
     """
     steps = [
-        Step.pipeline("on_true", true_pipeline),
-        Step.pipeline("on_false", false_pipeline),
+        Step.operation("on_true", true_operation),
+        Step.operation("on_false", false_operation),
         Step.choice("route", condition, "on_true", "on_false"),
     ]
 
@@ -276,7 +279,7 @@ def conditional_branch(
         name=name,
         steps=steps,
         domain=domain,
-        description=description or f"Branch: {true_pipeline} / {false_pipeline}",
+        description=description or f"Branch: {true_operation} / {false_operation}",
         tags=tags or ["conditional"],
     )
 
@@ -284,23 +287,23 @@ def conditional_branch(
 def retry_wrapper(
     *,
     name: str,
-    target_pipeline: str,
-    fallback_pipeline: str | None = None,
+    target_operation: str,
+    fallback_operation: str | None = None,
     max_retries: int = 3,
     domain: str = "",
     description: str = "",
     tags: list[str] | None = None,
 ) -> Workflow:
-    """Create a workflow that wraps a pipeline with retry semantics.
+    """Create a workflow that wraps a operation with retry semantics.
 
     Parameters
     ----------
     name
         Workflow name.
-    target_pipeline
-        The pipeline to attempt.
-    fallback_pipeline
-        Optional fallback pipeline if all retries fail.
+    target_operation
+        The operation to attempt.
+    fallback_operation
+        Optional fallback operation if all retries fail.
     max_retries
         Number of retry attempts (set via retry_policy on step).
     domain
@@ -317,7 +320,7 @@ def retry_wrapper(
     """
     from spine.orchestration.step_types import RetryPolicy
 
-    main_step = Step.pipeline("attempt", target_pipeline)
+    main_step = Step.operation("attempt", target_operation)
     main_step.on_error = ErrorPolicy.CONTINUE
     main_step.retry_policy = RetryPolicy(
         max_attempts=max_retries,
@@ -327,16 +330,16 @@ def retry_wrapper(
 
     steps: list[Step] = [main_step]
 
-    if fallback_pipeline:
+    if fallback_operation:
         steps.append(
-            Step.pipeline("fallback", fallback_pipeline, depends_on=("attempt",))
+            Step.operation("fallback", fallback_operation, depends_on=("attempt",))
         )
 
     return Workflow(
         name=name,
         steps=steps,
         domain=domain,
-        description=description or f"Retry wrapper: {target_pipeline} (max {max_retries})",
+        description=description or f"Retry wrapper: {target_operation} (max {max_retries})",
         tags=tags or ["retry", "resilience"],
         execution_policy=WorkflowExecutionPolicy(
             on_failure=FailurePolicy.CONTINUE,
@@ -348,7 +351,7 @@ def scheduled_batch(
     *,
     name: str,
     wait_seconds: int,
-    execute_pipeline: str,
+    execute_operation: str,
     validate_handler: Callable[..., Any] | None = None,
     notify_handler: Callable[..., Any] | None = None,
     domain: str = "",
@@ -363,8 +366,8 @@ def scheduled_batch(
         Workflow name.
     wait_seconds
         How long to wait before execution.
-    execute_pipeline
-        Pipeline to run.
+    execute_operation
+        Operation to run.
     validate_handler
         Optional validation handler.
     notify_handler
@@ -383,7 +386,7 @@ def scheduled_batch(
     """
     steps: list[Step] = [
         Step.wait("delay", wait_seconds),
-        Step.pipeline("execute", execute_pipeline, depends_on=("delay",)),
+        Step.operation("execute", execute_operation, depends_on=("delay",)),
     ]
 
     if validate_handler:
@@ -403,7 +406,7 @@ def scheduled_batch(
         name=name,
         steps=steps,
         domain=domain,
-        description=description or f"Scheduled batch: {wait_seconds}s → {execute_pipeline}",
+        description=description or f"Scheduled batch: {wait_seconds}s → {execute_operation}",
         tags=tags or ["batch", "scheduled"],
     )
 
@@ -413,7 +416,7 @@ def scheduled_batch(
 # ---------------------------------------------------------------------------
 
 _BUILTINS = {
-    "etl_pipeline": etl_pipeline,
+    "etl_operation": etl_operation,
     "fan_out_fan_in": fan_out_fan_in,
     "conditional_branch": conditional_branch,
     "retry_wrapper": retry_wrapper,

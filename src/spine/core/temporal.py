@@ -5,7 +5,7 @@ WeekEnding is the core abstraction for weekly data processing.
 It validates that dates are Fridays and provides range/iteration utilities.
 
 Manifesto:
-    Financial data pipelines operate on institutional time cycles. FINRA publishes
+    Financial data operations operate on institutional time cycles. FINRA publishes
     OTC transparency data every Friday. Market calendars follow weekly patterns.
     Using arbitrary dates leads to bugs: "Did we process 2025-12-25 (Thursday)?"
 
@@ -51,7 +51,7 @@ Tags:
 Doc-Types:
     - API Reference
     - Temporal Patterns Guide
-    - FINRA OTC Pipeline Documentation
+    - FINRA OTC Operation Documentation
 """
 
 from collections.abc import Iterator
@@ -78,7 +78,7 @@ class WeekEnding:
     and backfill ranges. Invalid dates fail at construction time, not runtime.
 
     Manifesto:
-        FINRA publishes OTC transparency data every Friday. Market data pipelines
+        FINRA publishes OTC transparency data every Friday. Market data operations
         process weekly windows. Using arbitrary dates leads to subtle bugs:
         - "2025-12-25" (Christmas, Thursday) - Wrong week boundary
         - Off-by-one errors in date arithmetic
@@ -182,7 +182,7 @@ class WeekEnding:
         ✅ DO: Use previous()/next() methods
 
     Context:
-        Problem: Weekly financial pipelines use arbitrary dates, causing
+        Problem: Weekly financial operations use arbitrary dates, causing
                  off-by-one errors, wrong week boundaries, and inconsistent data.
         Solution: Value object that validates Fridays at construction time,
                   with navigation and range utilities built-in.
@@ -196,7 +196,7 @@ class WeekEnding:
     Doc-Types:
         - API Reference
         - Temporal Patterns Guide
-        - FINRA OTC Pipeline Documentation
+        - FINRA OTC Operation Documentation
 
     Attributes:
         value: The validated Friday date

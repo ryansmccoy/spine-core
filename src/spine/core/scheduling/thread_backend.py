@@ -1,7 +1,20 @@
 """Zero-dependency threading-based scheduler backend.
 
+Manifesto:
+    The default backend uses only stdlib ``threading`` so spine-core
+    scheduling works out of the box with zero extra dependencies.
+    A daemon thread ticks at a configurable interval, invoking the
+    scheduler service's async callback via ``asyncio.run()``.
+
 This is the DEFAULT backend for spine-core scheduling. It uses Python's
 stdlib threading module and has no external dependencies.
+
+Tags:
+    spine-core, scheduling, thread, stdlib, default-backend, daemon
+
+Doc-Types:
+    api-reference, architecture-diagram
+
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  THREAD BACKEND ARCHITECTURE                                                  │

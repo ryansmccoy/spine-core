@@ -1,7 +1,6 @@
 """Process Executor — multi-process execution to escape the GIL.
 
-WHY
-───
+Manifesto:
 CPU-bound work (NLP extraction, PDF parsing, data aggregation)
 cannot benefit from threads due to the GIL.  ``ProcessExecutor``
 uses ``ProcessPoolExecutor`` to distribute work across cores.
@@ -28,6 +27,12 @@ Example::
     executor = ProcessExecutor(max_workers=4)
     executor.register("task", "parse_pdf", "myapp.parsers.parse_pdf")
     ref = await executor.submit(task_spec("parse_pdf", {"path": "file.pdf"}))
+
+Tags:
+    spine-core, execution, executor, process-pool, CPU-bound, multiprocessing
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -39,7 +44,6 @@ from concurrent.futures import ProcessPoolExecutor
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.execution.spec import WorkSpec
 
 logger = get_logger(__name__)
@@ -63,7 +67,7 @@ def _run_handler_in_process(handler_path: str, params: dict[str, Any]) -> dict[s
 
 
 class ProcessExecutor:
-    """``ProcessPoolExecutor``-based executor for CPU-bound pipelines.
+    """``ProcessPoolExecutor``-based executor for CPU-bound operations.
 
     Runs handlers in separate processes to escape the GIL.
     Handlers are registered by their dotted import path so they can
@@ -92,7 +96,7 @@ class ProcessExecutor:
         """Register a handler by dotted import path.
 
         Args:
-            kind: Work type (``task``, ``pipeline``).
+            kind: Work type (``task``, ``operation``).
             name: Handler name.
             handler_path: Dotted path, e.g. ``"myapp.parsers.parse_pdf"``.
         """

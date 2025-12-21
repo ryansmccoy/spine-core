@@ -1,9 +1,9 @@
-"""SEC Filing Workflow — Multi-step filing processing pipeline.
+"""SEC Filing Workflow — Multi-step filing processing operation.
 
 WHY THIS EXAMPLE
 ────────────────
 Processing an SEC filing is not a single step — it’s a multi-stage
-pipeline: fetch the raw document, extract text and exhibits, parse
+operation: fetch the raw document, extract text and exhibits, parse
 XBRL financial data, run NLP entity extraction, store results, and
 notify downstream consumers.  This example shows how spine-core’s
 execution primitives orchestrate that entire chain.
@@ -44,7 +44,7 @@ STEP HANDLERS
 Run: python examples/07_real_world/05_sec_filing_workflow.py
 
 See Also:
-    04_feed_ingestion — feed-level ingestion pipeline
+    04_feed_ingestion — feed-level ingestion operation
     01_entityspine_integration — entity resolution for filings
 """
 import asyncio
@@ -56,10 +56,10 @@ from spine.execution import (
     EventDispatcher,
     WorkSpec,
     task_spec,
-    pipeline_spec,
+    operation_spec,
     step_spec,
     register_task,
-    register_pipeline,
+    register_operation,
     register_step,
     HandlerRegistry,
     RunStatus,
@@ -71,7 +71,7 @@ from spine.execution.executors import MemoryExecutor
 # SEC FILING PROCESSING WORKFLOW (real use case)
 # =============================================================================
 
-# This simulates a filing processing pipeline that:
+# This simulates a filing processing operation that:
 # 1. Fetches raw filing from SEC EDGAR
 # 2. Extracts text and exhibits
 # 3. Parses structured data (XML/XBRL)
@@ -250,9 +250,9 @@ async def notify_downstream(params: dict) -> dict:
     }
 
 
-# --- Workflow Pipeline ---
+# --- Workflow Operation ---
 
-@register_pipeline("process_filing", registry=registry, description="Full SEC filing processing workflow")
+@register_operation("process_filing", registry=registry, description="Full SEC filing processing workflow")
 async def process_filing(params: dict) -> dict:
     """
     Complete filing processing workflow.
@@ -332,7 +332,7 @@ async def process_filing(params: dict) -> dict:
     }
 
 
-@register_pipeline("batch_process_filings", registry=registry, description="Process multiple filings")
+@register_operation("batch_process_filings", registry=registry, description="Process multiple filings")
 async def batch_process_filings(params: dict) -> dict:
     """Process multiple filings with controlled concurrency."""
     accessions = params.get("accession_numbers", [])
@@ -372,7 +372,7 @@ async def main():
     """Demonstrate the workflow execution."""
     print("\n" + "=" * 60)
     print("SPINE EXECUTION - WORKFLOW EXAMPLE")
-    print("SEC Filing Processing Pipeline")
+    print("SEC Filing Processing Operation")
     print("=" * 60)
     
     # Build handler map from registry
@@ -389,7 +389,7 @@ async def main():
     print("\n📋 Demo 1: Process a single 10-K filing")
     print("-" * 40)
     
-    run_id = await dispatcher.submit_pipeline(
+    run_id = await dispatcher.submit_operation(
         "process_filing",
         params={"accession_number": "0000320193-24-000001"},
     )
@@ -413,7 +413,7 @@ async def main():
     print("\n\n📋 Demo 2: Batch process multiple filings")
     print("-" * 40)
     
-    run_id = await dispatcher.submit_pipeline(
+    run_id = await dispatcher.submit_operation(
         "batch_process_filings",
         params={
             "accession_numbers": [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FastAPI Integration — Building REST APIs for Pipeline Orchestration.
+"""FastAPI Integration — Building REST APIs for Operation Orchestration.
 
 ================================================================================
 WHY FASTAPI INTEGRATION?
@@ -7,9 +7,9 @@ WHY FASTAPI INTEGRATION?
 
 Production data platforms need a REST API to:
 
-    - Submit pipeline runs from external systems (Airflow, cron, webhooks)
+    - Submit operation runs from external systems (Airflow, cron, webhooks)
     - Query run status and results (dashboards, monitoring)
-    - Manage pipeline configuration (feature flags, schedules)
+    - Manage operation configuration (feature flags, schedules)
 
 Spine-core's execution layer integrates directly with FastAPI::
 
@@ -87,7 +87,7 @@ from spine.execution import (
     EventDispatcher,
     WorkSpec,
     register_task,
-    register_pipeline,
+    register_operation,
     HandlerRegistry,
     RunStatus,
     create_runs_router,
@@ -241,11 +241,11 @@ async def send_alert(params: dict) -> dict:
     }
 
 
-# --- Pipelines ---
+# --- Operations ---
 
-@register_pipeline("daily_entity_refresh", registry=registry, description="Refresh entity data daily")
+@register_operation("daily_entity_refresh", registry=registry, description="Refresh entity data daily")
 async def daily_entity_refresh(params: dict) -> dict:
-    """Daily pipeline to refresh entity enrichments."""
+    """Daily operation to refresh entity enrichments."""
     entities = params.get("entities", ["AAPL", "MSFT", "TSLA"])
     
     results = []
@@ -267,7 +267,7 @@ async def daily_entity_refresh(params: dict) -> dict:
     }
 
 
-@register_pipeline("alert_check_cycle", registry=registry, description="Check all alert rules")
+@register_operation("alert_check_cycle", registry=registry, description="Check all alert rules")
 async def alert_check_cycle(params: dict) -> dict:
     """Check all configured alert rules."""
     rules = params.get("rules", [
@@ -312,7 +312,7 @@ def create_app() -> FastAPI:
     # Create FastAPI app
     app = FastAPI(
         title="Spine Execution API",
-        description="Unified execution API for tasks, pipelines, and workflows",
+        description="Unified execution API for tasks, operations, and workflows",
         version="1.0.0",
     )
     
@@ -341,7 +341,7 @@ def create_app() -> FastAPI:
             "handlers": registry.list_with_metadata(),
             "counts": {
                 "tasks": len(registry.list_handlers(kind="task")),
-                "pipelines": len(registry.list_handlers(kind="pipeline")),
+                "operations": len(registry.list_handlers(kind="operation")),
             }
         }
     

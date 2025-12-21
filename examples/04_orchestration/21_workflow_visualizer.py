@@ -19,7 +19,7 @@ Architecture::
     visualize_mermaid(workflow)
     ├── graph direction (TD/LR/BT/RL)
     ├── step-type shapes:
-    │   ├── pipeline  → rectangle    [name]
+    │   ├── operation  → rectangle    [name]
     │   ├── lambda    → rounded      (name)
     │   ├── choice    → diamond      {name}
     │   ├── wait      → subroutine   [[name]]
@@ -36,7 +36,7 @@ Architecture::
     ├── step_types, has_branches
     ├── max_depth, critical_path
     ├── tier (micro/small/medium/large/enterprise)
-    └── pipeline_names
+    └── operation_names
 
 Key Concepts:
     - **Mermaid**: Standards-based, renders in GitHub, Notion, VS Code.
@@ -67,13 +67,13 @@ from spine.orchestration.visualizer import (
 
 
 def _make_sequential() -> Workflow:
-    """Three-step sequential pipeline."""
+    """Three-step sequential operation."""
     return Workflow(
-        name="etl_pipeline",
+        name="etl_operation",
         steps=[
-            Step.pipeline("extract", "data-extract"),
-            Step.pipeline("transform", "data-transform"),
-            Step.pipeline("load", "data-load"),
+            Step.operation("extract", "data-extract"),
+            Step.operation("transform", "data-transform"),
+            Step.operation("load", "data-load"),
         ],
     )
 
@@ -83,10 +83,10 @@ def _make_dag() -> Workflow:
     return Workflow(
         name="parallel_dag",
         steps=[
-            Step.pipeline("fetch_a", "fetch-a"),
-            Step.pipeline("fetch_b", "fetch-b"),
-            Step.pipeline("merge", "merge", depends_on=["fetch_a", "fetch_b"]),
-            Step.pipeline("publish", "publish", depends_on=["merge"]),
+            Step.operation("fetch_a", "fetch-a"),
+            Step.operation("fetch_b", "fetch-b"),
+            Step.operation("merge", "merge", depends_on=["fetch_a", "fetch_b"]),
+            Step.operation("publish", "publish", depends_on=["merge"]),
         ],
     )
 
@@ -96,17 +96,17 @@ def _make_choice() -> Workflow:
     return Workflow(
         name="decision_flow",
         steps=[
-            Step.pipeline("validate", "validator"),
+            Step.operation("validate", "validator"),
             Step.choice("route", condition=lambda ctx: True, then_step="process", else_step="reject"),
-            Step.pipeline("process", "processor"),
-            Step.pipeline("reject", "rejector"),
+            Step.operation("process", "processor"),
+            Step.operation("reject", "rejector"),
         ],
     )
 
 
 def main() -> None:
     # ------------------------------------------------------------------
-    # 1. Mermaid diagram — sequential pipeline
+    # 1. Mermaid diagram — sequential operation
     # ------------------------------------------------------------------
     print(f"\n{'='*60}")
     print("1. Mermaid diagram (sequential)")

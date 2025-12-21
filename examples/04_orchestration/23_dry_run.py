@@ -8,7 +8,7 @@ committing to a real execution.
 Demonstrates:
     1. ``dry_run()``              — basic analysis
     2. ``DryRunResult``           — inspect plan and issues
-    3. ``register_cost_estimate`` — custom pipeline timing
+    3. ``register_cost_estimate`` — custom operation timing
     4. ``register_estimator``     — dynamic cost estimation
     5. Validation issue detection
     6. ``summary()``              — human-readable output
@@ -31,7 +31,7 @@ Architecture::
 
 Key Concepts:
     - Dry-run is *structural* analysis — no handlers execute.
-    - Register cost estimates for pipelines to get accurate timing.
+    - Register cost estimates for operations to get accurate timing.
     - Combine with ``lint_workflow()`` for comprehensive pre-flight.
 
 See Also:
@@ -79,9 +79,9 @@ def main() -> None:
     wf = Workflow(
         name="finra.daily_etl",
         steps=[
-            Step.pipeline("extract", "finra.fetch_data"),
+            Step.operation("extract", "finra.fetch_data"),
             Step.lambda_("validate", _handler),
-            Step.pipeline("load", "finra.store_data"),
+            Step.operation("load", "finra.store_data"),
         ],
     )
     result = dry_run(wf, params={"tier": "NMS_TIER_1"})
@@ -137,7 +137,7 @@ def main() -> None:
         name="test.invalid",
         steps=[
             Step.lambda_("broken", None),  # Missing handler
-            Step.pipeline("no_pipe", ""),   # Empty pipeline name
+            Step.operation("no_pipe", ""),   # Empty operation name
         ],
     )
     result = dry_run(bad_wf)
@@ -155,9 +155,9 @@ def main() -> None:
     par_wf = Workflow(
         name="parallel.ingest",
         steps=[
-            Step.pipeline("source_a", "ingest.a"),
-            Step.pipeline("source_b", "ingest.b"),
-            Step.pipeline("merge", "data.merge", depends_on=["source_a", "source_b"]),
+            Step.operation("source_a", "ingest.a"),
+            Step.operation("source_b", "ingest.b"),
+            Step.operation("merge", "data.merge", depends_on=["source_a", "source_b"]),
         ],
         execution_policy=WorkflowExecutionPolicy(
             mode=ExecutionMode.PARALLEL,
@@ -179,7 +179,7 @@ def main() -> None:
         name="scheduled.batch",
         steps=[
             Step.wait("delay", 300),
-            Step.pipeline("process", "batch.process"),
+            Step.operation("process", "batch.process"),
         ],
     )
     result = dry_run(wait_wf)

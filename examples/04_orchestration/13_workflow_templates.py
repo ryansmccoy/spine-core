@@ -7,10 +7,10 @@ so teams can instantiate, customize, and register without building
 workflows from scratch.
 
 Demonstrates:
-    1. ``etl_pipeline()`` — Extract → Transform → Load (+optional validation)
+    1. ``etl_operation()`` — Extract → Transform → Load (+optional validation)
     2. ``fan_out_fan_in()`` — Map/scatter step → merge results
     3. ``conditional_branch()`` — Route based on a condition
-    4. ``retry_wrapper()`` — Pipeline with retry + optional fallback
+    4. ``retry_wrapper()`` — Operation with retry + optional fallback
     5. ``scheduled_batch()`` — Wait → Execute → Validate → Notify
     6. Template registry — ``register_template()``, ``get_template()``, ``list_templates()``
     7. Custom templates — build and register your own
@@ -18,10 +18,10 @@ Demonstrates:
 Architecture::
 
     Template Registry
-    ├── etl_pipeline        → 3-4 step sequential workflow
+    ├── etl_operation        → 3-4 step sequential workflow
     ├── fan_out_fan_in      → map + optional merge
-    ├── conditional_branch  → choice + two pipeline branches
-    ├── retry_wrapper       → pipeline with retry_policy + fallback
+    ├── conditional_branch  → choice + two operation branches
+    ├── retry_wrapper       → operation with retry_policy + fallback
     └── scheduled_batch     → wait + execute + validate? + notify?
 
     register_template("my_pattern", my_factory)
@@ -30,7 +30,7 @@ Architecture::
 
 Key Concepts:
     - **Template factories**: Each template is a function that returns
-      a ``Workflow``.  Parameters customize names, pipelines, options.
+      a ``Workflow``.  Parameters customize names, operations, options.
     - **Auto-registration**: Built-in templates register themselves
       on import.  Custom templates use ``register_template()``.
     - **Composition over inheritance**: Templates create standard
@@ -54,7 +54,7 @@ from __future__ import annotations
 from spine.orchestration import Workflow, Step, StepResult
 from spine.orchestration.templates import (
     conditional_branch,
-    etl_pipeline,
+    etl_operation,
     fan_out_fan_in,
     get_template,
     list_templates,
@@ -74,7 +74,7 @@ def validate_quality(ctx, config) -> StepResult:
 
 
 def should_use_realtime(ctx) -> bool:
-    """Condition: route to realtime pipeline if data is fresh."""
+    """Condition: route to realtime operation if data is fresh."""
     return ctx.params.get("data_age_hours", 24) < 1
 
 
@@ -107,20 +107,20 @@ def main() -> None:
         print(f"  • {name}")
 
     # Templates can be looked up by name
-    etl_factory = get_template("etl_pipeline")
-    print(f"\nLooked up 'etl_pipeline': {etl_factory.__name__}")
+    etl_factory = get_template("etl_operation")
+    print(f"\nLooked up 'etl_operation': {etl_factory.__name__}")
 
     # ─────────────────────────────────────────────────────────────────
     print("\n" + "=" * 72)
-    print("SECTION 2: ETL Pipeline Template")
+    print("SECTION 2: ETL Operation Template")
     print("=" * 72)
 
     # Basic 3-step ETL
-    wf_basic = etl_pipeline(
+    wf_basic = etl_operation(
         name="finra.daily_etl",
-        extract_pipeline="finra.fetch_data",
-        transform_pipeline="finra.normalize",
-        load_pipeline="finra.store",
+        extract_operation="finra.fetch_data",
+        transform_operation="finra.normalize",
+        load_operation="finra.store",
         domain="finra",
     )
     print(f"\nBasic ETL: {wf_basic.name}")
@@ -129,14 +129,14 @@ def main() -> None:
     print(f"  Tags: {wf_basic.tags}")
 
     # ETL with validation step
-    wf_validated = etl_pipeline(
+    wf_validated = etl_operation(
         name="sec.filing_etl",
-        extract_pipeline="sec.fetch_filings",
-        transform_pipeline="sec.parse_xbrl",
-        load_pipeline="sec.store_parsed",
+        extract_operation="sec.fetch_filings",
+        transform_operation="sec.parse_xbrl",
+        load_operation="sec.store_parsed",
         validate_handler=validate_quality,
         domain="sec",
-        description="SEC filing pipeline with quality gate",
+        description="SEC filing operation with quality gate",
         tags=["sec", "etl", "validated"],
     )
     print(f"\nValidated ETL: {wf_validated.name}")
@@ -152,7 +152,7 @@ def main() -> None:
     wf_fanout = fan_out_fan_in(
         name="batch.process_records",
         items_path="$.data.records",
-        iterator_pipeline="record.process_single",
+        iterator_operation="record.process_single",
         merge_handler=merge_results,
         max_concurrency=16,
         domain="batch",
@@ -171,7 +171,7 @@ def main() -> None:
     wf_scatter = fan_out_fan_in(
         name="events.broadcast",
         items_path="$.events",
-        iterator_pipeline="event.publish",
+        iterator_operation="event.publish",
         max_concurrency=32,
     )
     print(f"\nFire-and-forget scatter: {wf_scatter.name}")
@@ -185,8 +185,8 @@ def main() -> None:
     wf_branch = conditional_branch(
         name="data.route_by_freshness",
         condition=should_use_realtime,
-        true_pipeline="data.realtime_process",
-        false_pipeline="data.batch_process",
+        true_operation="data.realtime_process",
+        false_operation="data.batch_process",
         domain="data",
         description="Route fresh data to realtime, stale to batch",
     )
@@ -196,8 +196,8 @@ def main() -> None:
         print(f"    {step.name}: type={step.step_type.value}", end="")
         if step.step_type.value == "choice":
             print(f", then={step.then_step}, else={step.else_step}", end="")
-        elif step.pipeline_name:
-            print(f", pipeline={step.pipeline_name}", end="")
+        elif step.operation_name:
+            print(f", operation={step.operation_name}", end="")
         print()
 
     # ─────────────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ def main() -> None:
     # Basic retry
     wf_retry = retry_wrapper(
         name="api.resilient_fetch",
-        target_pipeline="api.fetch_external",
+        target_operation="api.fetch_external",
         max_retries=5,
         domain="api",
         tags=["resilience", "api"],
@@ -222,8 +222,8 @@ def main() -> None:
     # Retry with fallback
     wf_fallback = retry_wrapper(
         name="fetch.with_fallback",
-        target_pipeline="primary.data_source",
-        fallback_pipeline="secondary.data_source",
+        target_operation="primary.data_source",
+        fallback_operation="secondary.data_source",
         max_retries=3,
     )
     print(f"\nRetry + fallback: {wf_fallback.name}")
@@ -239,7 +239,7 @@ def main() -> None:
     wf_batch = scheduled_batch(
         name="nightly.report",
         wait_seconds=3600,  # 1 hour
-        execute_pipeline="report.generate_nightly",
+        execute_operation="report.generate_nightly",
         validate_handler=validate_batch,
         notify_handler=send_notification,
         domain="reports",
@@ -251,8 +251,8 @@ def main() -> None:
         print(f"    {step.name}: type={step.step_type.value}", end="")
         if step.duration_seconds:
             print(f", wait={step.duration_seconds}s", end="")
-        if step.pipeline_name:
-            print(f", pipeline={step.pipeline_name}", end="")
+        if step.operation_name:
+            print(f", operation={step.operation_name}", end="")
         if step.depends_on:
             print(f", depends_on={list(step.depends_on)}", end="")
         print()
@@ -261,7 +261,7 @@ def main() -> None:
     wf_simple_batch = scheduled_batch(
         name="hourly.sync",
         wait_seconds=60,
-        execute_pipeline="sync.incremental",
+        execute_operation="sync.incremental",
     )
     print(f"\nMinimal batch: {wf_simple_batch.name}")
     print(f"  Steps: {[s.name for s in wf_simple_batch.steps]}")
@@ -275,17 +275,17 @@ def main() -> None:
     def audit_workflow(
         *,
         name: str,
-        scan_pipeline: str,
-        report_pipeline: str,
+        scan_operation: str,
+        report_operation: str,
         domain: str = "audit",
     ) -> Workflow:
         """Custom template for audit workflows."""
         return Workflow(
             name=name,
             steps=[
-                Step.pipeline("scan", scan_pipeline),
+                Step.operation("scan", scan_operation),
                 Step.lambda_("validate", validate_quality, depends_on=("scan",)),
-                Step.pipeline("report", report_pipeline, depends_on=("validate",)),
+                Step.operation("report", report_operation, depends_on=("validate",)),
             ],
             domain=domain,
             tags=["audit", "compliance"],
@@ -299,8 +299,8 @@ def main() -> None:
     factory = get_template("audit_workflow")
     wf_audit = factory(
         name="quarterly.compliance",
-        scan_pipeline="compliance.scan_portfolio",
-        report_pipeline="compliance.generate_report",
+        scan_operation="compliance.scan_portfolio",
+        report_operation="compliance.generate_report",
     )
     print(f"\nCreated from template: {wf_audit.name}")
     print(f"  Steps: {[s.name for s in wf_audit.steps]}")

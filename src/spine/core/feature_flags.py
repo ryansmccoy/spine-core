@@ -84,10 +84,14 @@ Examples:
     >>> # back to default after context
 
 Guardrails:
-    - Feature flags should NOT store complex state (use config for that)
-    - Flag names must be snake_case (validated on registration)
-    - Environment overrides only work for registered flags
-    - Don't use feature flags for user-facing personalization (use a proper A/B system)
+    ❌ DON'T: Store complex state in feature flags
+    ✅ DO: Use config/settings for structured configuration
+
+    ❌ DON'T: Use feature flags for user-facing A/B testing
+    ✅ DO: Use a proper A/B system for personalization
+
+    ❌ DON'T: Use non-snake_case flag names (validated on registration)
+    ✅ DO: Use descriptive snake_case: ``enable_async_ingestion``
 
 Performance:
     - Flag lookup: O(1) dict access
@@ -96,6 +100,11 @@ Performance:
 
 Tags:
     feature-flags, feature-toggle, configuration, runtime, spine-core
+
+Doc-Types:
+    - API Reference
+    - Configuration Guide
+    - Operations Documentation
 """
 
 from __future__ import annotations

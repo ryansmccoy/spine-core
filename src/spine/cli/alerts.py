@@ -61,7 +61,7 @@ def create_channel(
         config_dict = json.loads(config)
     except json.JSONDecodeError as e:
         err_console.print(f"[bold red]Invalid JSON config:[/bold red] {e}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
     ctx, _ = make_context(database)
     request = CreateAlertChannelRequest(

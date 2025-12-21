@@ -95,7 +95,7 @@ def main():
 
     interval_sched = repo.create(ScheduleCreate(
         name="health-check",
-        target_type="pipeline",
+        target_type="operation",
         target_name="system.health",
         schedule_type="interval",
         interval_seconds=300,

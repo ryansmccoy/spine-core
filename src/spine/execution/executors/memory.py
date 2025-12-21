@@ -1,7 +1,6 @@
 """Memory Executor — synchronous in-process execution for testing.
 
-WHY
-───
+Manifesto:
 Unit tests need deterministic, fast execution without threads,
 queues, or external services.  ``MemoryExecutor`` runs handlers
 synchronously in the calling thread, making test assertions trivial.
@@ -21,6 +20,12 @@ Related modules:
     protocol.py   — Executor protocol this implements
     stub.py       — even simpler (no handler execution)
     local.py      — ThreadPool for concurrent testing
+
+Tags:
+    spine-core, execution, executor, memory, in-memory, testing
+
+Doc-Types:
+    api-reference
 """
 
 import inspect
@@ -64,7 +69,7 @@ class MemoryExecutor:
         """Register a handler at runtime.
 
         Args:
-            kind: Work kind (task, pipeline, workflow, step)
+            kind: Work kind (task, operation, workflow, step)
             name: Handler name
             handler: Callable(params: dict) -> Any
         """

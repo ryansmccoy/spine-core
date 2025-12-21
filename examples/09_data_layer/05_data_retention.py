@@ -56,7 +56,7 @@ def create_test_tables(conn: Connection):
     conn.executescript("""
         CREATE TABLE core_executions (
             id TEXT PRIMARY KEY,
-            pipeline TEXT,
+            workflow TEXT,
             created_at TEXT
         );
         CREATE TABLE core_rejects (
@@ -95,8 +95,8 @@ def insert_sample_data(conn: Connection):
     # Insert old records
     for i in range(5):
         conn.execute(
-            "INSERT INTO core_executions (id, pipeline, created_at) VALUES (?, ?, ?)",
-            (f"old-exec-{i}", "test.pipeline", old_ts),
+            "INSERT INTO core_executions (id, workflow, created_at) VALUES (?, ?, ?)",
+            (f"old-exec-{i}", "test.operation", old_ts),
         )
         conn.execute(
             "INSERT INTO core_rejects (domain, created_at) VALUES (?, ?)",
@@ -118,8 +118,8 @@ def insert_sample_data(conn: Connection):
     # Insert recent records
     for i in range(3):
         conn.execute(
-            "INSERT INTO core_executions (id, pipeline, created_at) VALUES (?, ?, ?)",
-            (f"new-exec-{i}", "test.pipeline", recent_ts),
+            "INSERT INTO core_executions (id, workflow, created_at) VALUES (?, ?, ?)",
+            (f"new-exec-{i}", "test.operation", recent_ts),
         )
         conn.execute(
             "INSERT INTO core_rejects (domain, created_at) VALUES (?, ?)",

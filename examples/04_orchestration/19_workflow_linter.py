@@ -13,7 +13,7 @@ Demonstrates:
     4. Custom lint rules  — register your own checks
     5. ``list_lint_rules()`` — see all available rules
     6. Clean workflow     — verify no false positives
-    7. Pipeline naming    — INFO-level naming conventions
+    7. Operation naming    — INFO-level naming conventions
 
 Architecture::
 
@@ -22,12 +22,12 @@ Architecture::
     │   ├── E001 — empty workflow (no steps)
     │   ├── E002 — missing failure handler
     │   ├── E003 — choice missing condition
-    │   ├── E004 — missing pipeline_name
+    │   ├── E004 — missing operation_name
     │   ├── W001 — choice without else_step
     │   ├── W002 — unreachable steps
     │   ├── W003 — deep chains (>20 steps)
     │   ├── W004 — similar step names
-    │   └── I001 — pipeline naming convention
+    │   └── I001 — operation naming convention
     ├── Custom rules (register_lint_rule)
     └── Returns LintResult
         ├── .passed          — bool
@@ -83,7 +83,7 @@ def main() -> None:
     print("1. Lint an empty workflow")
     print(f"{'='*60}")
 
-    empty = Workflow(name="empty_pipeline", steps=[])
+    empty = Workflow(name="empty_operation", steps=[])
     result = lint_workflow(empty)
 
     print(f"   Workflow: {empty.name}")
@@ -93,15 +93,15 @@ def main() -> None:
         print(f"     [{d.code}] {d.message}")
 
     # ------------------------------------------------------------------
-    # 2. Workflow with missing pipeline_name (E004)
+    # 2. Workflow with missing operation_name (E004)
     # ------------------------------------------------------------------
     print(f"\n{'='*60}")
-    print("2. Missing pipeline_name on pipeline step")
+    print("2. Missing operation_name on operation step")
     print(f"{'='*60}")
 
     steps_no_name = [
-        Step.pipeline("ingest", ""),
-        Step.pipeline("transform", "etl-core"),
+        Step.operation("ingest", ""),
+        Step.operation("transform", "etl-core"),
     ]
     wf_no_name = Workflow(name="etl", steps=steps_no_name)
     result = lint_workflow(wf_no_name)
@@ -124,7 +124,7 @@ def main() -> None:
             then_step="a",
             else_step=None,
         ),
-        Step.pipeline("a", "branch-a"),
+        Step.operation("a", "branch-a"),
     ]
     wf_choice = Workflow(name="choice_demo", steps=steps_choice)
     result = lint_workflow(wf_choice)
@@ -160,8 +160,8 @@ def main() -> None:
     register_lint_rule("check_naming_prefix", check_naming_prefix)
 
     steps_custom = [
-        Step.pipeline("1_load", "loader"),
-        Step.pipeline("transform", "xform"),
+        Step.operation("1_load", "loader"),
+        Step.operation("transform", "xform"),
     ]
     wf_custom = Workflow(name="custom_check", steps=steps_custom)
     result = lint_workflow(wf_custom)
@@ -191,11 +191,11 @@ def main() -> None:
     print(f"{'='*60}")
 
     clean_steps = [
-        Step.pipeline("extract", "etl-extract"),
-        Step.pipeline("transform", "etl-transform"),
-        Step.pipeline("load", "etl-load"),
+        Step.operation("extract", "etl-extract"),
+        Step.operation("transform", "etl-transform"),
+        Step.operation("load", "etl-load"),
     ]
-    wf_clean = Workflow(name="etl_pipeline", steps=clean_steps)
+    wf_clean = Workflow(name="etl_operation", steps=clean_steps)
     result = lint_workflow(wf_clean)
 
     print(f"   Passed: {result.passed}")
@@ -209,8 +209,8 @@ def main() -> None:
     print(f"{'='*60}")
 
     messy_steps = [
-        Step.pipeline("step_a", "a"),
-        Step.pipeline("step_b", ""),  # Empty pipeline_name
+        Step.operation("step_a", "a"),
+        Step.operation("step_b", ""),  # Empty operation_name
         Step.choice("decide", condition=_always_true, then_step="step_a"),
     ]
     wf_messy = Workflow(name="messy", steps=messy_steps)

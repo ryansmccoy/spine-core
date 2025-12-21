@@ -9,7 +9,7 @@ While ExecutionLedger handles CRUD, the ExecutionRepository provides
 **operational analytics** — the queries ops teams actually need::
 
     "How many runs failed in the last 24 hours?"
-    "Which pipelines have stuck executions?"
+    "Which operations have stuck executions?"
     "What's the average duration for 'daily_ingest'?"
     "Find all runs that started but never completed."
 
@@ -32,7 +32,7 @@ KEY QUERIES
     │ find_stuck(threshold_minutes=60)    │ Zombie detection — runs stuck     │
     │                                     │ in RUNNING > 1 hour              │
     │ find_by_status(FAILED)              │ Failure investigation             │
-    │ compute_stats(pipeline_name)        │ Duration avg, success rate, count│
+    │ compute_stats(workflow_name)        │ Duration avg, success rate, count│
     │ find_recent(limit=20)              │ Dashboard "last N runs" view     │
     │ count_by_status()                   │ Aggregate health: 5 RUNNING,     │
     │                                     │ 12 COMPLETED, 1 FAILED           │
@@ -81,7 +81,7 @@ def main():
     # Create sample executions
     print("\n1. Creating sample executions...")
     
-    pipelines = [
+    operations = [
         ("finra.otc.ingest", ExecutionStatus.COMPLETED),
         ("finra.otc.ingest", ExecutionStatus.COMPLETED),
         ("finra.otc.ingest", ExecutionStatus.FAILED),
@@ -92,8 +92,8 @@ def main():
         ("sec.filings.ingest", ExecutionStatus.FAILED),
     ]
     
-    for i, (pipeline, status) in enumerate(pipelines):
-        exec = Execution.create(workflow=pipeline, params={"batch": i})
+    for i, (operation, status) in enumerate(operations):
+        exec = Execution.create(workflow=operation, params={"batch": i})
         ledger.create_execution(exec)
         
         if status in (ExecutionStatus.RUNNING, ExecutionStatus.COMPLETED, ExecutionStatus.FAILED):
@@ -115,7 +115,7 @@ def main():
                 error = "Test error" if status == ExecutionStatus.FAILED else None
                 ledger.update_status(exec.id, status, result=result, error=error)
     
-    print(f"   ✓ Created {len(pipelines)} executions")
+    print(f"   ✓ Created {len(operations)} executions")
     
     # Get execution stats
     print("\n2. Execution statistics (last 24 hours)...")
@@ -126,9 +126,9 @@ def main():
     for status, count in stats.get("status_counts", {}).items():
         print(f"     {status}: {count}")
     
-    print("\n   Pipeline counts:")
-    for pipeline, count in stats.get("pipeline_counts", {}).items():
-        print(f"     {pipeline}: {count}")
+    print("\n   Workflow counts:")
+    for workflow, count in stats.get("workflow_counts", {}).items():
+        print(f"     {workflow}: {count}")
     
     # Find stale executions
     print("\n3. Finding stale executions...")
@@ -143,7 +143,7 @@ def main():
         print("   No stale executions found")
     
     # Failure rate analysis
-    print("\n4. Failure rate by pipeline...")
+    print("\n4. Failure rate by operation...")
     
     cursor = conn.cursor()
     cursor.execute("""

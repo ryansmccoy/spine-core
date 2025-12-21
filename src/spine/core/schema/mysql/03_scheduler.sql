@@ -8,7 +8,7 @@
 CREATE TABLE IF NOT EXISTS core_schedules (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    target_type VARCHAR(100) NOT NULL DEFAULT 'pipeline',
+    target_type VARCHAR(100) NOT NULL DEFAULT 'operation',
     target_name VARCHAR(255) NOT NULL,
     params JSON,
     schedule_type VARCHAR(50) NOT NULL DEFAULT 'cron',

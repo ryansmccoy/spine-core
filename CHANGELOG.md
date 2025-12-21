@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `get_table_schema()` for introspection
 
 #### Orchestration
-- **Typed YAML Validation** - Pydantic models for pipeline group definitions
+- **Typed YAML Validation** - Pydantic models for operation group definitions
   - `GroupSpec`, `StepSpec`, `PolicySpec`, `MetadataSpec` models
   - Validates dependencies, detects duplicates, enforces API version
   - `from_yaml()` for direct YAML parsing
@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - 28 pre-existing test failures resolved (dispatcher + integration tests)
-- `PipelineStatus.SUCCESS` → `PipelineStatus.COMPLETED` enum fix
+- `OperationStatus.SUCCESS` → `OperationStatus.COMPLETED` enum fix
 
 ### Testing
 - Test count: 1345 (up from 1102)
@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch collection utilities: `collect_results`, `partition_results`
 - SpineError hierarchy with ErrorCategory for structured errors
 - Error context chaining with retryable semantics and retry_after hints
-- ExecutionContext for lineage tracking through pipeline execution
+- ExecutionContext for lineage tracking through operation execution
 - WeekEnding for Friday date validation in financial workflows
 - WorkManifest for multi-stage workflow progress tracking
 - QualityRunner framework for data validation gates
@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Execution Framework
 - Dispatcher as unified submission API for all work types
 - Executor protocol with MemoryExecutor and LocalExecutor implementations
-- WorkSpec universal work specification supporting tasks, pipelines, workflows
+- WorkSpec universal work specification supporting tasks, operations, workflows
 - RetryStrategy with ExponentialBackoff, LinearBackoff, ConstantBackoff
 - CircuitBreaker for failure protection with automatic half-open recovery
 - RateLimiter with TokenBucket and SlidingWindow algorithms
@@ -78,11 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Orchestration
 - Workflow v2 with context-aware steps and inter-step data passing
-- Step types: Lambda steps (inline functions), Pipeline steps, Choice steps (conditional branching)
+- Step types: Lambda steps (inline functions), Operation steps, Choice steps (conditional branching)
 - WorkflowContext for accessing step outputs and passing data
 - WorkflowRunner for stateless workflow execution
 - TrackedWorkflowRunner for database-persisted workflow state with idempotency
-- PipelineGroups v1 for static DAG execution (legacy pattern)
+- OperationGroups v1 for static DAG execution (legacy pattern)
 - Workflow YAML loading support
 - Quality gate integration in workflows
 
@@ -94,16 +94,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Event-based observability hooks
 
 #### Framework Infrastructure
-- Pipeline base class for reusable data transformations
-- PipelineResult with status, timing, error tracking, and metrics
-- PipelineRegistry for pipeline discovery and invocation
+- Operation base class for reusable data transformations
+- OperationResult with status, timing, error tracking, and metrics
+- OperationRegistry for operation discovery and invocation
 - Database connection protocol for sync operations
 - Schema management for core tables (manifest, quality, anomalies, rejects)
 
 #### Error Handling
-- Comprehensive error hierarchy: TransientError, SourceError, ValidationError, ConfigError, AuthError, PipelineError, OrchestrationError
-- Error categorization: NETWORK, DATABASE, STORAGE, SOURCE, PARSE, VALIDATION, CONFIG, AUTH, PIPELINE, ORCHESTRATION, INTERNAL, UNKNOWN
-- Structured ErrorContext with pipeline, source, URL, and custom fields
+- Comprehensive error hierarchy: TransientError, SourceError, ValidationError, ConfigError, AuthError, OperationError, OrchestrationError
+- Error categorization: NETWORK, DATABASE, STORAGE, SOURCE, PARSE, VALIDATION, CONFIG, AUTH, operation, ORCHESTRATION, INTERNAL, UNKNOWN
+- Structured ErrorContext with operation, source, URL, and custom fields
 - Utility: `is_retryable(error)` for retry decision logic
 
 #### Type Safety & Developer Experience

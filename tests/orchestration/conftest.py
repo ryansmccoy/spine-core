@@ -2,14 +2,14 @@
 
 import pytest
 
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 
 
 class _NoOpRunnable:
     """Minimal Runnable for tests that only use lambda steps."""
 
-    def submit_pipeline_sync(self, pipeline_name, params=None, *, parent_run_id=None, correlation_id=None):
-        return PipelineRunResult(status="completed")
+    def submit_operation_sync(self, operation_name, params=None, *, parent_run_id=None, correlation_id=None):
+        return OperationRunResult(status="completed")
 
 
 @pytest.fixture

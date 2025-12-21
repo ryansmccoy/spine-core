@@ -18,7 +18,7 @@ Architecture::
     Test Doubles:
       StubRunnable          → always succeeds
       FailingRunnable       → always fails
-      ScriptedRunnable      → scripted per-pipeline results
+      ScriptedRunnable      → scripted per-operation results
 
     Assertions:
       assert_workflow_completed(result)
@@ -49,7 +49,7 @@ Expected Output:
     patterns with clear pass/fail indicators.
 """
 
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 from spine.orchestration.step_result import StepResult
 from spine.orchestration.step_types import Step
 from spine.orchestration.testing import (
@@ -83,12 +83,12 @@ def main() -> None:
 
     wf = Workflow(
         name="test.stub",
-        steps=[Step.pipeline("fetch", "data.fetch")],
+        steps=[Step.operation("fetch", "data.fetch")],
     )
     result = runner.execute(wf)
     print(f"  Status: {result.status.value}")
     print(f"  Calls tracked: {len(stub.calls)}")
-    print(f"  Pipeline called: {stub.calls[0]['pipeline_name']}")
+    print(f"  Operation called: {stub.calls[0]['operation_name']}")
     print()
 
     # ------------------------------------------------------------------
@@ -106,18 +106,18 @@ def main() -> None:
     print()
 
     # ------------------------------------------------------------------
-    # 3. ScriptedRunnable — per-pipeline responses
+    # 3. ScriptedRunnable — per-operation responses
     # ------------------------------------------------------------------
     print("=" * 60)
     print("3. ScriptedRunnable — Scripted Responses")
     print("=" * 60)
 
     scripted = ScriptedRunnable(scripts={
-        "data.fetch": PipelineRunResult(status="completed", metrics={"rows": 42}),
-        "data.store": PipelineRunResult(status="failed", error="Disk full"),
+        "data.fetch": OperationRunResult(status="completed", metrics={"rows": 42}),
+        "data.store": OperationRunResult(status="failed", error="Disk full"),
     })
-    print(f"  fetch result: {scripted.submit_pipeline_sync('data.fetch').status}")
-    print(f"  store result: {scripted.submit_pipeline_sync('data.store').status}")
+    print(f"  fetch result: {scripted.submit_operation_sync('data.fetch').status}")
+    print(f"  store result: {scripted.submit_operation_sync('data.store').status}")
     print()
 
     # ------------------------------------------------------------------

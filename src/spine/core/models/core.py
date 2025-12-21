@@ -1,13 +1,25 @@
 """Core framework table models (00_core.sql).
 
+Manifesto:
+    The fundamental spine-core tables (executions, manifest, rejects,
+    quality, anomalies, work items, dead letters, locks, dependencies,
+    schedules, data readiness) each need a typed dataclass so the ops
+    and API layers work with structured objects instead of raw dicts.
+
 Models for the fundamental spine-core tables: executions, manifest,
 rejects, quality, anomalies, work items, dead letters, concurrency
 locks, calculation dependencies, expected schedules, and data readiness.
+
+Tags:
+    spine-core, models, dataclasses, core-tables, schema-mapping
+
+Doc-Types:
+    api-reference, data-model
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # ---------------------------------------------------------------------------
 # _migrations
@@ -104,6 +116,7 @@ class RejectRecord:
     includes all persisted fields (domain, execution_id, etc.).
     """
 
+    id: int | None = None
     domain: str = ""
     partition_key: str = ""
     stage: str = ""
@@ -127,6 +140,7 @@ class RejectRecord:
 class QualityRecord:
     """Quality check result row (``core_quality``)."""
 
+    id: int | None = None
     domain: str = ""
     partition_key: str = ""
     check_name: str = ""
@@ -249,7 +263,7 @@ class CalcDependency:
 
     id: int | None = None
     calc_domain: str = ""
-    calc_pipeline: str = ""
+    calc_operation: str = ""
     calc_table: str | None = None
     depends_on_domain: str = ""
     depends_on_table: str = ""
@@ -277,7 +291,7 @@ class ExpectedSchedule:
     expected_delay_hours: int | None = None
     preliminary_hours: int | None = None
     description: str | None = None
-    is_active: int = 1
+    is_active: bool = True
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -294,13 +308,13 @@ class DataReadiness:
     id: int | None = None
     domain: str = ""
     partition_key: str = ""
-    is_ready: int = 0
+    is_ready: bool = False
     ready_for: str | None = None  # trading, compliance, research
-    all_partitions_present: int = 0
-    all_stages_complete: int = 0
-    no_critical_anomalies: int = 0
-    dependencies_current: int = 0
-    age_exceeds_preliminary: int = 0
+    all_partitions_present: bool = False
+    all_stages_complete: bool = False
+    no_critical_anomalies: bool = False
+    dependencies_current: bool = False
+    age_exceeds_preliminary: bool = False
     blocking_issues: str | None = None
     certified_at: str | None = None
     certified_by: str | None = None

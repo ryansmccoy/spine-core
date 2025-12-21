@@ -199,10 +199,10 @@ class TestStepFactories:
         assert s.config == {"k": "v"}
         assert s.on_error == ErrorPolicy.STOP
 
-    def test_pipeline_step(self):
-        s = Step.pipeline("test", "my.pipeline", params={"x": 1})
-        assert s.step_type == StepType.PIPELINE
-        assert s.pipeline_name == "my.pipeline"
+    def test_operation_step(self):
+        s = Step.operation("test", "my.operation", params={"x": 1})
+        assert s.step_type == StepType.OPERATION
+        assert s.operation_name == "my.operation"
         assert s.config == {"x": 1}
 
     def test_choice_step(self):
@@ -237,8 +237,8 @@ class TestStepTierChecks:
         assert not s.is_intermediate_tier()
         assert not s.is_advanced_tier()
 
-    def test_pipeline_is_basic(self):
-        s = Step.pipeline("t", "p")
+    def test_operation_is_basic(self):
+        s = Step.operation("t", "p")
         assert s.is_basic_tier()
 
     def test_choice_is_intermediate(self):
@@ -259,12 +259,12 @@ class TestStepTierChecks:
 class TestStepSerialization:
     """Test Step to_dict."""
 
-    def test_pipeline_to_dict(self):
-        s = Step.pipeline("s", "p", params={"k": 1})
+    def test_operation_to_dict(self):
+        s = Step.operation("s", "p", params={"k": 1})
         d = s.to_dict()
         assert d["name"] == "s"
-        assert d["type"] == "pipeline"
-        assert d["pipeline"] == "p"
+        assert d["type"] == "operation"
+        assert d["operation"] == "p"
         assert d["config"] == {"k": 1}
 
     def test_lambda_to_dict(self):
@@ -293,12 +293,12 @@ class TestStepSerialization:
         assert d["max_concurrency"] == 2
 
     def test_on_error_excluded_when_default(self):
-        s = Step.pipeline("s", "p")
+        s = Step.operation("s", "p")
         d = s.to_dict()
         assert "on_error" not in d
 
     def test_on_error_included_when_continue(self):
-        s = Step.pipeline("s", "p", on_error=ErrorPolicy.CONTINUE)
+        s = Step.operation("s", "p", on_error=ErrorPolicy.CONTINUE)
         d = s.to_dict()
         assert d["on_error"] == "continue"
 
@@ -306,9 +306,9 @@ class TestStepSerialization:
 class TestStepRepr:
     """Test __repr__."""
 
-    def test_pipeline_repr(self):
-        s = Step.pipeline("ingest", "my.ingest")
-        assert "pipeline" in repr(s).lower()
+    def test_operation_repr(self):
+        s = Step.operation("ingest", "my.ingest")
+        assert "operation" in repr(s).lower()
 
     def test_lambda_repr(self):
         s = Step.lambda_("val", handler=lambda c, cfg: None)

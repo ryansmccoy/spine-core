@@ -10,13 +10,13 @@ Spine-Core provides the foundational modules used across all Spine ecosystem pro
 |--------|-------------|
 | **spine.core** | Primitives: Result[T], ExecutionContext, schema, configuration |
 | **spine.execution** | WorkSpec, RunRecord, Dispatcher, Executors, Ledger |
-| **spine.framework** | Pipeline registry, runner, logging, alerts |
+| **spine.framework** | Operation registry, runner, logging, alerts |
 | **spine.orchestration** | Workflow runner, group runner, tracked runner |
 
 ## Features
 
 - **Multi-tier Docker Deployment** — Basic (SQLite), Intermediate (PostgreSQL), Full (TimescaleDB + Redis)
-- **Registry Architecture** — Pipeline registry for automatic source discovery
+- **Registry Architecture** — Operation registry for automatic source discovery
 - **Core Primitives** — ExecutionContext, Result[T] pattern, capture semantics
 - **Execution Infrastructure** — Ledger, Concurrency Guard, DLQ Manager
 
@@ -25,6 +25,20 @@ Spine-Core provides the foundational modules used across all Spine ecosystem pro
 - [Features](FEATURES.md) — Feature history
 - [Changelog](CHANGELOG.md) — Release history
 
+## Principles & Philosophy
+
+Design principles, best practices, and anti-patterns governing the Spine ecosystem.
+
+| Document | Description |
+|----------|-------------|
+| [Tenets](principles/SPINE_TENETS.md) | 10-item manifesto (60-second read) |
+| [Principles](principles/SPINE_PRINCIPLES.md) | 20 core principles with evidence citations |
+| [Practices](principles/SPINE_PRACTICES.md) | Best practices, code snippets, and contributor checklists |
+| [Anti-Patterns](principles/SPINE_ANTI_PATTERNS.md) | 15 anti-patterns + 7 non-goals |
+| [Design Rationale](principles/SPINE_DESIGN_RATIONALE.md) | 15 architectural decision records |
+| [Glossary](principles/SPINE_GLOSSARY.md) | 40+ canonical terms |
+| [Style Guide](principles/SPINE_STYLE_GUIDE.md) | Naming, module layout, docstrings, testing |
+
 ## Project Structure
 
 ```
@@ -32,7 +46,7 @@ spine-core/
 ├── src/spine/             # Main package
 │   ├── core/              # Primitives, config, schema
 │   ├── execution/         # Dispatcher, executors, ledger
-│   ├── framework/         # Pipelines, runner, logging
+│   ├── framework/         # Operations, runner, logging
 │   └── orchestration/     # Workflow and group runners
 ├── docs/                  # Documentation
 ├── examples/              # Example code

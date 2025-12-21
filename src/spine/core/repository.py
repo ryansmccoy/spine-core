@@ -5,6 +5,16 @@ Provides :class:`BaseRepository` — an abstract base class that pairs a
 so that domain repositories can write **portable** SQL without referencing
 any specific database driver.
 
+Manifesto:
+    Repositories need a consistent set of DB helpers. Without a base class,
+    each repository reimplements execute(), query(), insert() with subtle
+    differences. BaseRepository provides:
+
+    - **Dialect-aware:** SQL generation via Dialect protocol
+    - **Standard API:** execute, query, query_one, insert, insert_many
+    - **Connection pairing:** Each repo instance gets a connection at construction
+    - **Portable:** Works with SQLite, PostgreSQL, or any Dialect implementation
+
 Architecture::
 
     ┌────────────────────────────────────────────────────────────────────┐
@@ -20,7 +30,13 @@ Architecture::
     │   insert_many(table, rows) → int                                   │
     └────────────────────────────────────────────────────────────────────┘
 
-Usage:
+Features:
+    - **execute():** Raw SQL execution with params
+    - **query() / query_one():** Return dicts for ergonomic access
+    - **insert() / insert_many():** Typed INSERT with dict data
+    - **ph():** Dialect placeholder shorthand (``self.ph(3)`` → ``?, ?, ?``)
+
+Examples:
     >>> class MyRepo(BaseRepository):
     ...     def get_by_id(self, id: str):
     ...         return self.query_one(
@@ -28,8 +44,21 @@ Usage:
     ...             (id,),
     ...         )
 
+Guardrails:
+    ❌ DON'T: Use conn.execute() directly in domain code
+    ✅ DO: Subclass BaseRepository and use self.execute() / self.query()
+
+    ❌ DON'T: Hardcode SQL placeholders (?, %s)
+    ✅ DO: Use self.ph(n) for dialect-portable placeholders
+
 Tags:
-    repository, database, abstraction, portability
+    repository, database, abstraction, portability, spine-core,
+    base-class, crud, dialect-aware
+
+Doc-Types:
+    - API Reference
+    - Architecture Documentation
+    - Repository Pattern Guide
 """
 
 from __future__ import annotations
@@ -140,7 +169,7 @@ class BaseRepository:
             return [dict(zip(columns, row, strict=False)) for row in rows]
 
         # Last resort: integer-keyed dicts
-        return [{i: v for i, v in enumerate(row)} for row in rows]
+        return [dict(enumerate(row)) for row in rows]
 
     def query_one(self, sql: str, params: tuple = ()) -> dict[str, Any] | None:
         """Execute a SELECT and return the first row as a dict (or None)."""

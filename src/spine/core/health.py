@@ -25,6 +25,52 @@ Quick start::
         ],
     )
     app.include_router(router)
+
+Manifesto:
+    Every Spine service must expose K8s-style health endpoints for
+    container orchestration, load balancers, and monitoring. Without
+    standardized health checks, each service invents its own format,
+    breaking monitoring dashboards and alerting rules.
+
+    - **Liveness:** "Is the process alive?" (always yes if responding)
+    - **Readiness:** "Can I serve traffic?" (all required deps healthy)
+    - **Health summary:** Aggregated status with per-check details
+
+Architecture:
+    ::
+
+        create_health_router(service_name, version, checks)
+              │
+              ├── GET /health/live  → LivenessResponse (always alive)
+              ├── GET /health/ready → HealthResponse (checks run)
+              └── GET /health       → HealthResponse (same as ready)
+
+        HealthCheck("postgres", check_fn, required=True, timeout_s=5)
+              │
+              └── CheckResult(status="healthy", latency_ms=2.3)
+
+Features:
+    - **create_health_router():** One-liner K8s health endpoint setup
+    - **HealthCheck:** Declarative dependency check definition
+    - **CheckResult:** Per-dependency status with latency and error info
+    - **HealthResponse:** Aggregated status with uptime and version
+    - **SpineHealth:** Lightweight model for non-HTTP callers
+
+Guardrails:
+    ❌ DON'T: Create custom health endpoints per service
+    ✅ DO: Use create_health_router() for consistency
+
+    ❌ DON'T: Mark optional dependencies as required (breaks readiness)
+    ✅ DO: Set required=False for non-critical dependencies (Redis cache)
+
+Tags:
+    health, liveness, readiness, kubernetes, monitoring, spine-core,
+    fastapi, observability
+
+Doc-Types:
+    - API Reference
+    - Deployment Guide
+    - Monitoring Documentation
 """
 
 from __future__ import annotations

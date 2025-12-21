@@ -13,6 +13,13 @@ Endpoints:
     POST   /deploy/down                 Stop services
     GET    /deploy/status               Current deployment status
 
+Manifesto:
+    Deployment state should be queryable so CI/CD pipelines
+    and operators can verify which version is running.
+
+Tags:
+    spine-core, api, deploy, version, release
+
 Doc-Types: API_REFERENCE
 """
 

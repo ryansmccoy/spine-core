@@ -1,46 +1,56 @@
 """Generalized Versioned Content Model for spine-core.
 
-Provides base classes for versioned content tracking.
+Provides base classes for versioned content tracking with immutable
+history. Applicable to any content type — chat messages, news headlines,
+SEC filing sections, LLM prompts, and document chunks.
 
-This module provides abstract versioning patterns that can be applied to
-ANY content type - not just chat messages:
+Manifesto:
+    Content evolves — headlines get corrected, prompts get refined,
+    filing sections get restated. Without version history, the original
+    context is lost, making audit trails impossible and debugging blind.
 
-- Chat messages (Copilot sessions)
-- News headlines (market news, earnings announcements)
-- SEC filing sections (risk factors, MD&A)
-- LLM prompts (prompt engineering)
-- Document chunks (RAG pipelines)
-- Annotations (human feedback)
+    - **Immutable history:** Every version is preserved, never overwritten
+    - **Event sourcing:** Derive current state from version sequence
+    - **Content-agnostic:** Works with any content type via ContentType enum
+    - **Source tracking:** Who/what created each version (human, LLM, system)
 
-Design inspired by:
-- Google Docs version history (track changes, restore, compare)
-- Financial Observations (multiple values for same observation: GAAP/Non-GAAP)
-- Event Sourcing (immutable history, derive current state)
+Architecture:
+    ::
 
-Key Concepts:
-    ContentVersion: A single snapshot of content at a point in time
-    VersionedContent: Content with immutable version history
-    ContentType: Enum defining the kind of content being versioned
+        VersionedContent
+        ├── ContentVersion v1 (original, source=HUMAN)
+        ├── ContentVersion v2 (LLM-expanded, source=LLM_EXPANDED)
+        └── ContentVersion v3 (corrected, source=HUMAN_EDITED)
 
-Example:
-    # Create versioned news headline
-    headline = VersionedContent.create(
-        content="Apple beats Q4 estimates",
-        content_type=ContentType.NEWS_HEADLINE,
-        context={"ticker": "AAPL", "source": "reuters"},
-    )
+        current → v3 (latest version)
+        history → [v1, v2, v3] (full audit trail)
 
-    # Add improved version (LLM rewrote)
-    headline.add_version(
-        content="Apple Reports Q4 Revenue of $95B, Beats Analyst Estimates by 3%",
-        source=ContentSource.LLM_EXPANDED,
-        created_by="claude-sonnet",
-        improvements=["added specifics", "added percentage"],
-    )
+Features:
+    - **VersionedContent:** Content with immutable version history
+    - **ContentVersion:** Single snapshot with version number and source
+    - **ContentType:** Enum (NEWS_HEADLINE, SEC_FILING, LLM_PROMPT, etc.)
+    - **ContentSource:** Who created this version (HUMAN, LLM, SYSTEM)
+    - **Content hashing:** SHA-256 fingerprint per version for dedup
 
-    # Access version history
-    for v in headline.history:
-        print(f"v{v.version}: {v.content[:50]}...")
+Examples:
+    >>> headline = VersionedContent.create(
+    ...     content="Apple beats Q4 estimates",
+    ...     content_type=ContentType.NEWS_HEADLINE,
+    ...     context={"ticker": "AAPL"},
+    ... )
+    >>> headline.add_version(
+    ...     content="Apple Reports Q4 Revenue of $95B, Beats Estimates by 3%",
+    ...     source=ContentSource.LLM_EXPANDED,
+    ... )
+
+Tags:
+    versioning, content, immutable-history, audit-trail, spine-core,
+    event-sourcing, content-tracking
+
+Doc-Types:
+    - API Reference
+    - Content Model Guide
+    - Audit Trail Documentation
 """
 
 from __future__ import annotations

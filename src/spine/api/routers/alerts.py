@@ -15,6 +15,13 @@ Endpoints:
     POST /alerts/{id}/ack         Acknowledge an alert
     GET  /alerts/deliveries       List alert deliveries
 
+Manifesto:
+    Alert channels must be configurable at runtime so operators
+    can add Slack, email, or PagerDuty targets without redeploying.
+
+Tags:
+    spine-core, api, alerts, channels, delivery, notifications
+
 Doc-Types: API_REFERENCE
 """
 

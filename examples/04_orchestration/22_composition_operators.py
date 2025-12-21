@@ -69,9 +69,9 @@ def main() -> None:
 
     etl = chain(
         "my.etl",
-        Step.pipeline("extract", "data.extract"),
+        Step.operation("extract", "data.extract"),
         Step.lambda_("validate", _handler),
-        Step.pipeline("load", "data.load"),
+        Step.operation("load", "data.load"),
         domain="data.processing",
     )
     print(f"  Workflow: {etl.name}")
@@ -89,9 +89,9 @@ def main() -> None:
 
     multi_source = parallel(
         "multi.ingest",
-        Step.pipeline("source_a", "ingest.source_a"),
-        Step.pipeline("source_b", "ingest.source_b"),
-        Step.pipeline("source_c", "ingest.source_c"),
+        Step.operation("source_a", "ingest.source_a"),
+        Step.operation("source_b", "ingest.source_b"),
+        Step.operation("source_c", "ingest.source_c"),
         max_concurrency=4,
         on_failure=FailurePolicy.CONTINUE,
     )
@@ -113,8 +113,8 @@ def main() -> None:
 
     merged_parallel = parallel(
         "parallel.with_merge",
-        Step.pipeline("a", "pipe.a"),
-        Step.pipeline("b", "pipe.b"),
+        Step.operation("a", "pipe.a"),
+        Step.operation("b", "pipe.b"),
         merge_fn=combine_results,
     )
     print(f"  Steps: {[s.name for s in merged_parallel.steps]}")
@@ -133,11 +133,11 @@ def main() -> None:
         "quality.check",
         condition=_always_true,
         then_steps=[
-            Step.pipeline("publish", "data.publish"),
+            Step.operation("publish", "data.publish"),
             Step.lambda_("notify_success", _handler),
         ],
         else_steps=[
-            Step.pipeline("quarantine", "data.quarantine"),
+            Step.operation("quarantine", "data.quarantine"),
             Step.lambda_("alert", _handler),
         ],
     )
@@ -156,7 +156,7 @@ def main() -> None:
 
     resilient = retry(
         "resilient.fetch",
-        Step.pipeline("fetch", "data.fetch"),
+        Step.operation("fetch", "data.fetch"),
         max_attempts=3,
     )
     print(f"  Workflow: {resilient.name}")
@@ -176,14 +176,14 @@ def main() -> None:
     transform_wf = chain("transform", Step.lambda_("clean", _handler))
     load_wf = chain("load", Step.lambda_("store", _handler))
 
-    full_pipeline = merge_workflows(
-        "full.pipeline",
+    full_operation = merge_workflows(
+        "full.operation",
         ingest_wf,
         transform_wf,
         load_wf,
     )
-    print(f"  Workflow: {full_pipeline.name}")
-    print(f"  Steps:    {[s.name for s in full_pipeline.steps]}")
+    print(f"  Workflow: {full_operation.name}")
+    print(f"  Steps:    {[s.name for s in full_operation.steps]}")
     print(f"  From:     {ingest_wf.name} + {transform_wf.name} + {load_wf.name}")
     print()
 

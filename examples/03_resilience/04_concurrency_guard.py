@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Concurrency Guard — Prevent overlapping pipeline runs.
+"""Concurrency Guard — Prevent overlapping operation runs.
 
 WHY CONCURRENCY GUARDS MATTER
 ─────────────────────────────
 When a cron job, manual trigger, and a catch-up backfill all try to
 ingest the same week simultaneously, you get duplicate rows, corrupted
 aggregates, or deadlocks.  ConcurrencyGuard uses database-level advisory
-locks to ensure exactly one instance of a keyed pipeline runs at a time,
+locks to ensure exactly one instance of a keyed operation runs at a time,
 without requiring an external lock service.
 
 ARCHITECTURE
@@ -28,13 +28,13 @@ DATABASE SCHEMA
     ┌──────────────┬──────────┬─────────────────────────────┐
     │ Column       │ Type     │ Purpose                     │
     ├──────────────┼──────────┼─────────────────────────────┤
-    │ lock_key     │ TEXT PK  │ "pipeline:partition" key     │
+    │ lock_key     │ TEXT PK  │ "operation:partition" key     │
     │ execution_id │ TEXT     │ Which execution holds lock  │
     │ acquired_at  │ TEXT     │ UTC timestamp               │
     │ expires_at   │ TEXT     │ Auto-expiry for crashed runs│
     └──────────────┴──────────┴─────────────────────────────┘
 
-    The lock_key is typically "pipeline_name:date_partition" so
+    The lock_key is typically "operation_name:date_partition" so
     different partitions can run in parallel while the same
     partition is protected.
 
@@ -152,36 +152,36 @@ def main():
         print(f"    Is locked: {is_locked}")
         print(f"    Held by: {holder}")
         
-        # === 7. Real-world: Pipeline with guard ===
-        print("\n[7] Real-world: Pipeline with Guard")
+        # === 7. Real-world: Operation with guard ===
+        print("\n[7] Real-world: Operation with Guard")
         
-        def run_pipeline(name: str, week: str, exec_id: str) -> dict:
-            """Run a pipeline with concurrency protection."""
+        def run_operation(name: str, week: str, exec_id: str) -> dict:
+            """Run a operation with concurrency protection."""
             lock_key = f"{name}:{week}"
             
             if guard.acquire(lock_key, exec_id, timeout_seconds=300):
                 try:
                     print(f"    [{exec_id}] Processing {name} for {week}...")
                     # Simulate work
-                    result = {"pipeline": name, "week": week, "status": "success"}
+                    result = {"operation": name, "week": week, "status": "success"}
                     print(f"    [{exec_id}] Complete!")
                     return result
                 finally:
                     guard.release(lock_key)
             else:
                 print(f"    [{exec_id}] Skipped - already running")
-                return {"pipeline": name, "week": week, "status": "skipped"}
+                return {"operation": name, "week": week, "status": "skipped"}
         
         # Cleanup from previous tests
         guard.release(lock_key)
         guard.release(lock_key_2)
         
-        # Run pipeline
-        result1 = run_pipeline("otc_volume", "2024-01-19", "exec-100")
+        # Run operation
+        result1 = run_operation("otc_volume", "2024-01-19", "exec-100")
         print(f"  Result: {result1}")
         
-        # Try to run same pipeline again (would block if lock wasn't released)
-        result2 = run_pipeline("otc_volume", "2024-01-19", "exec-101")
+        # Try to run same operation again (would block if lock wasn't released)
+        result2 = run_operation("otc_volume", "2024-01-19", "exec-101")
         print(f"  Result: {result2}")
         
         print("\n" + "=" * 60)

@@ -1,55 +1,48 @@
 """
-Temporal envelope primitives for multi-timestamp data pipelines.
+Temporal envelope primitives for multi-timestamp data operations.
 
 Provides explicit 4-timestamp semantics so that every record in the
 ecosystem carries unambiguous temporal context.  Without these, each
 project invents its own ad-hoc combination of ``created_at``,
 ``as_of``, ``captured_at``, etc., leading to PIT query bugs.
 
-Why This Matters — Financial Pipelines:
-    In financial data, the same observation (e.g. Apple's Q3 EPS of $1.52)
-    may be *announced* on one date (event_time), *published* by a vendor
-    like Bloomberg or FactSet minutes later (publish_time), *ingested*
-    by our pipeline hours later (ingest_time), and *effective* for a
-    reporting period that started months earlier (effective_time).
+Manifesto:
+    In financial data, a single observation (e.g. Apple's Q3 EPS) may be
+    *announced* (event_time), *published* by a vendor (publish_time),
+    *ingested* by our operation (ingest_time), and *effective* for a
+    reporting period (effective_time). Conflating these causes:
 
-    Without separating these four timestamps, common bugs arise:
+    - **Look-ahead bias:** Backtests use data before it was known
+    - **Stale-data masking:** Corrections missed because timestamps overlap
+    - **Source-vendor confusion:** Bloomberg vs FactSet timing differences
 
-    - **Look-ahead bias**: backtest uses data before it was actually known.
-    - **Stale-data masking**: a correction arrives but the old version
-      is still served because ``created_at`` was not disambiguated.
-    - **Source-vendor confusion**: Bloomberg may publish a figure before
-      FactSet — treating them identically introduces subtle timing errors
-      in multi-source reconciliation (see feedspine estimates-vs-actuals).
+    TemporalEnvelope makes this distinction first-class, enabling replay,
+    backfill, and PIT queries without per-project ad-hoc conventions.
 
-Why This Matters — General Pipelines:
-    Any event-driven or streaming architecture benefits from explicit
-    temporal semantics.  CDC feeds, IoT telemetry, log aggregation,
-    and workflow orchestration all face the "when did X happen vs.
-    when did we learn about X" problem.  TemporalEnvelope makes this
-    distinction first-class, enabling replay, backfill, and PIT queries
-    without per-project ad-hoc timestamp conventions.
+Architecture:
+    ::
 
-Key Concepts:
-    TemporalEnvelope: Wraps any payload with four timestamps that answer
-        distinct questions:
-        - **event_time** — When did the real-world event happen?
-        - **publish_time** — When did the source make it available?
-        - **ingest_time** — When did *we* first capture it?
-        - **effective_time** — When should downstream consumers treat it
-          as valid?  (often == event_time but can differ for corrections)
+        ┌──────────────────────────────────────────────────────────┐
+        │                  TemporalEnvelope                         │
+        │  event_time     — When did the real-world event happen?   │
+        │  publish_time   — When did the source make it available?  │
+        │  ingest_time    — When did WE first capture it?           │
+        │  effective_time — When should consumers treat it as valid?│
+        │  payload        — The actual data                         │
+        └──────────────────────────────────────────────────────────┘
 
-    BiTemporalRecord: Adds ``valid_from / valid_to`` (business axis) and
-        ``system_from / system_to`` (system/bookkeeping axis) so that
-        fact tables support fully bi-temporal queries.
+        BiTemporalRecord (extends with):
+        │  valid_from / valid_to    — Business time axis            │
+        │  system_from / system_to  — System/bookkeeping axis       │
 
-Related Modules:
-    - :mod:`spine.core.watermarks` — cursor tracking ("how far have I read?")
-    - :mod:`spine.core.backfill` — gap-fill planning when watermarks detect holes
-    - :mod:`spine.core.finance.corrections` — records *why* a value changed
-    - :mod:`spine.core.finance.adjustments` — corporate-action math (splits, etc.)
+Features:
+    - **TemporalEnvelope:** 4-timestamp wrapper for any payload
+    - **BiTemporalRecord:** Full bi-temporal support (valid + system axes)
+    - **effective_time default:** Falls back to event_time when unset
+    - **Replay-safe:** ingest_time reflects re-ingest, not original capture
+    - **stdlib-only:** No Pydantic dependency
 
-Example:
+Examples:
     >>> from spine.core.temporal_envelope import TemporalEnvelope
     >>> from spine.core.timestamps import utc_now
     >>> env = TemporalEnvelope(
@@ -63,16 +56,44 @@ Example:
 
 STDLIB ONLY — no Pydantic.
 
+Performance:
+    - Envelope creation: O(1), lightweight frozen dataclass
+    - No serialization overhead until persistence layer
+    - BiTemporalRecord adds ~48 bytes per record (4 extra timestamps)
+
+Guardrails:
+    ❌ DON'T: Use a single ``created_at`` for all temporal needs
+    ✅ DO: Separate event_time, publish_time, ingest_time, effective_time
+
+    ❌ DON'T: Set ingest_time to the original capture time during backfill
+    ✅ DO: Set ingest_time to NOW during re-ingest (reflects actual capture)
+
+    ❌ DON'T: Skip effective_time — it defaults to event_time if omitted
+    ✅ DO: Set effective_time explicitly for corrections and adjustments
+
+Context:
+    Problem: Ad-hoc timestamp conventions across projects cause PIT query bugs,
+        look-ahead bias, and stale-data masking in financial analytics.
+    Solution: Canonical 4-timestamp envelope that every record carries, making
+        temporal semantics explicit and consistent across the ecosystem.
+    Alternatives Considered: Single timestamp (ambiguous), event sourcing
+        (too heavy), per-project conventions (inconsistent).
+
 Tags:
-    temporal, bi-temporal, envelope, PIT, pipeline, spine-core,
+    temporal, bi-temporal, envelope, PIT, operation, spine-core,
     financial-data, event-sourcing, replay
+
+Doc-Types:
+    - API Reference
+    - Temporal Patterns Guide
+    - Data Engineering Best Practices
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -83,7 +104,7 @@ T = TypeVar("T")
 
 
 @dataclass(frozen=True, slots=True)
-class TemporalEnvelope(Generic[T]):
+class TemporalEnvelope[T]:
     """Wrap any payload with explicit 4-timestamp semantics.
 
     Attributes:

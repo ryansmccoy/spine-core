@@ -6,9 +6,9 @@ WHAT IS ASSET TRACKING?
 ================================================================================
 
 **Asset tracking** is the practice of treating *data artifacts* as first-class
-citizens in your data platform, rather than just side effects of pipeline runs.
+citizens in your data platform, rather than just side effects of operation runs.
 
-Instead of asking "Did the pipeline run?" you ask:
+Instead of asking "Did the operation run?" you ask:
 - "Does this data exist?"
 - "Is it fresh enough?"
 - "What created it?"
@@ -21,9 +21,9 @@ This is the philosophical difference between:
 
 Why This Matters:
     1. **Freshness SLAs** — Know when data is stale, not just when jobs failed
-    2. **Impact Analysis** — Before changing a pipeline, see what breaks downstream
+    2. **Impact Analysis** — Before changing a operation, see what breaks downstream
     3. **Lineage/Provenance** — Trace any number back to its source
-    4. **Observability** — Check data quality without re-running pipelines
+    4. **Observability** — Check data quality without re-running operations
     5. **Selective Refresh** — Re-materialize only stale assets, not everything
 
 
@@ -96,13 +96,13 @@ Declaration of what an asset IS and how it SHOULD behave.
     AssetDefinition(
         key=AssetKey("sec", "filings", "10-K"),
         description="SEC 10-K annual filings from EDGAR",
-        producing_pipeline="ingest_filings",
+        producing_operation="ingest_filings",
         freshness_policy=FreshnessPolicy(max_lag_seconds=86400),
         dependencies=[AssetKey("sec", "index", "full")],
     )
 
     Fields:
-    - producing_pipeline: Which job creates this asset
+    - producing_operation: Which job creates this asset
     - freshness_policy: When is this asset "too old"?
     - dependencies: Assets that must exist first
 
@@ -116,7 +116,7 @@ Record that an asset was CREATED or UPDATED.
         partition="CIK:0001318605",     # Optional: which slice?
         status=MaterializationStatus.SUCCESS,
         metadata={"count": 42},
-        execution_id="run_abc123",      # Link to pipeline run
+        execution_id="run_abc123",      # Link to operation run
         upstream_keys=[...],            # What data was consumed
     )
 
@@ -151,11 +151,11 @@ SLA definition: "This asset must be refreshed every N seconds."
 
 AssetRegistry
 ─────────────
-In-memory registry for querying assets by namespace, group, pipeline, etc.
+In-memory registry for querying assets by namespace, group, operation, etc.
 
     registry.by_namespace("sec")        # All sec/* assets
     registry.by_group("market_data")    # Assets tagged with group
-    registry.by_pipeline("ingest")      # Assets produced by this pipeline
+    registry.by_operation("ingest")      # Assets produced by this operation
     registry.dependents_of(key)         # What depends on this asset?
 
 
@@ -170,7 +170,7 @@ Asset definitions and materializations are persisted for observability::
     ├─────────────────────────────────────────────────────────────────────────┤
     │  asset_key        VARCHAR(255)  PRIMARY KEY  -- "sec/filings/10-K"     │
     │  description      TEXT                       -- Human-readable         │
-    │  producing_pipe   VARCHAR(255)               -- Pipeline name          │
+    │  producing_pipe   VARCHAR(255)               -- Operation name          │
     │  group_name       VARCHAR(100)               -- Logical grouping       │
     │  freshness_secs   INTEGER                    -- Max lag before stale   │
     │  dependencies     JSON                       -- Array of keys          │
@@ -187,7 +187,7 @@ Asset definitions and materializations are persisted for observability::
     │  asset_key        VARCHAR(255)  NOT NULL     -- FK to definitions      │
     │  partition_key    VARCHAR(255)               -- Optional partition     │
     │  status           VARCHAR(20)   NOT NULL     -- success|partial|failed │
-    │  execution_id     VARCHAR(64)                -- Link to pipeline run   │
+    │  execution_id     VARCHAR(64)                -- Link to operation run   │
     │  metadata         JSON                       -- Row counts, checksums  │
     │  upstream_keys    JSON                       -- Consumed asset keys    │
     │  materialized_at  TIMESTAMP     NOT NULL     -- When this was built    │
@@ -268,7 +268,7 @@ BEST PRACTICES
 
 1. **Name assets by WHAT they are, not HOW they're built**::
 
-       # BAD — names the pipeline
+       # BAD — names the operation
        AssetKey("daily_ingest_output")
 
        # GOOD — names the data
@@ -320,7 +320,7 @@ Run this example:
 
 See Also:
     - :mod:`spine.core.assets` — Core asset models
-    - :mod:`spine.execution.dispatcher` — Pipeline → Asset materialization
+    - :mod:`spine.execution.dispatcher` — Operation → Asset materialization
     - :mod:`spine.api.routers.assets` — REST API for querying assets
 """
 from datetime import UTC, datetime, timedelta
@@ -380,19 +380,19 @@ def main():
     filings_def = register_asset(
         "sec", "filings", "10-K",
         description="SEC 10-K annual filings from EDGAR",
-        producing_pipeline="ingest_filings",
+        producing_operation="ingest_filings",
         freshness_policy=FreshnessPolicy(max_lag_seconds=86400),  # 24 hours
         group="sec_data",
         tags={"source": "edgar", "priority": "high"},
     )
     print(f"  Registered: {filings_def.key}")
-    print(f"  Pipeline:   {filings_def.producing_pipeline}")
+    print(f"  Operation:   {filings_def.producing_operation}")
     print(f"  Freshness:  max {filings_def.freshness_policy.max_lag_seconds}s lag")
 
     register_asset(
         "sec", "filings", "10-Q",
         description="SEC 10-Q quarterly filings",
-        producing_pipeline="ingest_filings",
+        producing_operation="ingest_filings",
         freshness_policy=FreshnessPolicy(max_lag_seconds=86400),
         group="sec_data",
     )
@@ -400,7 +400,7 @@ def main():
     register_asset(
         "market", "prices", "daily",
         description="End-of-day equity prices",
-        producing_pipeline="fetch_prices",
+        producing_operation="fetch_prices",
         freshness_policy=FreshnessPolicy(max_lag_seconds=3600),  # 1 hour
         group="market_data",
         dependencies=(filings_key,),  # prices depend on filings for CIK mapping
@@ -409,7 +409,7 @@ def main():
     register_asset(
         "analytics", "portfolio", "risk_report",
         description="Portfolio risk metrics report",
-        producing_pipeline="compute_risk",
+        producing_operation="compute_risk",
         group="analytics",
         dependencies=(AssetKey("market", "prices", "daily"),),
     )
@@ -418,7 +418,7 @@ def main():
     print(f"  Total registered: {len(registry)} assets")
 
     # =================================================================
-    # 3. Query assets by group, namespace, pipeline
+    # 3. Query assets by group, namespace, operation
     # =================================================================
     print("\n[3] Querying the Asset Registry")
     print("-" * 40)
@@ -429,8 +429,8 @@ def main():
     sec_group = registry.by_group("sec_data")
     print(f"  Group 'sec_data':    {[str(a.key) for a in sec_group]}")
 
-    ingest_assets = registry.by_pipeline("ingest_filings")
-    print(f"  Pipeline 'ingest':   {[str(a.key) for a in ingest_assets]}")
+    ingest_assets = registry.by_operation("ingest_filings")
+    print(f"  Operation 'ingest':   {[str(a.key) for a in ingest_assets]}")
 
     dependents = registry.dependents_of(filings_key)
     print(f"  Depends on 10-K:     {[str(a.key) for a in dependents]}")

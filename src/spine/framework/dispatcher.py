@@ -11,9 +11,9 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from spine.framework.exceptions import BadParamsError, PipelineNotFoundError
+from spine.framework.exceptions import BadParamsError, OperationNotFoundError
 from spine.framework.logging import clear_context, get_logger, log_step, set_context
-from spine.framework.pipelines import PipelineResult, PipelineStatus
+from spine.framework.operations import OperationResult, OperationStatus
 from spine.framework.runner import get_runner
 
 log = get_logger(__name__)
@@ -42,22 +42,22 @@ class Execution:
     """Execution record (simplified for Basic tier)."""
 
     id: str
-    pipeline: str
+    operation: str
     params: dict[str, Any]
     lane: Lane
     trigger_source: TriggerSource
     logical_key: str | None
-    status: PipelineStatus
+    status: OperationStatus
     created_at: datetime
     started_at: datetime | None = None
     completed_at: datetime | None = None
     error: str | None = None
-    result: PipelineResult | None = None
+    result: OperationResult | None = None
 
 
-class PipelineDispatcher:
+class OperationDispatcher:
     """
-    Dispatcher for pipeline executions.
+    Dispatcher for operation executions.
 
     Basic tier: Synchronous execution (no queue).
     This interface remains stable as we add async execution in higher tiers.
@@ -69,20 +69,20 @@ class PipelineDispatcher:
 
     def submit(
         self,
-        pipeline: str,
+        operation: str,
         params: dict[str, Any] | None = None,
         lane: Lane = Lane.NORMAL,
         trigger_source: TriggerSource = TriggerSource.CLI,
         logical_key: str | None = None,
     ) -> Execution:
         """
-        Submit a pipeline for execution.
+        Submit a operation for execution.
 
         In Basic tier, this runs synchronously and returns the completed execution.
 
         Args:
-            pipeline: Name of the pipeline to run
-            params: Pipeline parameters
+            operation: Name of the operation to run
+            params: Operation parameters
             lane: Execution lane (informational in Basic)
             trigger_source: What triggered this execution
             logical_key: Optional concurrency guard key (informational in Basic)
@@ -95,19 +95,19 @@ class PipelineDispatcher:
 
         execution = Execution(
             id=execution_id,
-            pipeline=pipeline,
+            operation=operation,
             params=params or {},
             lane=lane,
             trigger_source=trigger_source,
             logical_key=logical_key,
-            status=PipelineStatus.PENDING,
+            status=OperationStatus.PENDING,
             created_at=now,
         )
 
         # Set logging context for this execution
         set_context(
             execution_id=execution_id,
-            pipeline=pipeline,
+            operation=operation,
             backend="sync",
         )
 
@@ -122,12 +122,12 @@ class PipelineDispatcher:
         self._executions[execution_id] = execution
 
         # Run synchronously in Basic tier
-        execution.status = PipelineStatus.RUNNING
+        execution.status = OperationStatus.RUNNING
         execution.started_at = datetime.now(UTC)
 
         try:
             with log_step("execution.run"):
-                result = self._runner.run(pipeline, params)
+                result = self._runner.run(operation, params)
 
             execution.status = result.status
             execution.completed_at = result.completed_at
@@ -148,34 +148,34 @@ class PipelineDispatcher:
                     summary_fields["weeks"] = result.metrics["weeks"]
 
             # Handle success vs failure logging
-            if execution.status == PipelineStatus.COMPLETED:
+            if execution.status == OperationStatus.COMPLETED:
                 log.info("execution.summary", **summary_fields)
             else:
                 # Add error details for failures
                 if result.error:
-                    summary_fields["error_type"] = "PipelineError"
+                    summary_fields["error_type"] = "OperationError"
                     summary_fields["error_message"] = result.error
                 log.error("execution.summary", **summary_fields)
 
-        except PipelineNotFoundError as e:
-            # Pipeline doesn't exist in registry
-            execution.status = PipelineStatus.FAILED
+        except OperationNotFoundError as e:
+            # Operation doesn't exist in registry
+            execution.status = OperationStatus.FAILED
             execution.completed_at = datetime.now(UTC)
             execution.error = str(e)
 
             log.error(
-                "execution.pipeline_not_found",
+                "execution.operation_not_found",
                 status="failed",
-                error_type="PipelineNotFoundError",
+                error_type="OperationNotFoundError",
                 error_message=str(e),
-                pipeline_name=pipeline,
+                operation_name=operation,
             )
             # Re-raise so CLI can handle it
             raise
 
         except BadParamsError as e:
             # Parameters are missing or invalid
-            execution.status = PipelineStatus.FAILED
+            execution.status = OperationStatus.FAILED
             execution.completed_at = datetime.now(UTC)
             execution.error = str(e)
 
@@ -191,10 +191,10 @@ class PipelineDispatcher:
             raise
 
         except Exception as e:
-            # Handle unexpected exceptions (pipeline should catch its own)
+            # Handle unexpected exceptions (operation should catch its own)
             import traceback
 
-            execution.status = PipelineStatus.FAILED
+            execution.status = OperationStatus.FAILED
             execution.completed_at = datetime.now(UTC)
             execution.error = str(e)
 
@@ -217,15 +217,15 @@ class PipelineDispatcher:
 
     def list_executions(
         self,
-        pipeline: str | None = None,
-        status: PipelineStatus | None = None,
+        operation: str | None = None,
+        status: OperationStatus | None = None,
         limit: int = 100,
     ) -> list[Execution]:
         """List executions with optional filters."""
         executions = list(self._executions.values())
 
-        if pipeline:
-            executions = [e for e in executions if e.pipeline == pipeline]
+        if operation:
+            executions = [e for e in executions if e.operation == operation]
         if status:
             executions = [e for e in executions if e.status == status]
 

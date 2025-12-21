@@ -19,7 +19,7 @@
 | 5 | Workflow API Extensions | 💡 Idea | Low | #3 Serialization ✅ |
 | 6 | Python SDK Generation | 💡 Idea | Medium | OpenAPI spec |
 | 7 | External Triggers & Events | 💡 Idea | Medium | Event bus |
-| 8 | Financial Calculation Pipelines | 💡 Idea | Medium | Domain models |
+| 8 | Financial Calculation Operations | 💡 Idea | Medium | Domain models |
 | 9 | Workflow Versioning & Migration | 💡 Idea | High | #5 API Extensions |
 | 10 | Distributed State & Checkpointing | 💡 Idea | High | #2 Artifact Store |
 | 11 | Document Parsing & Extraction | 💡 Idea | High | Domain models |
@@ -53,9 +53,9 @@ as a step, passing context and receiving results.
 ```python
 # Parent workflow composes child workflows
 parent = Workflow(
-    name="daily_pipeline",
+    name="daily_operation",
     steps=[
-        Step.pipeline("fetch", "data.fetch"),
+        Step.operation("fetch", "data.fetch"),
         Step.workflow(
             name="validate_data",
             workflow_name="common.validation",  # Registered child workflow
@@ -68,7 +68,7 @@ parent = Workflow(
             params={"source": "$.outputs.fetch.data"},
             wait=True,
         ),
-        Step.pipeline("load", "warehouse.load"),
+        Step.operation("load", "warehouse.load"),
     ],
 )
 ```
@@ -107,7 +107,7 @@ def workflow(
 
 ```
 ParentWorkflow
-  ├── step1: pipeline
+  ├── step1: operation
   │     └── outputs: {data: [...]}
   │
   ├── step2: workflow("child_wf")
@@ -119,7 +119,7 @@ ParentWorkflow
   │
   │     ← child outputs merged into parent.outputs["step2"]
   │
-  └── step3: pipeline (can access $.outputs.step2.enriched)
+  └── step3: operation (can access $.outputs.step2.enriched)
 ```
 
 ### Fire-and-Forget Mode
@@ -303,7 +303,7 @@ await store.delete_run_artifacts(run_id="run-123")
 ### Problem
 
 Current workflows are designed for **control flow**, not **data flow**.
-ETL/ELT pipelines need:
+ETL/ELT operations need:
 - Streaming data between steps (not load-all-into-memory)
 - Incremental processing (process new records only)
 - Partitioned parallel execution
@@ -741,7 +741,7 @@ webhook_trigger = EventTrigger(
         path="/hooks/github",
         secret="GITHUB_WEBHOOK_SECRET",
     ),
-    workflow_name="ci_pipeline",
+    workflow_name="ci_operation",
     filter="$.ref == 'refs/heads/main'",
     param_mapping={
         "commit": "$.after",
@@ -772,7 +772,7 @@ class EventRouter:
 
 ---
 
-## 8. Financial Calculation Pipelines
+## 8. Financial Calculation Operations
 
 **Status**: 💡 Idea
 
@@ -1059,7 +1059,7 @@ graph TD
 
 ---
 
-## 11. Document Parsing & Extraction Pipelines
+## 11. Document Parsing & Extraction Operations
 
 **Status**: 💡 Idea
 
@@ -1080,7 +1080,7 @@ Document-aware step types that chain parsing → extraction → validation.
 ### Design
 
 ```python
-# Document processing pipeline
+# Document processing operation
 workflow = Workflow(
     name="sec.filing_processor",
     domain="sec",
@@ -1161,7 +1161,7 @@ spine-core already has:
 #### 12a. Multi-Container Workflows (Sidecars)
 
 ```python
-# Run a pipeline step with helper containers
+# Run a operation step with helper containers
 spec = ContainerJobSpec(
     name="ml-inference",
     image="spine-ml:latest",
@@ -1183,23 +1183,23 @@ spec = ContainerJobSpec(
 )
 ```
 
-#### 12b. Pipeline-as-Container (Any Language)
+#### 12b. Operation-as-Container (Any Language)
 
 ```python
-# Run a non-Python pipeline step inside a container
+# Run a non-Python operation step inside a container
 workflow = Workflow(
-    name="polyglot.pipeline",
+    name="polyglot.operation",
     steps=[
         # Python step — runs locally
         Step.from_function("prepare", prepare_data),
 
         # R step — runs in container via ContainerRunnable
-        Step.pipeline("r_analysis", "analytics.r_model",
+        Step.operation("r_analysis", "analytics.r_model",
                       config={"image": "rocker/tidyverse:latest",
                               "command": ["Rscript", "model.R"]}),
 
         # Node.js step — container
-        Step.pipeline("generate_report", "reports.node_renderer",
+        Step.operation("generate_report", "reports.node_renderer",
                       config={"image": "node:20-alpine",
                               "command": ["node", "render.js"]}),
 
@@ -1214,7 +1214,7 @@ workflow = Workflow(
 ```python
 spec = ContainerJobSpec(
     name="heavy-compute",
-    image="spine-pipeline:latest",
+    image="spine-operation:latest",
     command=["python", "-m", "train_model"],
     resources=ResourceRequirements(
         cpu_request="2",
@@ -1404,7 +1404,7 @@ def build_workflow():
         steps.append(Step.from_function("ml_score", ml_score))
 
     steps.append(Step.from_function("store", store_results))
-    return Workflow(name="configurable.pipeline", steps=steps)
+    return Workflow(name="configurable.operation", steps=steps)
 ```
 
 #### 14c. Environment-Aware Workflows
@@ -1474,7 +1474,7 @@ workflow = Workflow(
     alerts=AlertPolicy(
         on_failure=[
             SlackChannel(webhook_url="secret:env:SLACK_WEBHOOK",
-                         channel="#pipeline-alerts"),
+                         channel="#operation-alerts"),
             EmailChannel(to=["oncall@company.com"]),
         ],
         on_slow=[
@@ -1520,25 +1520,25 @@ def fetch_edgar(cik: str) -> dict:
 | Level | # | Example | Key Features Used |
 |-------|---|---------|-------------------|
 | **Basic** | B1 | Hello World Workflow | `Step.from_function`, `ManagedWorkflow` |
-| **Basic** | B2 | CSV → Database Loader | `etl_pipeline` template, quality checks |
+| **Basic** | B2 | CSV → Database Loader | `etl_operation` template, quality checks |
 | **Basic** | B3 | Multi-Source Data Merge | `Step.lambda_`, context passing |
 | **Basic** | B4 | Scheduled Daily Report | `scheduled_batch` template, cron |
-| **Basic** | B5 | Feature-Flagged Pipeline | `FeatureFlags`, conditional steps |
+| **Basic** | B5 | Feature-Flagged Operation | `FeatureFlags`, conditional steps |
 | **Intermediate** | I1 | SEC Filing ETL | `TrackedWorkflowRunner`, temporal envelope |
 | **Intermediate** | I2 | Fan-Out Portfolio Analysis | `Step.map`, parallel DAG |
-| **Intermediate** | I3 | Idempotent Backfill | partition keys, `ManagedPipeline` |
+| **Intermediate** | I3 | Idempotent Backfill | partition keys, `ManagedOperation` |
 | **Intermediate** | I4 | YAML-Defined Workflow | `WorkflowSpec`, YAML round-trip |
 | **Intermediate** | I5 | Circuit-Protected API Ingest | `CircuitBreaker`, retry policy |
 | **Advanced** | A1 | Local Process Container Execution | `LocalProcessAdapter`, `JobEngine` |
-| **Advanced** | A2 | Stock Split Adjustment Pipeline | `AdjustmentChain`, corrections |
+| **Advanced** | A2 | Stock Split Adjustment Operation | `AdjustmentChain`, corrections |
 | **Advanced** | A3 | Bi-Temporal Filing Tracker | `TemporalEnvelope`, `BiTemporalRecord` |
 | **Advanced** | A4 | Packaged Portable Workflow (.pyz) | `WorkflowPackager`, zip archives |
 | **Advanced** | A5 | Hot-Reload Dev Server | `HotReloadAdapter`, config watching |
-| **Mind-Blowing** | M1 | Self-Healing Pipeline with DLQ | DLQ, anomaly detection, auto-retry |
-| **Mind-Blowing** | M2 | Full Audit Trail Financial Pipeline | Every primitives combined |
+| **Mind-Blowing** | M1 | Self-Healing Operation with DLQ | DLQ, anomaly detection, auto-retry |
+| **Mind-Blowing** | M2 | Full Audit Trail Financial Operation | Every primitives combined |
 | **Mind-Blowing** | M3 | Multi-Adapter Failover Orchestration | Router, local+Docker, ledger |
 | **Mind-Blowing** | M4 | Playground-Driven Debugging | `WorkflowPlayground`, step/step-back |
-| **Mind-Blowing** | M5 | Live Production Dashboard Pipeline | Tracked runner, analytics, alerts |
+| **Mind-Blowing** | M5 | Live Production Dashboard Operation | Tracked runner, analytics, alerts |
 
 ---
 
@@ -1572,11 +1572,11 @@ wf.show()
 
 ### B2 — CSV → Database Loader
 
-**Level**: Basic | **Uses**: `etl_pipeline` template, `QualityRunner`
+**Level**: Basic | **Uses**: `etl_operation` template, `QualityRunner`
 
 ```python
 import csv
-from spine.orchestration.templates import etl_pipeline
+from spine.orchestration.templates import etl_operation
 from spine.orchestration.step_adapters import workflow_step
 from spine.orchestration import WorkflowRunner, StepResult
 
@@ -1675,7 +1675,7 @@ def send_email(report: str = "", valid: bool = False) -> dict:
 
 wf = scheduled_batch(
     name="daily.pnl_report",
-    pipeline="reports.generate_daily",
+    operation="reports.generate_daily",
     validator=validate_report,
     notifier=send_email,
     domain="reporting",
@@ -1685,7 +1685,7 @@ wf = scheduled_batch(
 
 ---
 
-### B5 — Feature-Flagged Pipeline
+### B5 — Feature-Flagged Operation
 
 **Level**: Basic | **Uses**: `FeatureFlags`, conditional workflow construction
 
@@ -1710,7 +1710,7 @@ def parse_v2(data: dict = None) -> dict:
 def enrich(parsed: bool = False) -> dict:
     return {"enriched": True, "source": "external_api"}
 
-def build_pipeline() -> Workflow:
+def build_operation() -> Workflow:
     steps = [Step.from_function("fetch", lambda: {"data": {"a": 1, "b": 2}})]
 
     if FeatureFlags.is_enabled("use_new_parser"):
@@ -1722,11 +1722,11 @@ def build_pipeline() -> Workflow:
         steps.append(enrich.as_step())
 
     steps.append(Step.from_function("store", lambda: {"stored": True}))
-    return Workflow(name="flagged.pipeline", steps=steps)
+    return Workflow(name="flagged.operation", steps=steps)
 
 # Test with override
 with FeatureFlags.override("use_new_parser", True):
-    wf = build_pipeline()
+    wf = build_operation()
     assert any(s.name == "parse_v2" for s in wf.steps)
 ```
 
@@ -1776,8 +1776,8 @@ wf = Workflow(
     steps=[
         Step.lambda_("fetch_10k", fetch_10k, config={"cik": "0000320193"}),
         Step.lambda_("quality_gate", quality_gate),
-        Step.pipeline("normalize", "sec.normalize_filing"),
-        Step.pipeline("store", "sec.store_filing"),
+        Step.operation("normalize", "sec.normalize_filing"),
+        Step.operation("store", "sec.store_filing"),
     ],
     tags=["sec", "10-K", "etl"],
 )
@@ -1851,7 +1851,7 @@ wf = Workflow(
 
 ### I3 — Idempotent Backfill with Partitions
 
-**Level**: Intermediate | **Uses**: `ManagedPipeline`, partition keys, idempotency
+**Level**: Intermediate | **Uses**: `ManagedOperation`, partition keys, idempotency
 
 ```python
 from spine.orchestration.managed_workflow import ManagedWorkflow
@@ -1902,23 +1902,23 @@ kind: Workflow
 metadata:
   name: etl.sec_filings
   domain: sec
-  description: Daily SEC filing ingestion pipeline
+  description: Daily SEC filing ingestion operation
   tags: [sec, etl, daily]
 spec:
   steps:
     - name: fetch
-      pipeline: sec.fetch_filings
+      operation: sec.fetch_filings
       config:
         form_type: "10-K"
     - name: validate
-      pipeline: sec.validate_filings
+      operation: sec.validate_filings
       depends_on: [fetch]
       on_error: continue
     - name: normalize
-      pipeline: sec.normalize_filings
+      operation: sec.normalize_filings
       depends_on: [validate]
     - name: store
-      pipeline: sec.store_filings
+      operation: sec.store_filings
       depends_on: [normalize]
   policy:
     execution: parallel
@@ -1989,7 +1989,7 @@ wf = Workflow(
                 retryable_categories=("TRANSIENT", "DEPENDENCY"),
             ),
         ),
-        Step.pipeline("process", "sec.process_filings"),
+        Step.operation("process", "sec.process_filings"),
     ],
 )
 ```
@@ -2049,7 +2049,7 @@ asyncio.run(run_local_job())
 
 ---
 
-### A2 — Stock Split Adjustment Pipeline
+### A2 — Stock Split Adjustment Operation
 
 **Level**: Advanced | **Uses**: `AdjustmentChain`, `CorrectionRecord`, `TemporalEnvelope`
 
@@ -2104,7 +2104,7 @@ def record_correction(ticker: str = "", adjusted_prices: list = None) -> dict:
         original_value=25.10,
         corrected_value=25.00,
         reason=CorrectionReason.ROUNDING,
-        corrected_by="split_pipeline",
+        corrected_by="split_operation",
         source_ref="corporate_actions_feed",
     )
     return {
@@ -2204,7 +2204,7 @@ wf = Workflow(
     steps=[
         Step.lambda_("extract", extract_data),
         Step.lambda_("transform", transform_data),
-        Step.pipeline("load", "warehouse.load"),
+        Step.operation("load", "warehouse.load"),
     ],
     tags=["portable", "etl"],
 )
@@ -2242,7 +2242,7 @@ def adapter_factory(config):
 # Start with v1 config
 hot = HotReloadAdapter(
     initial_config={
-        "image": "spine-pipeline:v1",
+        "image": "spine-operation:v1",
         "timeout": 30,
         "env": {"LOG_LEVEL": "INFO"},
     },
@@ -2254,7 +2254,7 @@ print(f"Reload count: {hot.reload_count}")  # 0
 
 # Simulate config change (e.g., from file watcher or API call)
 hot.update_config({
-    "image": "spine-pipeline:v2",
+    "image": "spine-operation:v2",
     "timeout": 60,
     "env": {"LOG_LEVEL": "DEBUG"},
 })
@@ -2266,7 +2266,7 @@ print(f"Reload count: {hot.reload_count}")  # 1
 
 ---
 
-### M1 — Self-Healing Pipeline with DLQ
+### M1 — Self-Healing Operation with DLQ
 
 **Level**: Mind-Blowing | **Uses**: DLQ, anomaly recording, circuit breaker, auto-retry
 
@@ -2332,7 +2332,7 @@ wf = Workflow(
 
 ---
 
-### M2 — Full Audit Trail Financial Pipeline
+### M2 — Full Audit Trail Financial Operation
 
 **Level**: Mind-Blowing | **Uses**: Every financial primitive combined
 
@@ -2380,7 +2380,7 @@ def reconcile_sources(ticker: str = "", eps_adjusted: float = 0) -> dict:
             original_value=vendor_eps,
             corrected_value=eps_adjusted,
             reason=CorrectionReason.VENDOR_CORRECTION,
-            corrected_by="reconciliation_pipeline",
+            corrected_by="reconciliation_operation",
         )
         return {"reconciled": True, "correction_delta": correction.delta}
     return {"reconciled": True, "correction_delta": 0.0}
@@ -2436,13 +2436,13 @@ async def demonstrate_failover():
     # Submit jobs — router picks the highest-priority available adapter
     spec = ContainerJobSpec(
         name="resilient-etl",
-        image="spine-pipeline:latest",
+        image="spine-operation:latest",
         command=["python", "-c", "print('Processed 1000 records')"],
-        env={"PIPELINE": "sec.daily_ingest", "BATCH_DATE": "2025-01-15"},
+        env={"operation": "sec.daily_ingest", "BATCH_DATE": "2025-01-15"},
         timeout_seconds=60,
     )
 
-    # Even without Docker, the pipeline runs via LocalProcessAdapter
+    # Even without Docker, the operation runs via LocalProcessAdapter
     ref = await local.submit(spec)
     status = await local.status(ref)
 
@@ -2485,7 +2485,7 @@ def validate(ctx, config) -> StepResult:
     return StepResult.ok(output={"valid": True})
 
 wf = Workflow(
-    name="debug.pipeline",
+    name="debug.operation",
     steps=[
         Step.lambda_("fetch", fetch_data),
         Step.lambda_("transform", transform),
@@ -2531,7 +2531,7 @@ print(f"Remaining steps: {len(pg.remaining_steps)}")
 
 ---
 
-### M5 — Live Production Dashboard Pipeline
+### M5 — Live Production Dashboard Operation
 
 **Level**: Mind-Blowing | **Uses**: TrackedWorkflowRunner, run analytics, multi-workflow composition
 
@@ -2543,8 +2543,8 @@ from datetime import datetime, UTC
 
 # === Domain functions (zero framework coupling) ===
 
-def collect_pipeline_metrics(domain: str = "all") -> dict:
-    """Collect success rates, durations, error counts across all pipelines."""
+def collect_operation_metrics(domain: str = "all") -> dict:
+    """Collect success rates, durations, error counts across all operations."""
     return {
         "total_runs_today": 147,
         "success_rate": 0.965,
@@ -2612,7 +2612,7 @@ def generate_dashboard_html(
 
 dashboard = (
     ManagedWorkflow("ops.production_dashboard")
-    .step("metrics", collect_pipeline_metrics)
+    .step("metrics", collect_operation_metrics)
     .step("freshness", check_data_freshness)
     .step("sla", calculate_sla_compliance)
     .step("render", generate_dashboard_html)
@@ -2630,10 +2630,10 @@ dashboard.show()
 
 ---
 
-## Real-World Case Study: SEC EDGAR Medallion Pipeline
+## Real-World Case Study: SEC EDGAR Medallion Operation
 
 > This section maps real production patterns from `sec-docker-loader` — an SEC EDGAR XBRL
-> financial data pipeline processing 55M+ records across a 98 GB PostgreSQL database —
+> financial data operation processing 55M+ records across a 98 GB PostgreSQL database —
 > to spine-core workflow concepts. Each subsection shows how the working system
 > implements patterns described in sections #1–#15 above.
 
@@ -2641,7 +2641,7 @@ dashboard.show()
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    SEC EDGAR Data Pipeline                          │
+│                    SEC EDGAR Data Operation                          │
 │                                                                     │
 │  ┌──────────┐    ┌───────────┐    ┌──────────┐    ┌──────────────┐ │
 │  │ Download  │───▶│  Bronze   │───▶│  Silver  │───▶│    Gold      │ │
@@ -2653,7 +2653,7 @@ dashboard.show()
 │                  │ Lineage   │    │ Scoring   │    │             │ │
 │                  └───────────┘    └───────────┘    └──────────────┘ │
 │                                                                     │
-│  Orchestrator:  SECFinancialPipelineOrchestrator (3236 lines)      │
+│  Orchestrator:  SECFinancialOperationOrchestrator (3236 lines)      │
 │  Parallel:      ProcessPoolExecutor (load_parallel.py)             │
 │  DI Container:  DependencyContainer → SilverDependencies           │
 │  10 Stages:     INITIALIZE → ... → VALIDATE → FINALIZE            │
@@ -2675,19 +2675,19 @@ dashboard.show()
 
 ### R1 — Medallion Layer Orchestration (Maps to #1, #3)
 
-The pipeline orchestrator implements sub-workflow composition (#1) and
+The operation orchestrator implements sub-workflow composition (#1) and
 data-intensive ETL patterns (#3) in a single 3,236-line class.
 
 ```python
-# From: sec-docker-loader/src/py_sec_edgar_xbrl/pipeline/pipeline_orchestrator.py
+# From: sec-docker-loader/src/py_sec_edgar_xbrl/operation/operation_orchestrator.py
 # This maps to spine-core Pattern #1 (Sub-Workflows) — each layer is a composable unit
 
-class SECFinancialPipelineOrchestrator:
+class SECFinancialOperationOrchestrator:
     """
-    Bronze → Silver → Gold Pipeline Orchestrator.
+    Bronze → Silver → Gold Operation Orchestrator.
     
     Each layer is independently runnable (sub-workflow pattern)
-    but composed into a full pipeline via run_full_pipeline().
+    but composed into a full operation via run_full_operation().
     """
     
     def __init__(self, db_config, config=None):
@@ -2696,9 +2696,9 @@ class SECFinancialPipelineOrchestrator:
         self.silver_transformer = SilverLayerTransformerAdapter(db_config, batch_size=500_000)
         self.financial_calculator = FinancialMetricsCalculator(db_config=db_config)
     
-    def run_full_pipeline(self, zip_path, quarter, interactive=False, on_exists="prompt"):
+    def run_full_operation(self, zip_path, quarter, interactive=False, on_exists="prompt"):
         """
-        Complete Bronze → Silver → Gold pipeline for a single quarter.
+        Complete Bronze → Silver → Gold operation for a single quarter.
         
         Steps:
           0. Cleanup stale loads + check existing data + import ticker mappings
@@ -2709,7 +2709,7 @@ class SECFinancialPipelineOrchestrator:
         
         on_exists policy: 'prompt' | 'skip' | 'delete' | 'continue'
         """
-        self.pipeline_stats["start_time"] = datetime.now(timezone.utc)
+        self.operation_stats["start_time"] = datetime.now(timezone.utc)
         
         # Pre-check: cleanup stale loads, check quarter status, import tickers
         stale_cleaned = self.bronze_loader.cleanup_stale_loads(max_age_hours=1)
@@ -2728,10 +2728,10 @@ class SECFinancialPipelineOrchestrator:
         adjustment_stats = self.run_adjustment_detection()
         gold_stats = self.run_gold_layer(quarter)
         
-        self.generate_pipeline_summary()
-        return self.pipeline_stats
+        self.generate_operation_summary()
+        return self.operation_stats
     
-    def run_batch_pipeline(self, zip_files, quarters=None, interactive=False):
+    def run_batch_operation(self, zip_files, quarters=None, interactive=False):
         """
         Batch mode: process multiple quarters.
         
@@ -2757,7 +2757,7 @@ class SECFinancialPipelineOrchestrator:
 # --- spine-core equivalent ---
 # This maps directly to a ManagedWorkflow with sub-workflow composition:
 
-medallion_pipeline = (
+medallion_operation = (
     ManagedWorkflow("finance.sec_medallion")
     .step("cleanup", cleanup_stale_loads)
     .step("check_quarter", check_quarter_status)
@@ -2766,13 +2766,13 @@ medallion_pipeline = (
     .step("silver", run_silver_layer, config={"batch_size": 500_000})
     .step("adjustments", detect_adjustments)
     .step("gold", run_gold_analytics, config={"jit": True})
-    .step("summary", generate_pipeline_summary)
+    .step("summary", generate_operation_summary)
     .build()
 )
 ```
 
-**Key Pattern**: The orchestrator supports both single-quarter (`run_full_pipeline`) and
-multi-quarter (`run_batch_pipeline`) modes. Batch mode changes the execution topology:
+**Key Pattern**: The orchestrator supports both single-quarter (`run_full_operation`) and
+multi-quarter (`run_batch_operation`) modes. Batch mode changes the execution topology:
 Bronze runs N times in parallel, then Silver runs once to deduplicate, then Gold runs once.
 This is the fan-out/fan-in pattern from #3.
 
@@ -2839,7 +2839,7 @@ class BronzeLayerLoader:
 # --- spine-core equivalent ---
 # The Bronze pattern maps to an Artifact Store + idempotent step:
 
-bronze_step = Step.pipeline(
+bronze_step = Step.operation(
     "bronze_ingest",
     handler="sec.bronze.load_quarter",
     config={
@@ -2858,16 +2858,16 @@ for complex "was this already processed?" logic.
 
 ---
 
-### R3 — Silver Pipeline: 10-Stage Transformation with DI (Maps to #1, #4, #12)
+### R3 — Silver Operation: 10-Stage Transformation with DI (Maps to #1, #4, #12)
 
-The Silver layer implements a formal 10-stage pipeline with dependency injection,
+The Silver layer implements a formal 10-stage operation with dependency injection,
 automatic rollback, and streaming batch processing.
 
 ```python
-# From: sec-docker-loader/src/py_sec_edgar_xbrl/silver/orchestrator/pipeline.py (655 lines)
+# From: sec-docker-loader/src/py_sec_edgar_xbrl/silver/orchestrator/operation.py (655 lines)
 # Maps to Pattern #4 (Adaptive Workflows) — stages can be skipped dynamically
 
-class PipelineStage(Enum):
+class OperationStage(Enum):
     """10 formal stages in the Bronze → Silver transformation."""
     INITIALIZE          = "initialize"        # Validate dependencies
     LOAD_TRACKING       = "load_tracking"     # Create silver_loads session
@@ -2881,7 +2881,7 @@ class PipelineStage(Enum):
     FINALIZE            = "finalize"             # Mark load as COMPLETED
 
 @dataclass
-class PipelineResult:
+class OperationResult:
     """Typed result with throughput metrics."""
     success: bool
     load_ids: List[str]
@@ -2898,7 +2898,7 @@ class PipelineResult:
         """Facts processed per second."""
         return self.facts_processed / self.duration_seconds if self.duration_seconds > 0 else 0.0
 
-class SilverPipeline:
+class SilverOperation:
     """
     Full Bronze → Silver transformation with automatic rollback.
     
@@ -2911,7 +2911,7 @@ class SilverPipeline:
     
     def transform(self, load_ids=None, batch_size=500_000, skip_validation=False):
         """Execute all 10 stages sequentially."""
-        result = PipelineResult(success=True, load_ids=load_ids)
+        result = OperationResult(success=True, load_ids=load_ids)
         
         try:
             for stage_fn in [
@@ -2944,7 +2944,7 @@ class SilverPipeline:
 
 class DependencyContainer:
     """
-    Assembles all Silver pipeline dependencies.
+    Assembles all Silver operation dependencies.
     
     Capabilities detected at build time:
     - validation: Balance sheet, cash flow, EPS, outlier validators
@@ -2978,9 +2978,9 @@ class DependencyContainer:
         )
 
 # --- spine-core equivalent ---
-# The Silver pipeline maps to a multi-step workflow with rollback:
+# The Silver operation maps to a multi-step workflow with rollback:
 
-silver_pipeline = (
+silver_operation = (
     ManagedWorkflow("finance.silver_transform")
     .step("init", validate_dependencies)
     .step("track", create_load_session)
@@ -3007,12 +3007,12 @@ silver_pipeline = (
 
 ### R4 — Gold Layer: JIT-Optimized Financial Analytics (Maps to #8)
 
-The Gold layer implements financial calculation pipelines (#8) with
+The Gold layer implements financial calculation operations (#8) with
 Numba JIT compilation for 50–200x speedup on ratio calculations.
 
 ```python
 # From: sec-docker-loader/src/py_sec_edgar_xbrl/gold/gold_analytics.py (1,681 lines)
-# Maps to Pattern #8 (Financial Calculation Pipelines)
+# Maps to Pattern #8 (Financial Calculation Operations)
 
 class FinancialMetricsCalculator:
     """
@@ -3083,7 +3083,7 @@ class FinancialMetricsCalculator:
 # --- spine-core equivalent ---
 # Gold analytics maps to a financial calculation step with JIT:
 
-gold_step = Step.pipeline(
+gold_step = Step.operation(
     "gold_analytics",
     handler="sec.gold.calculate_tearsheet",
     config={
@@ -3142,7 +3142,7 @@ def main():
                 logger.error(f"❌ Bronze {quarter} failed: {e}")
     
     # Phase 2: Sequential Silver (all Bronze data visible)
-    orchestrator = SECFinancialPipelineOrchestrator(db_config)
+    orchestrator = SECFinancialOperationOrchestrator(db_config)
     silver_stats = orchestrator.run_silver_layer()
     
     # Phase 3: Sequential Gold
@@ -3179,41 +3179,41 @@ needs the complete normalized dataset.
 
 class SilverLayerTransformerAdapter:
     """
-    Backward-compatible bridge: legacy monolithic → new modular pipeline.
+    Backward-compatible bridge: legacy monolithic → new modular operation.
     
     The original SilverLayerTransformer was a single 2000+ line class.
     The new architecture splits into:
-      - SilverPipeline (orchestrator)
+      - SilverOperation (orchestrator)
       - DependencyContainer (DI)
       - FactTransformer, CompanyTransformer, etc. (individual transformers)
       - TagMappingService (JIT-cached XBRL tag resolution)
     
     This adapter presents the OLD interface while using the NEW internals.
-    Callers (pipeline_orchestrator.py, CLI commands) don't need to change.
+    Callers (operation_orchestrator.py, CLI commands) don't need to change.
     """
     
     def __init__(self, db_config, batch_size=500_000):
         self.db_config = db_config
         self.batch_size = batch_size
-        # Build new modular pipeline behind the scenes
+        # Build new modular operation behind the scenes
         self._container = DependencyContainer(db_config)
     
     def transform_bronze_to_silver(self, load_ids=None):
         """
-        Legacy interface — delegates to new SilverPipeline.
+        Legacy interface — delegates to new SilverOperation.
         
-        Old callers call this method. It builds the new pipeline,
+        Old callers call this method. It builds the new operation,
         executes it, and returns results in the old dict format.
         """
         deps = self._container.build()
-        pipeline = SilverPipeline(deps)
+        operation = SilverOperation(deps)
         
-        result = pipeline.transform(
+        result = operation.transform(
             load_ids=load_ids,
             batch_size=self.batch_size,
         )
         
-        # Convert new PipelineResult → legacy dict format
+        # Convert new OperationResult → legacy dict format
         return result.to_stats_dict()
 
 # --- spine-core equivalent ---
@@ -3224,7 +3224,7 @@ class WorkflowV1Adapter:
     
     def run_v1(self, params):
         """V1 callers use this. Internally runs V2 workflow."""
-        v2_workflow = ManagedWorkflow("pipeline.v2").build()
+        v2_workflow = ManagedWorkflow("operation.v2").build()
         v2_result = v2_workflow.run(params)
         return self._convert_to_v1_format(v2_result)
 ```
@@ -3357,7 +3357,7 @@ class TagMappingService:
 # JIT cache pattern for domain-specific lookup acceleration:
 
 class MetricsCache:
-    """JIT cache for any expensive lookup in a financial pipeline."""
+    """JIT cache for any expensive lookup in a financial operation."""
     
     def __init__(self, resolver_fn):
         self._cache = {}
@@ -3417,7 +3417,7 @@ class CompanyFixture:
 # --- spine-core equivalent ---
 # Fixture generation maps to an artifact-producing step:
 
-fixture_step = Step.pipeline(
+fixture_step = Step.operation(
     "generate_fixture",
     handler="sec.fixtures.generate_company_json",
     config={"format": "bloomberg_style", "include_temporal": True},
@@ -3476,14 +3476,14 @@ smaller filtered subset.
 
 | sec-docker-loader Component | spine-core Pattern | Section |
 |---|---|---|
-| `SECFinancialPipelineOrchestrator` | Sub-Workflows (#1) + Data-Intensive (#3) | R1 |
+| `SECFinancialOperationOrchestrator` | Sub-Workflows (#1) + Data-Intensive (#3) | R1 |
 | `BronzeLayerLoader` (SHA256, immutable) | Artifact Store (#2) + Checkpointing (#10) | R2 |
-| `SilverPipeline` (10 stages, rollback) | Adaptive Workflows (#4) + Container (#12) | R3 |
-| `FinancialMetricsCalculator` (JIT) | Financial Calculation Pipelines (#8) | R4 |
+| `SilverOperation` (10 stages, rollback) | Adaptive Workflows (#4) + Container (#12) | R3 |
+| `FinancialMetricsCalculator` (JIT) | Financial Calculation Operations (#8) | R4 |
 | `load_parallel.py` (ProcessPoolExecutor) | Data-Intensive / Partitioned (#3) | R5 |
 | `SilverLayerTransformerAdapter` | Versioning & Migration (#9) | R6 |
 | `v0_facts_canonical` (SQL foundation) | Data-Intensive (#3) + Financial (#8) | R7 |
-| `TagMappingService` (JIT cache) | Financial Calculation Pipelines (#8) | R8 |
+| `TagMappingService` (JIT cache) | Financial Calculation Operations (#8) | R8 |
 | `CompanyFixture` (frozen dataclass) | Artifact Store (#2) + Document (#11) | R9 |
 | Index optimization (covering indexes) | Observability / Operational (#15) | R10 |
 
@@ -3499,12 +3499,12 @@ smaller filtered subset.
 
 | Level | # | Example | Key Features Used |
 |-------|---|---------|-------------------|
-| **Infrastructure** | F1 | .env-Driven Database Pipeline | `dotenv`, `SecretsResolver`, env-based config |
+| **Infrastructure** | F1 | .env-Driven Database Operation | `dotenv`, `SecretsResolver`, env-based config |
 | **Infrastructure** | F2 | Secrets from API / Vault | `SecretsResolver`, multi-backend, API credential fetch |
-| **Infrastructure** | F3 | Container Pipeline via LocalProcessAdapter | `LocalProcessAdapter`, `ContainerJobSpec`, `JobEngine` |
+| **Infrastructure** | F3 | Container Operation via LocalProcessAdapter | `LocalProcessAdapter`, `ContainerJobSpec`, `JobEngine` |
 | **Infrastructure** | F4 | Package Workflow as .pyz with Env Bundling | `WorkflowPackager`, archive export with .env |
 | **Integration** | F5 | Query Live SEC Database from Workflow | `psycopg2`, `sec_dev_postgres`, `silver_financial_facts` |
-| **Financial** | F6 | Options Chain Valuation Pipeline | Black-Scholes, Greeks, vol surface |
+| **Financial** | F6 | Options Chain Valuation Operation | Black-Scholes, Greeks, vol surface |
 | **Financial** | F7 | Credit Risk Scoring Workflow | Altman Z-Score, Piotroski F, PD estimation |
 | **Financial** | F8 | Multi-Exchange Market Data Aggregator | Fan-out, merge, arbitrage detection |
 | **Financial** | F9 | End-of-Day Portfolio Reconciliation | Broker vs. books, break detection |
@@ -3512,12 +3512,12 @@ smaller filtered subset.
 
 ---
 
-### F1 — .env-Driven Database Pipeline
+### F1 — .env-Driven Database Operation
 
 **Level**: Infrastructure | **Uses**: `dotenv`, `SecretsResolver`, `EnvSecretBackend`, `ManagedWorkflow`
 
 Demonstrates loading database credentials from a `.env` file and using
-them in workflow steps — the standard pattern for financial data pipelines.
+them in workflow steps — the standard pattern for financial data operations.
 
 ```python
 import os
@@ -3590,7 +3590,7 @@ def generate_summary(row_count: int = 0, table: str = "") -> dict:
 
 # ── Build workflow ──
 wf = (
-    ManagedWorkflow("infra.env_driven_pipeline")
+    ManagedWorkflow("infra.env_driven_operation")
     .step("connect", connect_to_database)
     .step("count", count_records)
     .step("summary", generate_summary)
@@ -3598,7 +3598,7 @@ wf = (
 )
 result = wf.run()
 wf.show()
-# ✅ infra.env_driven_pipeline — 3 steps — completed
+# ✅ infra.env_driven_operation — 3 steps — completed
 #    connect  → localhost:5447/sec_dev_data
 #    count    → 17,903,144 rows
 #    summary  → healthy
@@ -3654,7 +3654,7 @@ class APISecretBackend(SecretBackend):
         # return vault_response.json()["data"]["data"]["value"]
 
         mock_vault = {
-            "db_username": "sec_pipeline_svc",
+            "db_username": "sec_operation_svc",
             "db_password": "rotated-credential-2026-02",
             "api_key_bloomberg": "BBG-xxxx-xxxx-xxxx",
             "api_key_factset": "FS-yyyy-yyyy-yyyy",
@@ -3725,16 +3725,16 @@ wf = (
 result = wf.run()
 wf.show()
 # ✅ infra.vault_credentials — 3 steps
-#    creds   → username=sec_pipeline_svc, source=vault
-#    connect → localhost:5447 as sec_pipeline_svc
+#    creds   → username=sec_operation_svc, source=vault
+#    connect → localhost:5447 as sec_operation_svc
 #    query   → 10,587 companies
 ```
 
 ---
 
-### F3 — Container Pipeline via LocalProcessAdapter
+### F3 — Container Operation via LocalProcessAdapter
 
-**Level**: Infrastructure | **Uses**: `LocalProcessAdapter`, `ContainerJobSpec`, `JobEngine`, `PipelineRunResult`
+**Level**: Infrastructure | **Uses**: `LocalProcessAdapter`, `ContainerJobSpec`, `JobEngine`, `OperationRunResult`
 
 Demonstrates running workflow steps as isolated processes via `LocalProcessAdapter`.
 This is the spine-core "local Docker" — runs `ContainerJobSpec` as subprocesses
@@ -3752,8 +3752,8 @@ from spine.orchestration.container_runnable import ContainerRunnable, _DEFAULT_I
 from spine.orchestration import Workflow, Step
 
 
-async def run_container_pipeline():
-    """Execute a multi-step financial pipeline using containers."""
+async def run_container_operation():
+    """Execute a multi-step financial operation using containers."""
 
     # ── Set up adapter stack ──
     adapter = LocalProcessAdapter()
@@ -3763,7 +3763,7 @@ async def run_container_pipeline():
     # ── Step 1: Fetch market data (container job) ──
     fetch_spec = ContainerJobSpec(
         name="fetch-market-data",
-        image="spine-pipeline:latest",  # Ignored by LocalProcessAdapter
+        image="spine-operation:latest",  # Ignored by LocalProcessAdapter
         command=["python", "-c", """
 import json, random
 data = {
@@ -3786,7 +3786,7 @@ print(json.dumps(data))
             "PGPASSWORD": "spine",  # In prod: secret:vault:db_password
         },
         labels={
-            "spine.pipeline": "market.fetch",
+            "spine.operation": "market.fetch",
             "spine.domain": "market_data",
         },
         timeout_seconds=60,
@@ -3832,35 +3832,35 @@ print(json.dumps({"returns_pct": returns, "avg_return": round(sum(returns.values
     print(f"  Output: {''.join(logs2).strip()}")
     await adapter.cleanup(ref2)
 
-    # ── Workflow definition for the same pipeline ──
+    # ── Workflow definition for the same operation ──
     # When using WorkflowRunner + ContainerRunnable, you define
     # the workflow declaratively and the runner handles submission:
     wf = Workflow(
-        name="market.daily_pipeline",
+        name="market.daily_operation",
         steps=[
-            Step.pipeline("fetch", "market.fetch_data"),
-            Step.pipeline("calculate", "market.calc_returns", depends_on=("fetch",)),
-            Step.pipeline("store", "market.store_results", depends_on=("calculate",)),
+            Step.operation("fetch", "market.fetch_data"),
+            Step.operation("calculate", "market.calc_returns", depends_on=("fetch",)),
+            Step.operation("store", "market.store_results", depends_on=("calculate",)),
         ],
         domain="market_data",
         tags=["daily", "containerized"],
     )
 
-    # Image resolver maps pipeline names to container images
+    # Image resolver maps operation names to container images
     IMAGE_MAP = {
-        "market.fetch_data": "spine-pipeline:latest",
+        "market.fetch_data": "spine-operation:latest",
         "market.calc_returns": "spine-analytics:latest",
-        "market.store_results": "spine-pipeline:latest",
+        "market.store_results": "spine-operation:latest",
     }
 
     print(f"\nWorkflow '{wf.name}' — {len(wf.steps)} steps")
-    for name in wf.pipeline_names():
+    for name in wf.operation_names():
         print(f"  {name:30s} → {IMAGE_MAP.get(name, _DEFAULT_IMAGE)}")
 
     print("\n" + "=" * 60)
-    print("Container pipeline complete!")
+    print("Container operation complete!")
 
-asyncio.run(run_container_pipeline())
+asyncio.run(run_container_operation())
 ```
 
 **Key Patterns**:
@@ -3933,7 +3933,7 @@ wf = Workflow(
         Step.lambda_("load_env", load_env_config),
         Step.lambda_("fetch", fetch_financial_data),
         Step.lambda_("calculate", calculate_metrics),
-        Step.pipeline("store", "warehouse.store_metrics"),
+        Step.operation("store", "warehouse.store_metrics"),
     ],
     tags=["portable", "finance", "etl"],
     defaults={"batch_size": 5000},
@@ -4126,7 +4126,7 @@ wf.show()
 
 ---
 
-### F6 — Options Chain Valuation Pipeline
+### F6 — Options Chain Valuation Operation
 
 **Level**: Financial | **Uses**: Black-Scholes, Greeks, volatility surface, `ManagedWorkflow`
 
@@ -4638,7 +4638,7 @@ def reconcile_positions(
     source: str = "",
 ) -> dict:
     """Compare internal vs. broker positions, detect breaks."""
-    # Note: in real pipeline, both positions dicts are accessed from context
+    # Note: in real operation, both positions dicts are accessed from context
     internal = {
         "AAPL": 10_000, "MSFT": 5_000, "NVDA": 2_500,
         "AMZN": 3_000, "GOOGL": 1_500,
@@ -4891,5 +4891,5 @@ wf.show()
 | 2026-02-16 | All | Initial capture of 10 advanced workflow patterns |
 | 2026-02-16 | #11-15 | Added document parsing, container, management, secrets, observability patterns |
 | 2026-02-16 | Examples | Added 20 concrete examples (B1-B5, I1-I5, A1-A5, M1-M5) grounded in actual API |
-| 2026-02-16 | R1-R10 | Added real-world case study: SEC EDGAR Medallion Pipeline from sec-docker-loader |
+| 2026-02-16 | R1-R10 | Added real-world case study: SEC EDGAR Medallion Operation from sec-docker-loader |
 | 2026-02-16 | F1-F10 | Added financial & infrastructure workflow examples: env config, secrets, containers, zip export, SEC DB queries, options, credit risk, reconciliation |

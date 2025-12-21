@@ -6,6 +6,16 @@ that govern the REST transport (CORS, rate-limiting, auth, prefix).
 
 All values can be overridden via environment variables prefixed with
 ``SPINE_`` (inherited) or ``SPINE_API_`` for API-specific knobs.
+
+Manifesto:
+    API settings extend the base so transport-level knobs (CORS,
+    rate-limiting, auth) are separate from core business settings.
+
+Tags:
+    spine-core, api, settings, configuration, environment-variables
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -49,8 +59,8 @@ class SpineCoreAPISettings(BaseSettings):
 
     # ── CORS ─────────────────────────────────────────────────────────────
     cors_origins: list[str] = Field(
-        default=["*"],
-        description="Allowed CORS origins",
+        default=["http://localhost:3000", "http://localhost:5173", "http://localhost:12000"],
+        description="Allowed CORS origins (set CORS_ORIGINS=* for development)",
     )
 
     # ── Rate limiting ────────────────────────────────────────────────────

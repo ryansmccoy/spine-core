@@ -1,10 +1,21 @@
 """
 Redis Pub/Sub event bus implementation.
 
+Manifesto:
+    Multi-node deployments need events to cross process boundaries.
+    Redis Pub/Sub provides fire-and-forget delivery with minimal latency
+    and no schema overhead.
+
 Uses Redis Pub/Sub for multi-node deployments. Events are delivered
 asynchronously and not persisted (use Redis Streams for persistence).
 
 Requires: ``pip install redis`` or ``spine-core[redis]``
+
+Tags:
+    spine-core, events, redis, pub-sub, multi-node, async, import-guarded
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -66,11 +77,11 @@ class RedisEventBus:
         """Connect to Redis and start listening for events."""
         try:
             import redis.asyncio as aioredis
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "redis package required for RedisEventBus. "
                 "Install with: pip install redis"
-            )
+            ) from e
 
         self._redis = aioredis.from_url(self._redis_url)
         self._pubsub = self._redis.pubsub()

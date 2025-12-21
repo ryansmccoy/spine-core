@@ -3,7 +3,7 @@
 
 WHY WORKFLOWS MATTER
 ───────────────────
-A financial data pipeline isn't one operation — it's a chain:
+A financial data operation isn't one operation — it's a chain:
 validate inputs → fetch data → analyse → generate report.
 Each step may depend on previous results, and intermediate
 state must be visible for debugging and auditing.  A *Workflow*
@@ -44,7 +44,7 @@ BEST PRACTICES
 Run: python examples/04_orchestration/01_workflow_basics.py
 
 See Also:
-    02_pipeline_vs_workflow — when to use pipeline vs workflow
+    02_operation_vs_workflow — when to use operation vs workflow
     08_tracked_runner — database-backed workflow execution
 """
 import asyncio
@@ -141,7 +141,7 @@ async def main():
     dispatcher = EventDispatcher(executor=executor, registry=registry)
     
     # === Workflow execution ===
-    print("\n[Workflow] Analysis Pipeline")
+    print("\n[Workflow] Analysis Operation")
     
     initial_params = {
         "ticker": "aapl",

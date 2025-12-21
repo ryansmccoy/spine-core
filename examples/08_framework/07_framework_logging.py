@@ -4,29 +4,29 @@
 WHY FRAMEWORK-LEVEL LOGGING
 ───────────────────────────
 The observability module (06_observability) provides general logging.
-The framework module adds *pipeline and workflow-aware* utilities:
-• LogContext with execution_id, pipeline, domain, step fields.
+The framework module adds *operation and workflow-aware* utilities:
+• LogContext with execution_id, operation, domain, step fields.
 • log_step() context manager that auto-measures duration.
 • @log_timing decorator for function-level timing.
 
 These fields align with the Workflow engine's own context.  When a
 Workflow runs step "ingest", the framework logging context is set
 automatically so every log line from the step carries the execution_id,
-pipeline, and step name without any manual wiring.
+operation, and step name without any manual wiring.
 
 ARCHITECTURE
 ────────────
     WorkflowRunner                     Framework Logging
     ──────────────                     ─────────────────
-    execute(workflow, params)   ──▶    set_context(execution_id, pipeline)
+    execute(workflow, params)   ──▶    set_context(execution_id, operation)
       step "ingest"             ──▶      set_context(step="ingest")
-        pipeline.run()                     with log_step("fetch"):
+        operation.run()                     with log_step("fetch"):
                                               ...work...
       step "transform"          ──▶      set_context(step="transform")
-        pipeline.run()                     with log_step("normalise"):
+        operation.run()                     with log_step("normalise"):
                                               ...work...
 
-    All log lines automatically include execution_id, pipeline,
+    All log lines automatically include execution_id, operation,
     domain, and step — no manual threading required.
 
     @log_timing("validate_data")
@@ -40,9 +40,9 @@ CONTEXT FIELDS
     Field          Purpose
     ────────────── ────────────────────────────────
     execution_id   Links logs to a specific run
-    pipeline       Which pipeline / workflow is running
+    operation       Which operation / workflow is running
     domain         Business domain (filings, otc)
-    step           Current pipeline / workflow step
+    step           Current operation / workflow step
     capture_id     Arbitrary extra field (via bind)
 
 Run: python examples/08_framework/07_framework_logging.py

@@ -1,12 +1,12 @@
 """
-Anomaly recording for pipeline and workflow failures.
+Anomaly recording for operation and workflow failures.
 
 Provides structured error and warning tracking via the AnomalyRecorder class.
 Anomalies are issues that should be tracked for audit, alerting, and debugging
-but don't necessarily stop pipeline execution.
+but don't necessarily stop operation execution.
 
 Manifesto:
-    Financial pipelines encounter many issues that aren't fatal:
+    Financial operations encounter many issues that aren't fatal:
     - Quality threshold warnings
     - Transient network errors
     - Data format anomalies
@@ -93,7 +93,7 @@ SEVERITY LEVELS:
 - DEBUG: Diagnostic information
 - INFO: Notable events (not problems)
 - WARN: Warning conditions that may need attention
-- ERROR: Error conditions (step/pipeline failures)
+- ERROR: Error conditions (step/operation failures)
 - CRITICAL: Severe errors requiring immediate attention
 
 CATEGORIES:
@@ -152,7 +152,7 @@ class Severity(str, Enum):
         DEBUG: Diagnostic information for developers.
         INFO: Notable events that aren't problems.
         WARN: Warning conditions that may need attention.
-        ERROR: Error conditions causing step/pipeline failures.
+        ERROR: Error conditions causing step/operation failures.
         CRITICAL: Severe errors requiring immediate attention.
 
     Examples:
@@ -196,8 +196,8 @@ class AnomalyCategory(str, Enum):
             │ QUALITY_GATE      → Data Quality Team              │
             │ NETWORK           → Infrastructure Team            │
             │ DATA_QUALITY      → Data Engineering Team          │
-            │ STEP_FAILURE      → Pipeline Owners                │
-            │ WORKFLOW_FAILURE  → Pipeline Owners                │
+            │ STEP_FAILURE      → Operation Owners                │
+            │ WORKFLOW_FAILURE  → Operation Owners                │
             │ CONFIGURATION     → DevOps Team                    │
             │ SOURCE_ERROR      → Data Source Owners             │
             │ TIMEOUT           → Infrastructure Team            │
@@ -247,7 +247,7 @@ class AnomalyRecorder:
     patterns, and support quality metrics over time.
 
     Manifesto:
-        Production pipelines encounter many issues that aren't fatal:
+        Production operations encounter many issues that aren't fatal:
         quality warnings, transient network errors, data format anomalies.
         These need to be recorded for audit, classified for routing, and
         tracked to resolution. AnomalyRecorder is the single entry point
@@ -257,7 +257,7 @@ class AnomalyRecorder:
         - **Immutability:** Anomalies are NEVER deleted (audit trail)
         - **Classification:** Severity + Category enable smart routing
         - **Resolution:** Mark resolved, don't delete
-        - **Correlation:** execution_id links to pipeline runs
+        - **Correlation:** execution_id links to operation runs
 
     Architecture:
         ::
@@ -278,7 +278,7 @@ class AnomalyRecorder:
 
             Record Flow:
             ┌───────────┐     ┌─────────────────┐     ┌──────────────┐
-            │ Pipeline  │────▶│ AnomalyRecorder │────▶│ core_anomalies│
+            │ Operation  │────▶│ AnomalyRecorder │────▶│ core_anomalies│
             │ catches   │     │ .record()       │     │ table         │
             │ error     │     │                 │     │               │
             └───────────┘     └─────────────────┘     └──────────────┘
@@ -295,7 +295,7 @@ class AnomalyRecorder:
         - **Category classification:** QUALITY_GATE, NETWORK, etc.
         - **Metadata storage:** Structured JSON for additional context
         - **Resolution tracking:** record() → resolve() workflow
-        - **Execution correlation:** Link to pipeline execution IDs
+        - **Execution correlation:** Link to operation execution IDs
         - **Query support:** list_unresolved() for investigation
 
     Examples:
@@ -332,7 +332,7 @@ class AnomalyRecorder:
 
     Context:
         - Domain: Observability, audit trail, error tracking
-        - Used By: All Spine pipelines (Entity, Feed, Market)
+        - Used By: All Spine operations (Entity, Feed, Market)
         - Storage: Shared core_anomalies table
         - Paired With: QualityRunner for automatic anomaly recording
 

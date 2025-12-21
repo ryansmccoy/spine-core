@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -21,8 +22,8 @@ interface DataTableProps<T> {
 }
 
 /**
- * Reusable data table with column sorting and optional global search.
- * Built on @tanstack/react-table v8.
+ * Production-grade data table with column sorting and optional global search.
+ * Built on @tanstack/react-table v8, styled like Prefect/Dagster tables.
  */
 export default function DataTable<T>({
   data,
@@ -52,25 +53,28 @@ export default function DataTable<T>({
     <div>
       {searchable && (
         <div className="mb-3">
-          <input
-            type="text"
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="w-full max-w-xs border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-spine-500 focus:border-spine-500"
-            aria-label="Search table"
-          />
+          <div className="relative w-full max-w-sm">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-spine-500 focus:border-spine-500 bg-white placeholder:text-gray-400"
+              aria-label="Search table"
+            />
+          </div>
         </div>
       )}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-xs text-gray-500">
+          <thead className="bg-gray-50/80 text-left text-xs text-gray-500">
             {headerGroups.map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className={`px-4 py-3 ${header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-gray-100' : ''}`}
+                    className={`px-5 py-3 font-medium ${header.column.getCanSort() ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                     onClick={header.column.getToggleSortingHandler()}
                     aria-sort={
                       header.column.getIsSorted() === 'asc'
@@ -80,15 +84,15 @@ export default function DataTable<T>({
                           : 'none'
                     }
                   >
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1.5">
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {header.column.getCanSort() && (
-                        <span className="text-gray-400">
+                        <span className="text-gray-300">
                           {header.column.getIsSorted() === 'asc'
-                            ? ' ▲'
+                            ? <ArrowUp size={12} className="text-spine-500" />
                             : header.column.getIsSorted() === 'desc'
-                              ? ' ▼'
-                              : ' ↕'}
+                              ? <ArrowDown size={12} className="text-spine-500" />
+                              : <ArrowUpDown size={12} />}
                         </span>
                       )}
                     </span>
@@ -97,11 +101,11 @@ export default function DataTable<T>({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100/80">
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
+              <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3">
+                  <td key={cell.id} className="px-5 py-3">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -109,7 +113,7 @@ export default function DataTable<T>({
             ))}
           </tbody>
         </table>
-        {footer && <div className="border-t">{footer}</div>}
+        {footer && <div className="border-t border-gray-100 px-4 py-3">{footer}</div>}
       </div>
     </div>
   );

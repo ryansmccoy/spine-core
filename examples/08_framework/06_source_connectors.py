@@ -3,21 +3,21 @@
 
 WHY SOURCE ABSTRACTION
 ──────────────────────
-Pipelines and workflows that hard-code `open("trades.csv")` can’t
+Operations and workflows that hard-code `open("trades.csv")` can’t
 switch to S3, HTTP, or database sources without rewriting.  FileSource
 provides a uniform fetch() → SourceResult interface with:
 • Auto-format detection from file extension (CSV, JSON, etc.).
 • Content-hash based caching to skip unchanged files.
 • SourceMetadata with duration, bytes, row count.
 
-Use FileSource inside a Pipeline’s run() method, inside a plain
+Use FileSource inside a Operation’s run() method, inside a plain
 @workflow_step function, or in a standalone script — the API is the
 same everywhere.
 
 ARCHITECTURE
 ────────────
     ┌─────────────────────────────────────┐
-    │ Pipeline.run()  OR  @workflow_step  │
+    │ Operation.run()  OR  @workflow_step  │
     └──────────────┬──────────────────────┘
                    │ .fetch()
                    ▼

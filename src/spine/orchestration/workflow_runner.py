@@ -5,13 +5,13 @@ and executes each step (sequentially or as a parallel DAG), passing
 context between steps.  It handles:
 
 - **Lambda** step execution (inline handler with context)
-- **Pipeline** step execution (via the :class:`~spine.execution.runnable.Runnable` protocol)
+- **Operation** step execution (via the :class:`~spine.execution.runnable.Runnable` protocol)
 - **Choice** step evaluation (conditional branching)
 - **Wait** steps
 - Error handling per step's :class:`~spine.orchestration.step_types.ErrorPolicy`
 - Result aggregation
 
-``WorkflowRunner`` depends on the **Runnable** protocol for pipeline
+``WorkflowRunner`` depends on the **Runnable** protocol for operation
 steps.  The canonical Runnable implementation is
 :class:`~spine.execution.dispatcher.EventDispatcher`, which creates
 proper ``RunRecord`` entries with full execution tracking.  Pass it
@@ -28,7 +28,7 @@ Example::
     workflow = Workflow(
         name="my.workflow",
         steps=[
-            Step.pipeline("ingest", "my.ingest"),
+            Step.operation("ingest", "my.ingest"),
             Step.lambda_("validate", validate_fn),
         ],
     )
@@ -40,6 +40,17 @@ Example::
         print(f"Success! Processed {len(result.completed_steps)} steps")
     else:
         print(f"Failed at {result.error_step}: {result.error}")
+
+Manifesto:
+    Workflow definitions should remain pure data; execution
+    concerns (concurrency, retry, persistence) live here in
+    the runner so each concern can be tested in isolation.
+
+Tags:
+    spine-core, orchestration, runner, concurrency, retry, execution-engine
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -52,8 +63,7 @@ from threading import Lock
 from typing import Any
 
 from spine.core.logging import get_logger
-
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 from spine.orchestration.exceptions import GroupError
 from spine.orchestration.step_result import StepResult
 from spine.orchestration.step_types import ErrorPolicy, Step, StepType
@@ -161,16 +171,16 @@ class WorkflowResult:
 class WorkflowRunner:
     """Executes workflows with context passing.
 
-    Pipeline steps are dispatched through the
+    Operation steps are dispatched through the
     :class:`~spine.execution.runnable.Runnable` protocol.  The canonical
     implementation is :class:`~spine.execution.dispatcher.EventDispatcher`,
-    which creates ``RunRecord`` entries for every pipeline step so your
+    which creates ``RunRecord`` entries for every operation step so your
     execution history is complete and portable.
 
     Supports:
 
     * **Lambda** steps — inline functions
-    * **Pipeline** steps — via ``Runnable.submit_pipeline_sync()``
+    * **Operation** steps — via ``Runnable.submit_operation_sync()``
     * **Choice** steps — conditional branching
     * **Wait** steps
     * **Sequential** and **parallel DAG** execution modes
@@ -187,7 +197,7 @@ class WorkflowRunner:
         Args:
             runnable: Any object implementing the ``Runnable`` protocol
                 (typically ``EventDispatcher``).
-            dry_run: If ``True``, pipeline steps return mock success.
+            dry_run: If ``True``, operation steps return mock success.
         """
         self._runnable = runnable
         self._dry_run = dry_run
@@ -538,8 +548,8 @@ class WorkflowRunner:
         try:
             if step.step_type == StepType.LAMBDA:
                 result = self._execute_lambda(step, context)
-            elif step.step_type == StepType.PIPELINE:
-                result = self._execute_pipeline(step, context)
+            elif step.step_type == StepType.OPERATION:
+                result = self._execute_operation(step, context)
             elif step.step_type == StepType.CHOICE:
                 result = self._execute_choice(step, context)
             elif step.step_type == StepType.WAIT:
@@ -596,37 +606,37 @@ class WorkflowRunner:
         raw = step.handler(context, step.config)
         return StepResult.from_value(raw)
 
-    def _execute_pipeline(self, step: Step, context: WorkflowContext) -> StepResult:
-        """Execute a pipeline step via the ``Runnable`` protocol.
+    def _execute_operation(self, step: Step, context: WorkflowContext) -> StepResult:
+        """Execute a operation step via the ``Runnable`` protocol.
 
-        Calls ``self.runnable.submit_pipeline_sync()`` which — when backed
+        Calls ``self.runnable.submit_operation_sync()`` which — when backed
         by ``EventDispatcher`` — creates a ``RunRecord`` with full
         execution tracking.
         """
-        if step.pipeline_name is None:
-            return StepResult.fail("Pipeline step has no pipeline_name")
+        if step.operation_name is None:
+            return StepResult.fail("Operation step has no operation_name")
 
         if self._dry_run:
             return StepResult.ok(
-                output={"dry_run": True, "pipeline": step.pipeline_name},
+                output={"dry_run": True, "operation": step.operation_name},
             )
 
         # Merge context params with step-specific params
         params = {**context.params, **step.config}
 
         # Execute via Runnable protocol
-        result: PipelineRunResult = self.runnable.submit_pipeline_sync(
-            pipeline_name=step.pipeline_name,
+        result: OperationRunResult = self.runnable.submit_operation_sync(
+            operation_name=step.operation_name,
             params=params,
             parent_run_id=context.run_id,
             correlation_id=context.run_id,
         )
 
-        # Convert PipelineRunResult to StepResult
+        # Convert OperationRunResult to StepResult
         if result.succeeded:
             return StepResult.ok(
                 output={
-                    "pipeline_result": {
+                    "operation_result": {
                         "status": result.status,
                         "metrics": result.metrics,
                         "run_id": result.run_id,
@@ -637,10 +647,10 @@ class WorkflowRunner:
             )
         else:
             return StepResult.fail(
-                error=result.error or "Pipeline failed",
+                error=result.error or "Operation failed",
                 category="INTERNAL",
                 output={
-                    "pipeline_result": {
+                    "operation_result": {
                         "status": result.status,
                         "error": result.error,
                         "run_id": result.run_id,
@@ -716,6 +726,6 @@ def get_workflow_runner(
     Args:
         runnable: Any :class:`~spine.execution.runnable.Runnable`
             (typically ``EventDispatcher``).
-        dry_run: If ``True``, pipeline steps return mock success.
+        dry_run: If ``True``, operation steps return mock success.
     """
     return WorkflowRunner(runnable=runnable, dry_run=dry_run)

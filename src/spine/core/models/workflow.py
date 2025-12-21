@@ -1,12 +1,22 @@
 """Workflow history table models (02_workflow_history.sql).
 
+Manifesto:
+    Workflow runs, steps, and lifecycle events need typed dataclass
+    representations so the orchestration engine and API can track
+    execution progress as structured objects.
+
 Models for workflow execution history: runs, steps, and lifecycle events.
+
+Tags:
+    spine-core, models, workflow, dataclasses, execution-history
+
+Doc-Types:
+    api-reference, data-model
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 
 # ---------------------------------------------------------------------------
 # core_workflow_runs
@@ -55,7 +65,7 @@ class WorkflowStep:
     step_id: str = ""
     run_id: str = ""
     step_name: str = ""
-    step_type: str = ""  # pipeline, task, condition, parallel
+    step_type: str = ""  # operation, task, condition, parallel
     step_order: int = 0
     status: str = "PENDING"  # PENDING, RUNNING, COMPLETED, FAILED, SKIPPED
     started_at: str | None = None

@@ -69,6 +69,18 @@ Modules:
 See Also:
     spine-workspace/prompts/04_project/spine-core/job-engine.prompt.md
     spine-core/docs/architecture/JOB_ENGINE_ARCHITECTURE.md
+
+Manifesto:
+    Runtime adapters abstract the "where" of execution — local
+    process, Docker, Kubernetes, or Lambda — behind a single
+    protocol.  Operations declare what they need; the engine
+    picks the adapter.
+
+Tags:
+    spine-core, execution, runtimes, job-engine, adapter-protocol
+
+Doc-Types:
+    api-reference
 """
 
 from spine.execution.runtimes._base import (

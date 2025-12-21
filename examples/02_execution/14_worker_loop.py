@@ -70,7 +70,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS core_executions (
             id TEXT PRIMARY KEY,
-            pipeline TEXT,
+            workflow TEXT,
             params TEXT DEFAULT '{}',
             status TEXT DEFAULT 'pending',
             lane TEXT DEFAULT 'default',
@@ -99,7 +99,7 @@ def submit_run(conn: sqlite3.Connection, kind: str, name: str, params: dict) -> 
     run_id = str(uuid4())
     now = datetime.now(UTC).isoformat()
     conn.execute(
-        "INSERT INTO core_executions (id, pipeline, params, status, created_at) "
+        "INSERT INTO core_executions (id, workflow, params, status, created_at) "
         "VALUES (?, ?, ?, 'pending', ?)",
         (run_id, f"{kind}:{name}", json.dumps(params), now),
     )
@@ -128,14 +128,14 @@ def main():
     registry = HandlerRegistry()
     registry.register("task", "echo", lambda p: {"echoed": p})
     registry.register("task", "add", lambda p: {"result": p.get("a", 0) + p.get("b", 0)})
-    registry.register("pipeline", "etl_stub",
-                       lambda p: {"pipeline": "etl_stub", "records": p.get("records", 0)})
+    registry.register("operation", "etl_stub",
+                       lambda p: {"operation": "etl_stub", "records": p.get("records", 0)})
 
     # Submit some runs (simulating API calls)
     print("\n[1] Submitting runs …")
     run1 = submit_run(conn, "task", "echo", {"msg": "hello"})
     run2 = submit_run(conn, "task", "add", {"a": 17, "b": 25})
-    run3 = submit_run(conn, "pipeline", "etl_stub", {"records": 500})
+    run3 = submit_run(conn, "operation", "etl_stub", {"records": 500})
     print(f"  Submitted: {run1[:8]}… (echo)")
     print(f"  Submitted: {run2[:8]}… (add)")
     print(f"  Submitted: {run3[:8]}… (etl_stub)")

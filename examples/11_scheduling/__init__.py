@@ -1,6 +1,6 @@
 """Scheduling — Backends, distributed locks, scheduler service.
 
-The scheduling layer adds time-based execution to spine pipelines:
+The scheduling layer adds time-based execution to spine operations:
 pluggable timing backends, cron-based schedule repositories,
 distributed locks for multi-instance safety, and a full scheduler
 service with health monitoring.

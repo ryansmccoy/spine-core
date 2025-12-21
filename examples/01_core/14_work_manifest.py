@@ -5,7 +5,7 @@ WorkManifest — Multi-Stage Workflow Progress Tracking.
 WHY WORK MANIFESTS?
 ================================================================================
 
-Data pipelines often have multiple stages::
+Data operations often have multiple stages::
 
     INGEST → NORMALIZE → AGGREGATE → PUBLISH
 
@@ -117,7 +117,7 @@ DATABASE SCHEMA
 BEST PRACTICES
 ================================================================================
 
-1. **Define stages that match your pipeline structure**::
+1. **Define stages that match your operation structure**::
 
        stages = ["PENDING", "INGESTED", "VALIDATED", "TRANSFORMED", "PUBLISHED"]
 
@@ -169,7 +169,7 @@ def main():
     conn = sqlite3.connect(":memory:")
     create_core_tables(conn)
     
-    # Define stages for a data pipeline
+    # Define stages for a data operation
     stages = ["PENDING", "INGESTED", "NORMALIZED", "AGGREGATED", "PUBLISHED"]
     
     # Create manifest for the "otc" domain
@@ -186,7 +186,7 @@ def main():
     print(f"   Is at PENDING? {manifest.is_at_least(partition_key, 'PENDING')}")
     print(f"   Is at INGESTED? {manifest.is_at_least(partition_key, 'INGESTED')}")
     
-    # Simulate pipeline stages
+    # Simulate operation stages
     print("\n2. Advancing through stages...")
     
     # Stage 1: Ingest

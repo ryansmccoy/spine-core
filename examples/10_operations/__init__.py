@@ -12,7 +12,7 @@ READING ORDER
     04 — Health & capabilities (aggregate checks, introspection)
     05 — Alert management (channels, delivery tracking)
     06 — Source management (data sources, fetches, cache)
-    07 — Pipeline data (manifests, rejects, work items)
+    07 — Operation data (manifests, rejects, work items)
     08 — Schedule metadata (dependencies, expected schedules)
     09 — Locks, DLQ, quality (concurrency locks, dead letters)
     10 — Full table population (populate all 27 tables)

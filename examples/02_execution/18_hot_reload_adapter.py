@@ -108,7 +108,7 @@ def main() -> None:
     print("=" * 72)
 
     initial = {
-        "image": "spine-pipeline:v1.0",
+        "image": "spine-operation:v1.0",
         "max_memory_mb": 512,
         "max_cpu": 2,
         "gpu": False,
@@ -131,7 +131,7 @@ def main() -> None:
 
     # Update config — adapter is re-created
     new_config = {
-        "image": "spine-pipeline:v2.0",
+        "image": "spine-operation:v2.0",
         "max_memory_mb": 1024,
         "max_cpu": 4,
         "gpu": True,

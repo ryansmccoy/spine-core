@@ -1,7 +1,19 @@
 """SQL migration runner.
 
+Manifesto:
+    Numbered .sql files are the single source of truth for schema.
+    The runner applies them in filename order, records each in the
+    ``_migrations`` table, and skips already-applied files so the
+    operation is fully idempotent.
+
 Reads ``.sql`` files from the schema directory, tracks applied migrations
 in the ``_migrations`` table, and applies pending ones in filename order.
+
+Tags:
+    spine-core, migrations, SQL, idempotent, schema-evolution
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

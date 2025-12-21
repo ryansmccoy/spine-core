@@ -17,7 +17,7 @@ CREATE TABLE _migrations (
 
 CREATE TABLE core_executions (
     id VARCHAR(255) NOT NULL PRIMARY KEY,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     params CLOB DEFAULT '{}',
     lane VARCHAR(50) NOT NULL DEFAULT 'normal',
     trigger_source VARCHAR(100) NOT NULL DEFAULT 'api',
@@ -35,7 +35,7 @@ CREATE TABLE core_executions (
 );
 
 CREATE INDEX idx_core_executions_status ON core_executions(status);
-CREATE INDEX idx_core_executions_pipeline ON core_executions(pipeline);
+CREATE INDEX idx_core_executions_workflow ON core_executions(workflow);
 CREATE INDEX idx_core_executions_created_at ON core_executions(created_at);
 
 
@@ -96,7 +96,7 @@ CREATE INDEX idx_core_quality_domain ON core_quality(domain);
 CREATE TABLE core_anomalies (
     id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     domain VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255),
+    workflow VARCHAR(255),
     partition_key VARCHAR(2000),
     stage VARCHAR(255),
     severity VARCHAR(50) NOT NULL,
@@ -123,7 +123,7 @@ CREATE INDEX idx_core_anomalies_detected ON core_anomalies(detected_at);
 CREATE TABLE core_work_items (
     id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     domain VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     partition_key VARCHAR(2000) NOT NULL,
     params_json CLOB,
     desired_at TIMESTAMP NOT NULL,
@@ -141,12 +141,12 @@ CREATE TABLE core_work_items (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT TIMESTAMP,
     completed_at TIMESTAMP,
-    CONSTRAINT uq_core_work_items UNIQUE (domain, pipeline, partition_key)
+    CONSTRAINT uq_core_work_items UNIQUE (domain, workflow, partition_key)
 );
 
 CREATE INDEX idx_core_work_items_state ON core_work_items(state);
 CREATE INDEX idx_core_work_items_desired ON core_work_items(desired_at);
-CREATE INDEX idx_core_work_items_domain ON core_work_items(domain, pipeline);
+CREATE INDEX idx_core_work_items_domain ON core_work_items(domain, workflow);
 
 
 CREATE TABLE core_execution_events (
@@ -165,7 +165,7 @@ CREATE INDEX idx_core_exec_events_ts ON core_execution_events(timestamp);
 CREATE TABLE core_dead_letters (
     id VARCHAR(255) NOT NULL PRIMARY KEY,
     execution_id VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     params CLOB DEFAULT '{}',
     error CLOB NOT NULL,
     retry_count INTEGER DEFAULT 0,
@@ -177,7 +177,7 @@ CREATE TABLE core_dead_letters (
 );
 
 CREATE INDEX idx_core_dl_resolved ON core_dead_letters(resolved_at);
-CREATE INDEX idx_core_dl_pipeline ON core_dead_letters(pipeline);
+CREATE INDEX idx_core_dl_workflow ON core_dead_letters(workflow);
 
 
 CREATE TABLE core_concurrency_locks (
@@ -193,7 +193,7 @@ CREATE INDEX idx_core_conc_locks_exp ON core_concurrency_locks(expires_at);
 CREATE TABLE core_schedules (
     id VARCHAR(255) NOT NULL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    target_type VARCHAR(50) NOT NULL DEFAULT 'pipeline',
+    target_type VARCHAR(50) NOT NULL DEFAULT 'operation',
     target_name VARCHAR(255) NOT NULL,
     params CLOB,
     schedule_type VARCHAR(50) NOT NULL DEFAULT 'cron',
@@ -255,7 +255,7 @@ CREATE INDEX idx_sched_locks_exp ON core_schedule_locks(expires_at);
 CREATE TABLE core_calc_dependencies (
     id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     calc_domain VARCHAR(255) NOT NULL,
-    calc_pipeline VARCHAR(255) NOT NULL,
+    calc_operation VARCHAR(255) NOT NULL,
     calc_table VARCHAR(255),
     depends_on_domain VARCHAR(255) NOT NULL,
     depends_on_table VARCHAR(255) NOT NULL,
@@ -264,14 +264,14 @@ CREATE TABLE core_calc_dependencies (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT TIMESTAMP
 );
 
-CREATE INDEX idx_core_calc_deps_calc ON core_calc_dependencies(calc_domain, calc_pipeline);
+CREATE INDEX idx_core_calc_deps_calc ON core_calc_dependencies(calc_domain, calc_operation);
 CREATE INDEX idx_core_calc_deps_upstream ON core_calc_dependencies(depends_on_domain, depends_on_table);
 
 
 CREATE TABLE core_expected_schedules (
     id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     domain VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     schedule_type VARCHAR(50) NOT NULL,
     cron_expression VARCHAR(100),
     partition_template VARCHAR(2000) NOT NULL,
@@ -284,7 +284,7 @@ CREATE TABLE core_expected_schedules (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT TIMESTAMP
 );
 
-CREATE INDEX idx_core_exp_sched_domain ON core_expected_schedules(domain, pipeline);
+CREATE INDEX idx_core_exp_sched_domain ON core_expected_schedules(domain, workflow);
 CREATE INDEX idx_core_exp_sched_active ON core_expected_schedules(is_active);
 
 

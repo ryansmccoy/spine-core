@@ -1,24 +1,21 @@
 """
 Lazy-initialised dependency-injection container.
 
+Manifesto:
+    Application code should declare *what* it needs (engine, scheduler, cache)
+    without knowing *how* to construct those components.  ``SpineContainer``
+    creates each component on first access using the factory layer, then
+    caches it for the lifetime of the container.
+
 :class:`SpineContainer` holds references to the major backend
 components (database engine, scheduler, cache, worker executor) and
 creates them on first access using the factory functions.
 
-Usage::
+Tags:
+    spine-core, configuration, dependency-injection, container, lazy-init
 
-    from spine.core.config import SpineContainer
-
-    container = SpineContainer()
-    engine    = container.engine       # lazy-created
-    scheduler = container.scheduler    # same pattern
-
-    # Or initialise with explicit settings:
-    container = SpineContainer(get_settings(tier="full"))
-
-    # As a context manager for automatic cleanup:
-    with SpineContainer() as c:
-        c.engine.execute(...)
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

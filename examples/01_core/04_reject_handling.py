@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""RejectSink — Capturing Validation Failures Without Stopping Pipelines.
+"""RejectSink — Capturing Validation Failures Without Stopping Operations.
 
 ================================================================================
 WHY REJECT HANDLING?
 ================================================================================
 
-Data pipelines must handle invalid records gracefully.  The naive approach
+Data operations must handle invalid records gracefully.  The naive approach
 fails in production::
 
     # BAD: One bad record kills the entire batch
@@ -69,7 +69,7 @@ DATABASE: core_rejects TABLE
     ├─────────────────────────────────────────────────────────────────────────┤
     │  id              SERIAL       PRIMARY KEY                               │
     │  domain          VARCHAR(100) NOT NULL    -- 'otc', 'sec', 'finra'     │
-    │  execution_id    VARCHAR(64)              -- Links to pipeline run     │
+    │  execution_id    VARCHAR(64)              -- Links to operation run     │
     │  stage           VARCHAR(50)  NOT NULL    -- 'INGEST', 'NORMALIZE'     │
     │  reason_code     VARCHAR(100) NOT NULL    -- 'INVALID_SYMBOL', etc.    │
     │  reason_detail   TEXT                     -- Human description         │

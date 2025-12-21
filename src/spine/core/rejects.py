@@ -3,10 +3,10 @@ Standardized reject handling for validation failures.
 
 RejectSink writes rejected records to storage with lineage,
 enabling audit trails and debugging. Rejects are records that
-fail validation but shouldn't stop pipeline execution.
+fail validation but shouldn't stop operation execution.
 
 Manifesto:
-    Financial data pipelines encounter invalid records:
+    Financial data operations encounter invalid records:
     - Invalid symbols (BAD$YM)
     - Negative volumes
     - Missing required fields

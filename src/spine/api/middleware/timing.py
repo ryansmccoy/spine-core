@@ -1,5 +1,15 @@
-"""
-Timing middleware — adds ``X-Process-Time-Ms`` header.
+"""Timing middleware — adds ``X-Process-Time-Ms`` header.
+
+Manifesto:
+    Server-side latency should be visible to every caller
+    without extra instrumentation.  The timing header makes
+    slow requests immediately obvious in browser dev-tools.
+
+Tags:
+    spine-core, api, middleware, timing, latency, observability
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

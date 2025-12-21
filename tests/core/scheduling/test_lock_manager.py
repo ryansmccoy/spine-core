@@ -103,21 +103,21 @@ class TestQueryMethods:
 
 class TestConcurrencyLocks:
     def test_acquire_concurrency_lock(self, manager):
-        assert manager.acquire_concurrency_lock("pipeline", "daily-report") is True
+        assert manager.acquire_concurrency_lock("operation", "daily-report") is True
 
     def test_release_concurrency_lock(self, manager):
-        manager.acquire_concurrency_lock("pipeline", "daily-report")
-        assert manager.release_concurrency_lock("pipeline", "daily-report") is True
+        manager.acquire_concurrency_lock("operation", "daily-report")
+        assert manager.release_concurrency_lock("operation", "daily-report") is True
 
     def test_concurrency_uses_composite_key(self, conn):
         m1 = LockManager(conn, instance_id="inst-1")
         m2 = LockManager(conn, instance_id="inst-2")
 
-        m1.acquire_concurrency_lock("pipeline", "report-a")
+        m1.acquire_concurrency_lock("operation", "report-a")
         # Different resource name should succeed
-        assert m2.acquire_concurrency_lock("pipeline", "report-b") is True
+        assert m2.acquire_concurrency_lock("operation", "report-b") is True
         # Same resource name should fail
-        assert m2.acquire_concurrency_lock("pipeline", "report-a") is False
+        assert m2.acquire_concurrency_lock("operation", "report-a") is False
 
 
 # ── Maintenance ──────────────────────────────────────────────────────────

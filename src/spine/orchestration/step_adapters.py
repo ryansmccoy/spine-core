@@ -68,6 +68,17 @@ a ``._workflow_meta`` attribute to the original function.  The function
 remains directly callable with its normal parameters.
 
 Tier: Basic (spine-core)
+
+Manifesto:
+    Business logic functions should not import or depend on the workflow
+    framework.  Step adapters wrap plain functions to conform to the
+    step interface, keeping business code decoupled and testable.
+
+Tags:
+    spine-core, orchestration, adapters, decoupling, plain-functions
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

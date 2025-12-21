@@ -36,7 +36,7 @@ class SqliteConnection:
     """
 
     def __init__(self, path: str = ":memory:", *, row_factory: Any = sqlite3.Row) -> None:
-        self._conn = sqlite3.connect(path)
+        self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.row_factory = row_factory
         self._cursor = self._conn.cursor()
 

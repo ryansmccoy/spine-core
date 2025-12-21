@@ -1,21 +1,21 @@
 """
-Execution context for pipeline lineage tracking.
+Execution context for operation lineage tracking.
 
-Provides execution context tracking for pipeline lineage and tracing. Every
-pipeline execution gets a unique `execution_id`. When pipelines call sub-pipelines,
+Provides execution context tracking for operation lineage and tracing. Every
+operation execution gets a unique `execution_id`. When operations call sub-operations,
 the `parent_execution_id` links them for distributed tracing. Batch operations
 (like backfills) share a `batch_id` to correlate related executions.
 
 This module is foundational for observability in spine projects. By passing
-ExecutionContext through pipeline calls, you can:
+ExecutionContext through operation calls, you can:
 - Trace the complete execution path of a request
 - Link logs and metrics to specific executions
-- Correlate batch operations that span multiple pipelines
+- Correlate batch operations that span multiple operations
 - Debug issues by finding all related executions
 
 Manifesto:
     - **Every execution gets an ID:** Unique identifier for tracing
-    - **Parent-child linking:** Sub-pipelines link to their parent
+    - **Parent-child linking:** Sub-operations link to their parent
     - **Batch correlation:** Related executions share batch_id
     - **Immutable context:** Context is copied, not mutated
 
@@ -27,7 +27,7 @@ Architecture:
         ├─────────────────────────────────────────────────────────────────┤
         │  execution_id: str       ← Unique ID for this execution         │
         │  batch_id: str | None    ← Shared ID for related executions     │
-        │  parent_execution_id: str | None  ← ID of spawning pipeline     │
+        │  parent_execution_id: str | None  ← ID of spawning operation     │
         │  started_at: datetime    ← When execution began                 │
         ├─────────────────────────────────────────────────────────────────┤
         │                                                                  │
@@ -44,7 +44,7 @@ Architecture:
 
 Features:
     - **Unique execution IDs:** UUID-based identifiers
-    - **Parent-child linking:** child() method for sub-pipelines
+    - **Parent-child linking:** child() method for sub-operations
     - **Batch correlation:** with_batch() and batch_id for grouping
     - **Timestamp tracking:** started_at for duration calculation
     - **Immutable design:** Methods return new contexts, don't mutate
@@ -65,7 +65,7 @@ Examples:
     >>> "backfill_" in ctx.batch_id
     True
 
-    Linking sub-pipeline executions:
+    Linking sub-operation executions:
 
     >>> parent_ctx = new_context()
     >>> child_ctx = parent_ctx.child()
@@ -74,10 +74,10 @@ Examples:
     >>> child_ctx.batch_id == parent_ctx.batch_id
     True
 
-    Using in pipeline code:
+    Using in operation code:
 
     >>> def fetch_filings(ctx: ExecutionContext):
-    ...     # Pass child context to sub-pipelines
+    ...     # Pass child context to sub-operations
     ...     for cik in ciks:
     ...         fetch_company(ctx.child(), cik)
     ...     return results
@@ -92,13 +92,13 @@ Guardrails:
     ✅ DO: Use child() or with_batch() to create new contexts
 
     ❌ DON'T: Create execution_id manually
-    ✅ DO: Use new_context() for root, child() for sub-pipelines
+    ✅ DO: Use new_context() for root, child() for sub-operations
 
     ❌ DON'T: Pass context by reference and modify it
     ✅ DO: Each function should receive its own context
 
 Context:
-    - **Problem:** Need to trace execution across distributed pipelines
+    - **Problem:** Need to trace execution across distributed operations
     - **Solution:** Execution IDs with parent-child linking and batch IDs
     - **Alternatives:** OpenTelemetry spans, request IDs, correlation headers
 
@@ -109,7 +109,7 @@ Tags:
 Doc-Types:
     - API Reference
     - Observability Guide
-    - Pipeline Development Tutorial
+    - Operation Development Tutorial
 """
 
 import uuid
@@ -120,10 +120,10 @@ from datetime import UTC, datetime
 @dataclass
 class ExecutionContext:
     """
-    Context passed through pipeline execution for lineage tracking.
+    Context passed through operation execution for lineage tracking.
 
     ExecutionContext is the core data structure for distributed tracing in
-    spine pipelines. Each execution gets a unique ID, and when one pipeline
+    spine operations. Each execution gets a unique ID, and when one operation
     calls another, the child execution links back to its parent via
     `parent_execution_id`. Batch operations share a `batch_id` for correlation.
 
@@ -161,7 +161,7 @@ class ExecutionContext:
 
     Features:
         - **Auto-generated IDs:** execution_id is a UUID by default
-        - **Child context creation:** child() for sub-pipeline calls
+        - **Child context creation:** child() for sub-operation calls
         - **Batch ID propagation:** batch_id inherited by children
         - **Timestamp tracking:** started_at for metrics/debugging
 
@@ -174,7 +174,7 @@ class ExecutionContext:
         >>> ctx.parent_execution_id is None
         True
 
-        Creating child context for sub-pipeline:
+        Creating child context for sub-operation:
 
         >>> parent = ExecutionContext(batch_id="batch_123")
         >>> child = parent.child()
@@ -199,7 +199,7 @@ class ExecutionContext:
         >>> log_data = {
         ...     "execution_id": ctx.execution_id,
         ...     "batch_id": ctx.batch_id,
-        ...     "message": "Starting pipeline"
+        ...     "message": "Starting operation"
         ... }
 
     Performance:
@@ -219,7 +219,7 @@ class ExecutionContext:
         ✅ DO: Let the default factory generate UUIDs
 
     Context:
-        - **Problem:** Need to trace execution flow across pipeline calls
+        - **Problem:** Need to trace execution flow across operation calls
         - **Solution:** Immutable context with parent-child linking
         - **Alternatives:** Thread-local storage, OpenTelemetry context
 
@@ -229,13 +229,13 @@ class ExecutionContext:
 
     Doc-Types:
         - API Reference
-        - Pipeline Development Guide
+        - Operation Development Guide
         - Observability Tutorial
 
     Attributes:
         execution_id: Unique ID for this execution (UUID string)
         batch_id: Shared ID for related executions (e.g., a backfill run)
-        parent_execution_id: ID of the pipeline that spawned this one
+        parent_execution_id: ID of the operation that spawned this one
         started_at: When this execution began (UTC datetime)
     """
 
@@ -246,7 +246,7 @@ class ExecutionContext:
 
     def child(self) -> "ExecutionContext":
         """
-        Create child context for sub-pipeline execution.
+        Create child context for sub-operation execution.
 
         Creates a new ExecutionContext with:
         - A new unique execution_id
@@ -305,11 +305,11 @@ def new_context(batch_id: str = None) -> ExecutionContext:
     """
     Create new root execution context.
 
-    Factory function to create a fresh ExecutionContext for a new pipeline
+    Factory function to create a fresh ExecutionContext for a new operation
     execution. Optionally associates it with a batch_id for correlation.
 
     This is the entry point for creating execution contexts. Call this at
-    the start of a pipeline execution, then use ctx.child() for sub-pipelines.
+    the start of a operation execution, then use ctx.child() for sub-operations.
 
     Manifesto:
         - **Clean entry point:** Single function to start execution tracking
@@ -330,11 +330,11 @@ def new_context(batch_id: str = None) -> ExecutionContext:
         >>> "backfill_" in ctx.batch_id
         True
 
-        Pipeline entry point pattern:
+        Operation entry point pattern:
 
-        >>> def run_pipeline():
+        >>> def run_operation():
         ...     ctx = new_context()
-        ...     # ... pipeline logic using ctx
+        ...     # ... operation logic using ctx
         ...     return ctx.execution_id
 
     Args:
@@ -344,7 +344,7 @@ def new_context(batch_id: str = None) -> ExecutionContext:
         New root ExecutionContext
 
     Tags:
-        factory, execution-context, pipeline-entry, spine-core
+        factory, execution-context, operation-entry, spine-core
 
     Doc-Types:
         - API Reference

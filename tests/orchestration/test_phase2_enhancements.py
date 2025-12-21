@@ -34,11 +34,11 @@ class TestStepDependsOn:
     """Step depends_on field."""
 
     def test_default_empty(self):
-        step = Step.pipeline("a", "p1")
+        step = Step.operation("a", "p1")
         assert step.depends_on == ()
 
-    def test_pipeline_with_depends_on(self):
-        step = Step.pipeline("b", "p2", depends_on=("a",))
+    def test_operation_with_depends_on(self):
+        step = Step.operation("b", "p2", depends_on=("a",))
         assert step.depends_on == ("a",)
 
     def test_lambda_with_depends_on(self):
@@ -46,12 +46,12 @@ class TestStepDependsOn:
         assert step.depends_on == ("ingest",)
 
     def test_depends_on_serialized(self):
-        step = Step.pipeline("b", "p1", depends_on=("a",))
+        step = Step.operation("b", "p1", depends_on=("a",))
         d = step.to_dict()
         assert d["depends_on"] == ["a"]
 
     def test_depends_on_empty_omitted_from_dict(self):
-        step = Step.pipeline("a", "p1")
+        step = Step.operation("a", "p1")
         d = step.to_dict()
         # Empty depends_on is still present but empty
         assert d.get("depends_on", []) == []
@@ -66,7 +66,7 @@ class TestWorkflowExecutionPolicy:
     """Workflow execution_policy and dependency helpers."""
 
     def test_default_policy(self):
-        wf = Workflow(name="t", steps=[Step.pipeline("a", "p1")])
+        wf = Workflow(name="t", steps=[Step.operation("a", "p1")])
         assert wf.execution_policy.mode == ExecutionMode.SEQUENTIAL
         assert wf.execution_policy.max_concurrency == 4
         assert wf.execution_policy.on_failure == FailurePolicy.STOP
@@ -78,7 +78,7 @@ class TestWorkflowExecutionPolicy:
             timeout_seconds=300,
             on_failure=FailurePolicy.CONTINUE,
         )
-        wf = Workflow(name="t", steps=[Step.pipeline("a", "p1")], execution_policy=policy)
+        wf = Workflow(name="t", steps=[Step.operation("a", "p1")], execution_policy=policy)
         assert wf.execution_policy.mode == ExecutionMode.PARALLEL
         assert wf.execution_policy.max_concurrency == 8
         assert wf.execution_policy.timeout_seconds == 300
@@ -86,7 +86,7 @@ class TestWorkflowExecutionPolicy:
     def test_has_dependencies_false(self):
         wf = Workflow(
             name="t",
-            steps=[Step.pipeline("a", "p1"), Step.pipeline("b", "p2")],
+            steps=[Step.operation("a", "p1"), Step.operation("b", "p2")],
         )
         assert wf.has_dependencies() is False
 
@@ -94,8 +94,8 @@ class TestWorkflowExecutionPolicy:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2", depends_on=("a",)),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2", depends_on=("a",)),
             ],
         )
         assert wf.has_dependencies() is True
@@ -104,9 +104,9 @@ class TestWorkflowExecutionPolicy:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2", depends_on=("a",)),
-                Step.pipeline("c", "p3", depends_on=("a", "b")),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2", depends_on=("a",)),
+                Step.operation("c", "p3", depends_on=("a", "b")),
             ],
         )
         graph = wf.dependency_graph()
@@ -117,9 +117,9 @@ class TestWorkflowExecutionPolicy:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2", depends_on=("a",)),
-                Step.pipeline("c", "p3", depends_on=("b",)),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2", depends_on=("a",)),
+                Step.operation("c", "p3", depends_on=("b",)),
             ],
         )
         order = wf.topological_order()
@@ -129,10 +129,10 @@ class TestWorkflowExecutionPolicy:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2", depends_on=("a",)),
-                Step.pipeline("c", "p3", depends_on=("a",)),
-                Step.pipeline("d", "p4", depends_on=("b", "c")),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2", depends_on=("a",)),
+                Step.operation("c", "p3", depends_on=("a",)),
+                Step.operation("d", "p4", depends_on=("b", "c")),
             ],
         )
         order = wf.topological_order()
@@ -147,8 +147,8 @@ class TestWorkflowExecutionPolicy:
             Workflow(
                 name="t",
                 steps=[
-                    Step.pipeline("a", "p1", depends_on=("b",)),
-                    Step.pipeline("b", "p2", depends_on=("a",)),
+                    Step.operation("a", "p1", depends_on=("b",)),
+                    Step.operation("b", "p2", depends_on=("a",)),
                 ],
             )
 
@@ -158,7 +158,7 @@ class TestWorkflowExecutionPolicy:
             Workflow(
                 name="t",
                 steps=[
-                    Step.pipeline("a", "p1", depends_on=("nonexistent",)),
+                    Step.operation("a", "p1", depends_on=("nonexistent",)),
                 ],
             )
 
@@ -170,7 +170,7 @@ class TestWorkflowExecutionPolicy:
         )
         wf = Workflow(
             name="t",
-            steps=[Step.pipeline("a", "p1")],
+            steps=[Step.operation("a", "p1")],
             execution_policy=policy,
         )
         d = wf.to_dict()
@@ -188,8 +188,8 @@ class TestWorkflowExecutionPolicy:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2", depends_on=("a",)),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2", depends_on=("a",)),
             ],
             execution_policy=policy,
         )
@@ -337,14 +337,14 @@ class TestWorkflowRegistry:
     def test_register_and_get(self):
         from spine.orchestration.workflow_registry import get_workflow, register_workflow
 
-        wf = Workflow(name="test.wf", steps=[Step.pipeline("a", "p1")])
+        wf = Workflow(name="test.wf", steps=[Step.operation("a", "p1")])
         register_workflow(wf)
         assert get_workflow("test.wf") is wf
 
     def test_register_duplicate_raises(self):
         from spine.orchestration.workflow_registry import register_workflow
 
-        wf = Workflow(name="dup", steps=[Step.pipeline("a", "p1")])
+        wf = Workflow(name="dup", steps=[Step.operation("a", "p1")])
         register_workflow(wf)
         with pytest.raises(ValueError, match="already registered"):
             register_workflow(wf)
@@ -358,22 +358,22 @@ class TestWorkflowRegistry:
     def test_list_workflows(self):
         from spine.orchestration.workflow_registry import list_workflows, register_workflow
 
-        register_workflow(Workflow(name="b.wf", steps=[Step.pipeline("a", "p1")]))
-        register_workflow(Workflow(name="a.wf", steps=[Step.pipeline("a", "p1")]))
+        register_workflow(Workflow(name="b.wf", steps=[Step.operation("a", "p1")]))
+        register_workflow(Workflow(name="a.wf", steps=[Step.operation("a", "p1")]))
         assert list_workflows() == ["a.wf", "b.wf"]
 
     def test_list_workflows_by_domain(self):
         from spine.orchestration.workflow_registry import list_workflows, register_workflow
 
-        register_workflow(Workflow(name="ingest.wf", steps=[Step.pipeline("a", "p1")], domain="ingest"))
-        register_workflow(Workflow(name="export.wf", steps=[Step.pipeline("a", "p1")], domain="export"))
+        register_workflow(Workflow(name="ingest.wf", steps=[Step.operation("a", "p1")], domain="ingest"))
+        register_workflow(Workflow(name="export.wf", steps=[Step.operation("a", "p1")], domain="export"))
         assert list_workflows(domain="ingest") == ["ingest.wf"]
 
     def test_workflow_exists(self):
         from spine.orchestration.workflow_registry import register_workflow, workflow_exists
 
         assert workflow_exists("x") is False
-        register_workflow(Workflow(name="x", steps=[Step.pipeline("a", "p1")]))
+        register_workflow(Workflow(name="x", steps=[Step.operation("a", "p1")]))
         assert workflow_exists("x") is True
 
     def test_clear_registry(self):
@@ -383,7 +383,7 @@ class TestWorkflowRegistry:
             register_workflow,
         )
 
-        register_workflow(Workflow(name="x", steps=[Step.pipeline("a", "p1")]))
+        register_workflow(Workflow(name="x", steps=[Step.operation("a", "p1")]))
         clear_workflow_registry()
         assert list_workflows() == []
 
@@ -392,7 +392,7 @@ class TestWorkflowRegistry:
 
         @register_workflow
         def my_factory():
-            return Workflow(name="factory.wf", steps=[Step.pipeline("a", "p1")])
+            return Workflow(name="factory.wf", steps=[Step.operation("a", "p1")])
 
         assert get_workflow("factory.wf").name == "factory.wf"
 
@@ -402,9 +402,9 @@ class TestWorkflowRegistry:
             register_workflow,
         )
 
-        register_workflow(Workflow(name="a", steps=[Step.pipeline("x", "p1")], domain="d1"))
-        register_workflow(Workflow(name="b", steps=[Step.pipeline("x", "p1")], domain="d1"))
-        register_workflow(Workflow(name="c", steps=[Step.pipeline("x", "p1")], domain="d2"))
+        register_workflow(Workflow(name="a", steps=[Step.operation("x", "p1")], domain="d1"))
+        register_workflow(Workflow(name="b", steps=[Step.operation("x", "p1")], domain="d1"))
+        register_workflow(Workflow(name="c", steps=[Step.operation("x", "p1")], domain="d2"))
         stats = get_workflow_registry_stats()
         assert stats["total_workflows"] == 3
         assert stats["workflows_by_domain"]["d1"] == 2
@@ -427,7 +427,7 @@ class TestWorkflowYaml:
             "kind": "Workflow",
             "metadata": {"name": "test.wf"},
             "spec": {
-                "steps": [{"name": "a", "pipeline": "p1"}],
+                "steps": [{"name": "a", "operation": "p1"}],
             },
         }
         spec = WorkflowSpec.model_validate(data)
@@ -451,9 +451,9 @@ class TestWorkflowYaml:
             "spec": {
                 "defaults": {"batch_size": 1000},
                 "steps": [
-                    {"name": "fetch", "pipeline": "ingest.fetch"},
-                    {"name": "normalize", "pipeline": "ingest.normalize", "depends_on": ["fetch"]},
-                    {"name": "store", "pipeline": "ingest.store", "depends_on": ["normalize"]},
+                    {"name": "fetch", "operation": "ingest.fetch"},
+                    {"name": "normalize", "operation": "ingest.normalize", "depends_on": ["fetch"]},
+                    {"name": "store", "operation": "ingest.store", "depends_on": ["normalize"]},
                 ],
                 "policy": {
                     "execution": "parallel",
@@ -486,8 +486,8 @@ class TestWorkflowYaml:
             "metadata": {"name": "t"},
             "spec": {
                 "steps": [
-                    {"name": "a", "pipeline": "p1"},
-                    {"name": "a", "pipeline": "p2"},
+                    {"name": "a", "operation": "p1"},
+                    {"name": "a", "operation": "p2"},
                 ],
             },
         }
@@ -503,7 +503,7 @@ class TestWorkflowYaml:
             "metadata": {"name": "t"},
             "spec": {
                 "steps": [
-                    {"name": "a", "pipeline": "p1", "depends_on": ["nonexistent"]},
+                    {"name": "a", "operation": "p1", "depends_on": ["nonexistent"]},
                 ],
             },
         }
@@ -519,7 +519,7 @@ class TestWorkflowYaml:
             "metadata": {"name": "t"},
             "spec": {
                 "steps": [
-                    {"name": "a", "pipeline": "p1", "depends_on": ["a"]},
+                    {"name": "a", "operation": "p1", "depends_on": ["a"]},
                 ],
             },
         }
@@ -539,9 +539,9 @@ metadata:
 spec:
   steps:
     - name: fetch
-      pipeline: test.fetch
+      operation: test.fetch
     - name: process
-      pipeline: test.process
+      operation: test.process
       depends_on: [fetch]
   policy:
     execution: parallel
@@ -560,7 +560,7 @@ spec:
             "kind": "Workflow",
             "metadata": {"name": "t"},
             "spec": {
-                "steps": [{"name": "a", "pipeline": "p1"}],
+                "steps": [{"name": "a", "operation": "p1"}],
             },
         }
         wf = validate_yaml_workflow(data)
@@ -574,9 +574,9 @@ spec:
 
         data = {
             "apiVersion": "spine.io/v1",
-            "kind": "PipelineGroup",
+            "kind": "OperationGroup",
             "metadata": {"name": "t"},
-            "spec": {"steps": [{"name": "a", "pipeline": "p1"}]},
+            "spec": {"steps": [{"name": "a", "operation": "p1"}]},
         }
         with pytest.raises(ValidationError):
             WorkflowSpec.model_validate(data)
@@ -589,7 +589,7 @@ spec:
         data = {
             "metadata": {"name": "t"},
             "spec": {
-                "steps": [{"name": "a", "pipeline": "p1", "extra_field": True}],
+                "steps": [{"name": "a", "operation": "p1", "extra_field": True}],
             },
         }
         with pytest.raises(ValidationError):
@@ -619,7 +619,7 @@ class TestWorkflowExecutor:
 
         wf = Workflow(
             name="dry",
-            steps=[Step.pipeline("a", "nonexistent.pipeline")],
+            steps=[Step.operation("a", "nonexistent.operation")],
         )
         result = execute_workflow(wf, dry_run=True)
         assert result.status == WorkflowStatus.COMPLETED

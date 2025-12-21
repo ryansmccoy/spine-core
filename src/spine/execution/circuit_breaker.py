@@ -1,7 +1,6 @@
 """Circuit Breaker — fail-fast on downstream failures.
 
-WHY
-───
+Manifesto:
 When an external service (EDGAR, LLM API, database) starts failing,
 retrying every request wastes time and load.  The circuit breaker
 “trips” after N consecutive failures, rejecting requests instantly
@@ -28,7 +27,7 @@ ARCHITECTURE
 
 BEST PRACTICES
 ──────────────
-- Use one breaker per downstream service, not per pipeline.
+- Use one breaker per downstream service, not per operation.
 - Set ``recovery_timeout`` to match the service’s typical recovery.
 - Combine with ``RetryStrategy`` for transient failures *within*
   the closed state, and circuit breaker for sustained outages.
@@ -50,6 +49,12 @@ Example::
             raise
     else:
         raise CircuitOpenError("Service unavailable")
+
+Tags:
+    spine-core, execution, circuit-breaker, resilience, fault-tolerance
+
+Doc-Types:
+    api-reference
 """
 
 import threading

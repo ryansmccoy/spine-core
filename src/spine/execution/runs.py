@@ -3,6 +3,18 @@
 This module defines RunRecord and RunStatus, the canonical contracts for
 tracking execution state in spine-core. All work types use these same
 structures regardless of which executor ran them.
+
+Manifesto:
+    Run tracking must be executor-agnostic.  Whether a run executes
+    locally, in Celery, or in a container, the same RunRecord
+    captures its lifecycle so dashboards and alerting work
+    unchanged across backends.
+
+Tags:
+    spine-core, execution, runs, run-record, state-tracking
+
+Doc-Types:
+    api-reference
 """
 
 from dataclasses import dataclass, field

@@ -3,8 +3,7 @@
 .. warning::
     **EXPERIMENTAL** — not yet production-tested.  API may change.
 
-WHY
-───
+Manifesto:
 For production workloads requiring distributed execution across
 multiple machines, priority queues, and durable result backends,
 Celery provides a mature platform.  This executor wraps it behind
@@ -26,6 +25,12 @@ Related modules:
     protocol.py — Executor protocol
     tasks.py    — Celery task stubs
     local.py    — non-distributed alternative
+
+Tags:
+    spine-core, execution, executor, celery, distributed, broker
+
+Doc-Types:
+    api-reference
 """
 
 import warnings
@@ -114,7 +119,7 @@ class CeleryExecutor:
 
         Task naming convention: spine.execute.{kind}
         - spine.execute.task
-        - spine.execute.pipeline
+        - spine.execute.operation
         - spine.execute.workflow
         - spine.execute.step
         """

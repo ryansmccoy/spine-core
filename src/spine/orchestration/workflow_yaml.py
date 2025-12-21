@@ -21,21 +21,33 @@ Example YAML::
     metadata:
       name: ingest.daily
       domain: ingest
-      description: Daily ingest pipeline
+      description: Daily ingest operation
     spec:
       steps:
         - name: fetch
-          pipeline: ingest.fetch_data
+          operation: ingest.fetch_data
         - name: normalize
-          pipeline: ingest.normalize
+          operation: ingest.normalize
           depends_on: [fetch]
         - name: store
-          pipeline: ingest.store
+          operation: ingest.store
           depends_on: [normalize]
       policy:
         execution: parallel
         max_concurrency: 4
         on_failure: stop
+
+Manifesto:
+    Workflow authors should be able to define pipelines in YAML
+    without writing Python.  This module parses YAML definitions
+    into the same Workflow model used by code-first authors,
+    keeping both paths first-class.
+
+Tags:
+    spine-core, orchestration, yaml, declarative, config-driven
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -102,15 +114,15 @@ class WorkflowPolicySpec(BaseModel):
 class WorkflowStepSpec(BaseModel):
     """Workflow step specification (supports all step types).
 
-    Pipeline steps require `pipeline`. Lambda steps use `handler_ref`.
+    Operation steps require `operation`. Lambda steps use `handler_ref`.
     Choice steps use `condition_ref`, `then_step`, `else_step`.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., min_length=1, description="Unique step name within workflow")
-    type: str = Field(default="pipeline", description="Step type: pipeline, lambda, choice, wait, map")
-    pipeline: str | None = Field(default=None, description="Registered pipeline name (for pipeline steps)")
+    type: str = Field(default="operation", description="Step type: operation, lambda, choice, wait, map")
+    operation: str | None = Field(default=None, description="Registered operation name (for operation steps)")
     depends_on: list[str] = Field(default_factory=list, description="Step dependencies")
     params: dict[str, Any] = Field(default_factory=dict, description="Step-specific parameters (maps to config)")
     config: dict[str, Any] | None = Field(default=None, description="Step configuration (alternative to params)")
@@ -141,10 +153,10 @@ class WorkflowStepSpec(BaseModel):
         step_config = self.config or self.params or {}
         depends = tuple(self.depends_on) if self.depends_on else ()
 
-        if self.type == "pipeline":
-            return Step.pipeline(
+        if self.type == "operation":
+            return Step.operation(
                 name=self.name,
-                pipeline_name=self.pipeline or "",
+                operation_name=self.operation or "",
                 params=step_config or None,
                 depends_on=depends,
             )
@@ -193,10 +205,10 @@ class WorkflowStepSpec(BaseModel):
             step.depends_on = depends
             return step
         else:
-            # Fallback: treat as pipeline
-            return Step.pipeline(
+            # Fallback: treat as operation
+            return Step.operation(
                 name=self.name,
-                pipeline_name=self.pipeline or f"__unknown__{self.type}__",
+                operation_name=self.operation or f"__unknown__{self.type}__",
                 params=step_config or None,
                 depends_on=depends,
             )
@@ -261,9 +273,9 @@ class WorkflowSpec(BaseModel):
         spec:
           steps:
             - name: fetch
-              pipeline: ingest.fetch_data
+              operation: ingest.fetch_data
             - name: normalize
-              pipeline: ingest.normalize
+              operation: ingest.normalize
               depends_on: [fetch]
           policy:
             execution: parallel
@@ -390,12 +402,12 @@ class WorkflowSpec(BaseModel):
             depends = list(step.depends_on) if step.depends_on else []
             config = step.config or {}
 
-            if step.step_type == StepType.PIPELINE:
+            if step.step_type == StepType.OPERATION:
                 step_specs.append(
                     WorkflowStepSpec(
                         name=step.name,
-                        type="pipeline",
-                        pipeline=step.pipeline_name or "",
+                        type="operation",
+                        operation=step.operation_name or "",
                         depends_on=depends,
                         config=config if config else None,
                     )

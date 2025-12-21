@@ -36,17 +36,17 @@ def _another_handler(ctx: Any, config: dict[str, Any]) -> StepResult:
     return StepResult.ok(output={"step": "two"})
 
 
-def _make_pipeline_workflow() -> Workflow:
-    """Workflow with only pipeline steps — fully serializable."""
+def _make_operation_workflow() -> Workflow:
+    """Workflow with only operation steps — fully serializable."""
     return Workflow(
-        name="test.pipeline_only",
+        name="test.operation_only",
         steps=[
-            Step.pipeline("ingest", "data.ingest"),
-            Step.pipeline("transform", "data.transform"),
-            Step.pipeline("load", "data.load"),
+            Step.operation("ingest", "data.ingest"),
+            Step.operation("transform", "data.transform"),
+            Step.operation("load", "data.load"),
         ],
         domain="testing",
-        description="A test workflow with pipeline steps",
+        description="A test workflow with operation steps",
         tags=["test", "packager"],
     )
 
@@ -63,13 +63,13 @@ def _make_lambda_workflow() -> Workflow:
 
 
 def _make_mixed_workflow() -> Workflow:
-    """Workflow mixing pipeline and lambda steps."""
+    """Workflow mixing operation and lambda steps."""
     return Workflow(
         name="test.mixed",
         steps=[
-            Step.pipeline("ingest", "data.ingest"),
+            Step.operation("ingest", "data.ingest"),
             Step.lambda_("validate", _sample_handler),
-            Step.pipeline("load", "data.load"),
+            Step.operation("load", "data.load"),
         ],
     )
 
@@ -202,8 +202,8 @@ class TestExtractHandlerSource:
 class TestCanPackageStep:
     """Tests for the can_package_step static helper."""
 
-    def test_pipeline_step(self) -> None:
-        step = Step.pipeline("s", "my.pipeline")
+    def test_operation_step(self) -> None:
+        step = Step.operation("s", "my.operation")
         ok, reason = WorkflowPackager.can_package_step(step)
         assert ok is True
         assert "name at runtime" in reason
@@ -237,11 +237,11 @@ class TestCanPackageStep:
 # ---------------------------------------------------------------------------
 
 
-class TestPackagePipelineWorkflow:
-    """Tests for packaging pipeline-only workflows."""
+class TestPackageOperationWorkflow:
+    """Tests for packaging operation-only workflows."""
 
     def test_creates_pyz_file(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, manifest = packager.package(wf, tmp_path / "out.pyz")
 
@@ -250,18 +250,18 @@ class TestPackagePipelineWorkflow:
         assert output.stat().st_size > 0
 
     def test_manifest_fields(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         _, manifest = packager.package(wf, tmp_path / "out.pyz")
 
-        assert manifest.workflow_name == "test.pipeline_only"
+        assert manifest.workflow_name == "test.operation_only"
         assert manifest.step_count == 3
         assert manifest.handler_files == []
         assert manifest.warnings == []
         assert manifest.tags == ["test", "packager"]
 
     def test_archive_contains_expected_files(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, _ = packager.package(wf, tmp_path / "out.pyz")
 
@@ -271,7 +271,7 @@ class TestPackagePipelineWorkflow:
             assert "workflow.json" in names
 
     def test_workflow_json_contents(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, _ = packager.package(wf, tmp_path / "out.pyz")
 
@@ -280,11 +280,11 @@ class TestPackagePipelineWorkflow:
 
         assert "manifest" in data
         assert "workflow" in data
-        assert data["workflow"]["name"] == "test.pipeline_only"
+        assert data["workflow"]["name"] == "test.operation_only"
         assert len(data["workflow"]["steps"]) == 3
 
     def test_main_py_content(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, _ = packager.package(wf, tmp_path / "out.pyz")
 
@@ -296,7 +296,7 @@ class TestPackagePipelineWorkflow:
         assert "WorkflowRunner" in main
 
     def test_adds_pyz_extension(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, _ = packager.package(wf, tmp_path / "out")
 
@@ -344,7 +344,7 @@ class TestPackageLambdaWorkflow:
 
 
 class TestPackageMixedWorkflow:
-    """Tests for workflows mixing pipeline and lambda steps."""
+    """Tests for workflows mixing operation and lambda steps."""
 
     def test_mixed_workflow_packages(self, tmp_path: Path) -> None:
         wf = _make_mixed_workflow()
@@ -367,7 +367,7 @@ class TestInspect:
     """Tests for inspecting existing archives."""
 
     def test_inspect_roundtrip(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, original = packager.package(wf, tmp_path / "out.pyz")
 
@@ -401,7 +401,7 @@ class TestUnpack:
     """Tests for extracting archives."""
 
     def test_unpack_creates_files(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
         output, _ = packager.package(wf, tmp_path / "out.pyz")
 
@@ -432,7 +432,7 @@ class TestCompression:
     """Tests for compressed archives."""
 
     def test_compressed_flag(self, tmp_path: Path) -> None:
-        wf = _make_pipeline_workflow()
+        wf = _make_operation_workflow()
         packager = WorkflowPackager(interpreter=None)
 
         _, m_plain = packager.package(wf, tmp_path / "plain.pyz", compressed=False)

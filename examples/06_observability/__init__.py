@@ -1,6 +1,6 @@
 """Observability — Structured logging, metrics collection, context binding.
 
-Observability primitives give pipelines production-grade visibility:
+Observability primitives give operations production-grade visibility:
 structured log events, Prometheus-style counters/histograms, and
 thread-local context that enriches every log line automatically.
 

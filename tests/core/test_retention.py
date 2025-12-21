@@ -34,7 +34,7 @@ def conn():
     c.executescript("""
         CREATE TABLE core_executions (
             id TEXT PRIMARY KEY,
-            pipeline TEXT,
+            operation TEXT,
             created_at TEXT
         );
         CREATE TABLE core_rejects (
@@ -71,12 +71,12 @@ def _insert_old_and_new(conn: sqlite3.Connection, table: str, ts_column: str):
     if table == "core_executions":
         for i in range(3):
             conn.execute(
-                "INSERT INTO core_executions (id, pipeline, created_at) VALUES (?, ?, ?)",
+                "INSERT INTO core_executions (id, operation, created_at) VALUES (?, ?, ?)",
                 (f"old-{i}", "test", old_ts),
             )
         for i in range(2):
             conn.execute(
-                "INSERT INTO core_executions (id, pipeline, created_at) VALUES (?, ?, ?)",
+                "INSERT INTO core_executions (id, operation, created_at) VALUES (?, ?, ?)",
                 (f"new-{i}", "test", new_ts),
             )
     elif table == "core_work_items":

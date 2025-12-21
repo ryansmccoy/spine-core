@@ -1,13 +1,23 @@
 """Scheduler table models (03_scheduler.sql).
 
-Models for cron-based pipeline scheduling: schedule definitions,
+Manifesto:
+    Schedule definitions, execution history, and distributed locks
+    need typed dataclass representations so the scheduling service
+    and API can work with structured objects.
+
+Models for cron-based operation scheduling: schedule definitions,
 execution history, and distributed locks.
+
+Tags:
+    spine-core, models, scheduling, dataclasses, cron, schema-mapping
+
+Doc-Types:
+    api-reference, data-model
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 
 # ---------------------------------------------------------------------------
 # core_schedules
@@ -20,7 +30,7 @@ class Schedule:
 
     id: str = ""
     name: str = ""
-    target_type: str = "pipeline"  # pipeline, workflow
+    target_type: str = "operation"  # operation, workflow
     target_name: str = ""
     params: str | None = None  # JSON default parameters
     schedule_type: str = "cron"  # cron, interval, date
@@ -28,7 +38,7 @@ class Schedule:
     interval_seconds: int | None = None
     run_at: str | None = None
     timezone: str = "UTC"
-    enabled: int = 1
+    enabled: bool = True
     max_instances: int = 1
     misfire_grace_seconds: int = 60
     last_run_at: str | None = None

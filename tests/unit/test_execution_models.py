@@ -59,11 +59,11 @@ class TestExecution:
 
     def test_create_defaults(self):
         """Create execution with minimal args uses defaults."""
-        execution = Execution.create(workflow="test.pipeline")
+        execution = Execution.create(workflow="test.operation")
         
         assert execution.id is not None
         assert len(execution.id) == 36  # UUID format
-        assert execution.workflow == "test.pipeline"
+        assert execution.workflow == "test.operation"
         assert execution.params == {}
         assert execution.status == ExecutionStatus.PENDING
         assert execution.lane == "default"
@@ -93,14 +93,14 @@ class TestExecution:
     def test_to_dict(self):
         """Execution serializes to dictionary."""
         execution = Execution.create(
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
         )
         
         d = execution.to_dict()
         
         assert d["id"] == execution.id
-        assert d["workflow"] == "test.pipeline"
+        assert d["workflow"] == "test.operation"
         assert d["params"] == {"key": "value"}
         assert d["status"] == "pending"
         assert d["lane"] == "default"
@@ -167,7 +167,7 @@ class TestDeadLetter:
         dlq = DeadLetter(
             id="dlq-123",
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             error="Connection error",
             retry_count=2,
@@ -182,7 +182,7 @@ class TestDeadLetter:
         dlq = DeadLetter(
             id="dlq-123",
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             error="Connection error",
             retry_count=3,
@@ -197,7 +197,7 @@ class TestDeadLetter:
         dlq = DeadLetter(
             id="dlq-123",
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             error="Connection error",
             retry_count=0,
@@ -213,7 +213,7 @@ class TestDeadLetter:
         dlq = DeadLetter(
             id="dlq-123",
             execution_id="exec-456",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
             error="Error message",
             retry_count=1,

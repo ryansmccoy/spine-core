@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 from spine.orchestration.step_result import StepResult
 from spine.orchestration.step_types import Step
 from spine.orchestration.testing import (
@@ -42,25 +42,25 @@ class TestStubRunnable:
 
     def test_always_succeeds(self):
         stub = StubRunnable()
-        result = stub.submit_pipeline_sync("any.pipeline")
+        result = stub.submit_operation_sync("any.operation")
         assert result.succeeded
 
     def test_tracks_calls(self):
         stub = StubRunnable()
-        stub.submit_pipeline_sync("pipe.a", params={"x": 1})
-        stub.submit_pipeline_sync("pipe.b")
+        stub.submit_operation_sync("pipe.a", params={"x": 1})
+        stub.submit_operation_sync("pipe.b")
         assert len(stub.calls) == 2
-        assert stub.calls[0]["pipeline_name"] == "pipe.a"
+        assert stub.calls[0]["operation_name"] == "pipe.a"
         assert stub.calls[0]["params"] == {"x": 1}
 
     def test_custom_outputs(self):
         stub = StubRunnable(outputs={"pipe.a": {"rows": 100}})
-        result = stub.submit_pipeline_sync("pipe.a")
+        result = stub.submit_operation_sync("pipe.a")
         assert result.metrics == {"rows": 100}
 
-    def test_unknown_pipeline_empty_metrics(self):
+    def test_unknown_operation_empty_metrics(self):
         stub = StubRunnable(outputs={"pipe.a": {"rows": 100}})
-        result = stub.submit_pipeline_sync("pipe.unknown")
+        result = stub.submit_operation_sync("pipe.unknown")
         assert result.metrics == {}
 
 
@@ -72,23 +72,23 @@ class TestFailingRunnable:
 
     def test_always_fails(self):
         failing = FailingRunnable(error="Connection refused")
-        result = failing.submit_pipeline_sync("any.pipeline")
+        result = failing.submit_operation_sync("any.operation")
         assert not result.succeeded
         assert result.error == "Connection refused"
 
     def test_selective_failure(self):
         failing = FailingRunnable(
             error="broken",
-            fail_pipelines={"pipe.bad"},
+            fail_operations={"pipe.bad"},
         )
-        bad = failing.submit_pipeline_sync("pipe.bad")
-        good = failing.submit_pipeline_sync("pipe.good")
+        bad = failing.submit_operation_sync("pipe.bad")
+        good = failing.submit_operation_sync("pipe.good")
         assert not bad.succeeded
         assert good.succeeded
 
     def test_tracks_calls(self):
         failing = FailingRunnable()
-        failing.submit_pipeline_sync("pipe.a")
+        failing.submit_operation_sync("pipe.a")
         assert len(failing.calls) == 1
 
 
@@ -100,11 +100,11 @@ class TestScriptedRunnable:
 
     def test_returns_scripted_results(self):
         scripted = ScriptedRunnable(scripts={
-            "pipe.ok": PipelineRunResult(status="completed", metrics={"x": 1}),
-            "pipe.fail": PipelineRunResult(status="failed", error="boom"),
+            "pipe.ok": OperationRunResult(status="completed", metrics={"x": 1}),
+            "pipe.fail": OperationRunResult(status="failed", error="boom"),
         })
-        ok = scripted.submit_pipeline_sync("pipe.ok")
-        fail = scripted.submit_pipeline_sync("pipe.fail")
+        ok = scripted.submit_operation_sync("pipe.ok")
+        fail = scripted.submit_operation_sync("pipe.fail")
         assert ok.succeeded
         assert ok.metrics == {"x": 1}
         assert not fail.succeeded
@@ -112,12 +112,12 @@ class TestScriptedRunnable:
 
     def test_unscripted_succeeds(self):
         scripted = ScriptedRunnable()
-        result = scripted.submit_pipeline_sync("pipe.unknown")
+        result = scripted.submit_operation_sync("pipe.unknown")
         assert result.succeeded
 
     def test_tracks_calls(self):
         scripted = ScriptedRunnable()
-        scripted.submit_pipeline_sync("pipe.a")
+        scripted.submit_operation_sync("pipe.a")
         assert len(scripted.calls) == 1
 
 
@@ -146,7 +146,7 @@ class TestAssertions:
                 ),
                 StepExecution(
                     step_name="step_2",
-                    step_type="pipeline",
+                    step_type="operation",
                     status="completed",
                     result=StepResult.ok(output={"saved": True}),
                 ),
@@ -168,7 +168,7 @@ class TestAssertions:
             step_executions=[
                 StepExecution(
                     step_name="step_1",
-                    step_type="pipeline",
+                    step_type="operation",
                     status="failed",
                     error="Connection refused",
                 ),

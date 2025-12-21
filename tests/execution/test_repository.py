@@ -208,10 +208,10 @@ class TestCleanup:
         assert "old" not in ids
 
 
-# ── Pipeline Throughput ──────────────────────────────────────────────────
+# ── Operation Throughput ──────────────────────────────────────────────────
 
 
-class TestPipelineThroughput:
+class TestOperationThroughput:
     def test_throughput(self, conn, repo):
         now = datetime.now(UTC)
         _insert_execution(

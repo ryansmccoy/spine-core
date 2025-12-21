@@ -30,13 +30,20 @@ Tier: Basic (spine-core only, zero external dependencies)
 
 from __future__ import annotations
 
+import sys
 import json
 import time
 import uuid
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
 
 import structlog
+
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 
 # ── structlog setup ─────────────────────────────────────────────────────
 
@@ -55,13 +62,12 @@ log = structlog.get_logger("golden.e2e")
 # PHASE 1 — Initialize database from scratch
 # ═══════════════════════════════════════════════════════════════════════
 
-from spine.core.connection import create_connection
-
 print("=" * 72)
 print("PHASE 1 — Database Initialization")
 print("=" * 72)
 
-conn, info = create_connection(init_schema=True)
+load_env()
+conn, info = get_demo_connection()
 
 # ExecutionLedger needs raw sqlite3.Connection (uses cursor())
 raw_conn = conn.raw if hasattr(conn, "raw") else conn

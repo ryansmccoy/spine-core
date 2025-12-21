@@ -1,5 +1,5 @@
 """
-Webhook registry — manage webhook targets for workflows and pipelines.
+Webhook registry — manage webhook targets for workflows and operations.
 
 Extracted from ``api/routers/webhooks.py`` so that both CLI and API
 can share the same registry without cross-layer imports
@@ -19,10 +19,10 @@ logger = get_logger(__name__)
 
 @dataclass
 class WebhookTarget:
-    """A workflow or pipeline exposed as a webhook target."""
+    """A workflow or operation exposed as a webhook target."""
 
     name: str = ""
-    kind: str = "workflow"  # "workflow" | "pipeline"
+    kind: str = "workflow"  # "workflow" | "operation"
     description: str = ""
 
 
@@ -36,11 +36,11 @@ def register_webhook(
     kind: str = "workflow",
     description: str = "",
 ) -> None:
-    """Register a workflow or pipeline as a webhook target.
+    """Register a workflow or operation as a webhook target.
 
     Args:
-        name: Registered workflow or pipeline name.
-        kind: ``"workflow"`` or ``"pipeline"``.
+        name: Registered workflow or operation name.
+        kind: ``"workflow"`` or ``"operation"``.
         description: Human-readable description shown in ``GET /webhooks``.
     """
     _targets[name] = WebhookTarget(name=name, kind=kind, description=description)
@@ -60,3 +60,34 @@ def list_registered_webhooks() -> list[WebhookTarget]:
 def get_webhook_target(name: str) -> WebhookTarget | None:
     """Look up a single webhook target by name."""
     return _targets.get(name)
+
+
+async def dispatch_webhook(
+    *,
+    dispatcher: object,
+    name: str,
+    kind: str,
+    params: dict | None = None,
+) -> str:
+    """Build and submit a run spec through the execution dispatcher.
+
+    This wraps ``spine.execution.dispatcher`` / ``spine.execution.spec``
+    so that API routers never import from the execution layer directly.
+
+    Args:
+        dispatcher: An ``EventDispatcher`` instance (from ``app.state``).
+        name: Workflow or operation name.
+        kind: ``"workflow"`` or ``"operation"``.
+        params: Optional parameters for the run.
+
+    Returns:
+        The ``run_id`` returned by the dispatcher.
+    """
+    from spine.execution.spec import operation_spec, workflow_spec
+
+    if kind == "workflow":
+        spec = workflow_spec(name, params=params or {}, trigger_source="webhook")
+    else:
+        spec = operation_spec(name, params=params or {}, trigger_source="webhook")
+
+    return await dispatcher.submit(spec)  # type: ignore[union-attr]

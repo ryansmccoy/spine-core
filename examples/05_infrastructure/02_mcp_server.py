@@ -128,7 +128,7 @@ def demo_integration_examples():
    # Execute workflow
    result = await call_spine_tool(
        "run_workflow",
-       {"name": "etl_pipeline", "params": {"tier": "TIER_1"}}
+       {"name": "etl_operation", "params": {"tier": "TIER_1"}}
    )
 
 3. Cline / Continue / Other MCP Clients:
@@ -180,7 +180,7 @@ The MCP server exposes spine-core's monitoring capabilities:
 
 3. Quality Metrics:
    tool: list_quality_results
-   filter: {"workflow": "etl_pipeline"}
+   filter: {"workflow": "etl_operation"}
    →  Test pass/fail rates
 
 4. Anomaly Detection:

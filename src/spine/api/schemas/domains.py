@@ -5,6 +5,13 @@ These mirror the ops-layer dataclasses but as Pydantic models so they
 get full JSON serialisation, OpenAPI schema generation, and validation.
 We keep them intentionally thin — the real types live in ``spine.ops.responses``.
 
+Manifesto:
+    Domain-specific schemas keep validation close to the business
+    rules so the API rejects invalid data before it hits the ops layer.
+
+Tags:
+    spine-core, api, schemas, domain-models, validation
+
 Doc-Types: API_REFERENCE
 """
 
@@ -148,7 +155,7 @@ class WorkflowStepSchema(BaseModel):
 
     name: str = Field(default="", description="Step identifier within the workflow")
     description: str = Field(default="", description="What this step does")
-    pipeline: str = Field(default="", description="Registered pipeline name this step executes")
+    operation: str = Field(default="", description="Registered operation name this step executes")
     depends_on: list[str] = Field(default_factory=list, description="Step names this step depends on (DAG edges)")
     params: dict[str, Any] = Field(default_factory=dict, description="Step-specific parameter overrides")
     metadata: dict[str, Any] = Field(
@@ -315,7 +322,7 @@ class RunStepSchema(BaseModel):
     step_name: str = Field(default="", description="Step identifier within the workflow")
     step_type: str = Field(
         default="",
-        description="Step type: 'pipeline'|'task'|'condition'|'parallel'",
+        description="Step type: 'operation'|'task'|'condition'|'parallel'",
     )
     step_order: int = Field(default=0, description="Execution order (0-based)")
     status: str = Field(
@@ -351,6 +358,27 @@ class RunStepSchema(BaseModel):
     )
 
 
+class RunLogEntrySchema(BaseModel):
+    """Single log line from a run execution.
+
+    UI Hints:
+        Render in monospace font with color-coded level badges.
+        Level colors: DEBUG=gray, INFO=blue, WARN=yellow, ERROR=red.
+        step_name enables filtering to specific step context.
+        timestamp should show absolute time with millisecond precision.
+    """
+
+    timestamp: str = Field(description="ISO-8601 timestamp with milliseconds")
+    level: str = Field(default="INFO", description="Log level: DEBUG|INFO|WARN|ERROR")
+    message: str = Field(description="Log message text")
+    step_name: str | None = Field(
+        default=None,
+        description="Step name context (null for run-level logs)",
+    )
+    logger: str = Field(default="", description="Logger name (e.g., 'spine.operations.etl')")
+    line_number: int = Field(default=0, description="Sequential line number in log output")
+
+
 # ── Schedule ─────────────────────────────────────────────────────────────
 
 
@@ -365,8 +393,8 @@ class ScheduleSummarySchema(BaseModel):
 
     schedule_id: str = Field(description="Unique schedule identifier")
     name: str = Field(default="", description="Human-readable schedule name")
-    target_type: str = Field(default="pipeline", description="Target type: 'pipeline' or 'workflow'")
-    target_name: str = Field(default="", description="Target pipeline or workflow name")
+    target_type: str = Field(default="operation", description="Target type: 'operation' or 'workflow'")
+    target_name: str = Field(default="", description="Target operation or workflow name")
     cron_expression: str | None = Field(
         default=None,
         description="Cron expression (e.g., '0 9 * * *' for daily at 9am)",

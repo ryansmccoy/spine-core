@@ -16,6 +16,17 @@ Usage (programmatic)::
 Usage (CLI)::
 
     spine worker start --workers 4 --poll-interval 2
+
+Manifesto:
+    The worker is the process-level loop that polls for work and
+    delegates to handlers.  Keeping it thin and configurable means
+    operators can tune concurrency without changing business logic.
+
+Tags:
+    spine-core, execution, worker, polling, process-loop
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -317,14 +328,14 @@ class WorkerLoop:
             dispatch_list: list[tuple[str, str, dict, str, int]] = []
 
             for row in rows:
-                run_id = row[0] if isinstance(row, (tuple, list)) else row["id"]
-                workflow = row[1] if isinstance(row, (tuple, list)) else row["workflow"]
-                params_raw = row[2] if isinstance(row, (tuple, list)) else row["params"]
-                lane = row[3] if isinstance(row, (tuple, list)) else row["lane"]
-                trigger_source = row[4] if isinstance(row, (tuple, list)) else row["trigger_source"]
-                parent_id = row[5] if isinstance(row, (tuple, list)) else row["parent_execution_id"]
-                idemp_key = row[6] if isinstance(row, (tuple, list)) else row["idempotency_key"]
-                retry_count = row[7] if isinstance(row, (tuple, list)) else row["retry_count"]
+                run_id = row[0] if isinstance(row, tuple | list) else row["id"]
+                workflow = row[1] if isinstance(row, tuple | list) else row["workflow"]
+                params_raw = row[2] if isinstance(row, tuple | list) else row["params"]
+                lane = row[3] if isinstance(row, tuple | list) else row["lane"]
+                row[4] if isinstance(row, tuple | list) else row["trigger_source"]
+                row[5] if isinstance(row, tuple | list) else row["parent_execution_id"]
+                row[6] if isinstance(row, tuple | list) else row["idempotency_key"]
+                retry_count = row[7] if isinstance(row, tuple | list) else row["retry_count"]
 
                 # Atomically claim — only transition if still pending
                 cursor.execute(

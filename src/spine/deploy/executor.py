@@ -5,14 +5,14 @@ schema verification, pytest suites, example scripts, smoke tests,
 and arbitrary commands. Each executor method returns a typed result
 model from :mod:`spine.deploy.results`.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     After spinning up a PostgreSQL container, the testbed needs to:
     (1) apply all 23 core DDL files and verify table creation,
     (2) run 2000+ pytest cases with JUnit XML output,
     (3) optionally run example scripts. Each phase produces a typed
     result that feeds into the ``BackendResult`` aggregate.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     The executor pattern separates "what to run" from "where to run it".
     ``TestbedExecutor`` can run locally or inside a Docker container by
     simply changing the ``project_dir`` and ``connection_url``.
@@ -79,7 +79,7 @@ CORE_TABLES = [
     "core_workflow_definitions",
     "core_workflow_runs",
     "core_workflow_steps",
-    "core_pipeline_runs",
+    "core_operation_runs",
     "core_idempotency_keys",
     "core_quality_checks",
     "core_rejects",
@@ -535,11 +535,11 @@ class TestbedExecutor:
             engine = create_spine_engine(connection_url)
             session = SpineSession(bind=engine)
             return SAConnectionBridge(session)
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 f"SQLAlchemy is required for {connection_url.split(':')[0]} connections. "
                 "Install with: pip install spine-core[postgresql]"
-            )
+            ) from e
 
     @staticmethod
     def _parse_junit_xml(path: Path, result: TestResult) -> None:

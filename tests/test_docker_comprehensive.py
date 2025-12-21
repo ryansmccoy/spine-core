@@ -271,9 +271,9 @@ class TestRuns:
         run_ids = [r["run_id"] for r in body["data"]]
         assert run_id in run_ids
 
-    def test_submit_pipeline_run(self):
-        """Submit a pipeline-type run."""
-        status, body = http_post("/runs", {"kind": "pipeline", "name": "etl_test"})
+    def test_submit_operation_run(self):
+        """Submit a operation-type run."""
+        status, body = http_post("/runs", {"kind": "operation", "name": "etl_test"})
         assert status in (200, 201, 202), f"Submit failed: {body}"
         assert body["data"]["run_id"]
 
@@ -457,7 +457,7 @@ class TestBackendConfig:
         status, body = http_get(f"/runs/{run_id}")
         assert status == 200
         assert body["data"]["run_id"] == run_id
-        assert body["data"].get("kind") or body["data"].get("pipeline")
+        assert body["data"].get("kind") or body["data"].get("operation")
 
     def test_database_health_shows_backend_type(self):
         """Database health should indicate the backend type."""

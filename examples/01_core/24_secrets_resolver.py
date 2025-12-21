@@ -5,7 +5,7 @@
 WHY A SECRETS RESOLVER?
 ================================================================================
 
-Data pipelines need API keys, database passwords, and tokens.  The naive
+Data operations need API keys, database passwords, and tokens.  The naive
 approaches all have problems::
 
     # BAD: Hardcoded

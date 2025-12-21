@@ -5,11 +5,11 @@ from spine.execution import (
     EventDispatcher,
     WorkSpec,
     task_spec,
-    pipeline_spec,
+    operation_spec,
     workflow_spec,
     step_spec,
     register_task,
-    register_pipeline,
+    register_operation,
     HandlerRegistry,
     RunStatus,
     EventType,
@@ -42,10 +42,10 @@ class TestWorkSpec:
         assert spec.priority == "high"
         assert spec.idempotency_key == "email-123"
     
-    def test_pipeline_spec(self):
-        """Test pipeline_spec convenience."""
-        spec = pipeline_spec("ingest_otc", {"date": "2026-01-15"})
-        assert spec.kind == "pipeline"
+    def test_operation_spec(self):
+        """Test operation_spec convenience."""
+        spec = operation_spec("ingest_otc", {"date": "2026-01-15"})
+        assert spec.kind == "operation"
         assert spec.name == "ingest_otc"
         assert spec.params == {"date": "2026-01-15"}
     
@@ -103,7 +103,7 @@ class TestHandlerRegistry:
         registry = HandlerRegistry()
         registry.register("task", "task1", lambda p: p)
         registry.register("task", "task2", lambda p: p)
-        registry.register("pipeline", "pipe1", lambda p: p)
+        registry.register("operation", "pipe1", lambda p: p)
         
         all_handlers = registry.list_handlers()
         assert len(all_handlers) == 3
@@ -116,11 +116,11 @@ class TestHandlerRegistry:
         """Test conversion to executor handler dict."""
         registry = HandlerRegistry()
         registry.register("task", "t1", lambda p: p)
-        registry.register("pipeline", "p1", lambda p: p)
+        registry.register("operation", "p1", lambda p: p)
         
         handlers = registry.to_executor_handlers()
         assert "task:t1" in handlers
-        assert "pipeline:p1" in handlers
+        assert "operation:p1" in handlers
 
 
 class TestMemoryExecutor:
@@ -201,7 +201,7 @@ class TestStubExecutor:
         executor = StubExecutor()
         
         await executor.submit(task_spec("task1", {"x": 1}))
-        await executor.submit(pipeline_spec("pipe1", {"y": 2}))
+        await executor.submit(operation_spec("pipe1", {"y": 2}))
         
         assert executor.submission_count == 2
         
@@ -215,8 +215,8 @@ class TestStubExecutor:
         
         await executor.submit(task_spec("task1", {}))
         
-        with pytest.raises(AssertionError, match="No pipeline:missing"):
-            executor.assert_submitted("pipeline", "missing")
+        with pytest.raises(AssertionError, match="No operation:missing"):
+            executor.assert_submitted("operation", "missing")
 
 
 class TestDispatcher:
@@ -246,7 +246,7 @@ class TestDispatcher:
         
         # Test each convenience wrapper
         task_id = await dispatcher.submit_task("t1", {"a": 1})
-        pipe_id = await dispatcher.submit_pipeline("p1", {"b": 2})
+        pipe_id = await dispatcher.submit_operation("p1", {"b": 2})
         workflow_id = await dispatcher.submit_workflow("w1", {"c": 3})
         step_id = await dispatcher.submit_step("s1", {"d": 4}, parent_run_id=workflow_id)
         
@@ -256,7 +256,7 @@ class TestDispatcher:
         step_run = await dispatcher.get_run(step_id)
         
         assert task_run.spec.kind == "task"
-        assert pipe_run.spec.kind == "pipeline"
+        assert pipe_run.spec.kind == "operation"
         assert workflow_run.spec.kind == "workflow"
         assert step_run.spec.kind == "step"
         assert step_run.spec.parent_run_id == workflow_id
@@ -308,13 +308,13 @@ class TestDispatcher:
         # Create various runs
         await dispatcher.submit_task("task1", {})
         await dispatcher.submit_task("task2", {})
-        await dispatcher.submit_pipeline("pipe1", {})
+        await dispatcher.submit_operation("pipe1", {})
         
         # Filter by kind
         tasks = await dispatcher.list_runs(kind="task")
         assert len(tasks) == 2
         
-        pipes = await dispatcher.list_runs(kind="pipeline")
+        pipes = await dispatcher.list_runs(kind="operation")
         assert len(pipes) == 1
         
         # Filter by name
@@ -396,7 +396,7 @@ class TestEndToEndWithMemoryExecutor:
         def greet(params):
             return {"message": f"Hello, {params['name']}!"}
         
-        @register_pipeline("process", registry=registry)
+        @register_operation("process", registry=registry)
         def process(params):
             return {"processed": len(params.get("items", []))}
         
@@ -405,7 +405,7 @@ class TestEndToEndWithMemoryExecutor:
         
         # Both should work
         task_id = await dispatcher.submit_task("greet", {"name": "World"})
-        pipe_id = await dispatcher.submit_pipeline("process", {"items": [1, 2, 3]})
+        pipe_id = await dispatcher.submit_operation("process", {"items": [1, 2, 3]})
         
         task_run = await dispatcher.get_run(task_id)
         pipe_run = await dispatcher.get_run(pipe_id)

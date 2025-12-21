@@ -78,7 +78,7 @@ def validate_config() -> None:
         settings = get_settings(_force_reload=True)
     except ValueError as e:
         console.print(f"[red]Configuration Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     console.print(f"[bold]Tier:[/bold] {settings.infer_tier()}")
 

@@ -1,16 +1,16 @@
 """
 Correction taxonomy and records for financial observations.
 
-When an observation (price, EPS, ratio, etc.) changes after initial
-publication, a CorrectionRecord captures **why** it changed, what the
-old and new values were, and who/what made the correction.
-
-Why This Matters — Financial Pipelines:
+Manifesto:
     Financial data changes after publication more often than people
     expect.  SEC-mandated restatements (10-K/A filings), vendor
     correction notices from Bloomberg or FactSet, late-arriving actuals
     that replace preliminary estimates, and methodology changes all
-    produce corrections that must be tracked.
+    produce corrections that must be tracked with an auditable trail.
+
+When an observation (price, EPS, ratio, etc.) changes after initial
+publication, a CorrectionRecord captures **why** it changed, what the
+old and new values were, and who/what made the correction.
 
     Real-world examples:
     - **EPS restatement**: Apple files a 10-K/A that revises diluted
@@ -26,7 +26,7 @@ Why This Matters — Financial Pipelines:
       report is filed.  ``pct_change`` returns ``None`` for the zero-
       original case, preventing division-by-zero surprises.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Any system where published values are later revised — reference
     data, configuration snapshots, telemetry — benefits from an
     auditable correction trail.  The pattern is: never silently
@@ -71,6 +71,9 @@ STDLIB ONLY — no Pydantic.
 Tags:
     finance, correction, restatement, audit, spine-core,
     observation, vendor-reconciliation, audit-trail
+
+Doc-Types:
+    api-reference, domain-model
 """
 
 from __future__ import annotations

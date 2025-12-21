@@ -7,7 +7,7 @@ import WorkflowContext or StepResult.
 
 import pytest
 
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 from spine.orchestration import (
     Step,
     StepResult,
@@ -31,8 +31,8 @@ from spine.orchestration.workflow_runner import WorkflowRunner
 class _NoOpRunnable:
     """Minimal Runnable for tests that only use lambda steps."""
 
-    def submit_pipeline_sync(self, pipeline_name, params=None, *, parent_run_id=None, correlation_id=None):
-        return PipelineRunResult(status="completed")
+    def submit_operation_sync(self, operation_name, params=None, *, parent_run_id=None, correlation_id=None):
+        return OperationRunResult(status="completed")
 
 
 # ---------------------------------------------------------------------------
@@ -509,7 +509,7 @@ class TestRealWorldScenario:
     """Simulate a realistic use case: financial calculation functions
     used both standalone AND in a workflow."""
 
-    def test_financial_pipeline(self):
+    def test_financial_operation(self):
         """Financial calc functions work standalone and in workflow."""
 
         # --- Pure business functions (no framework imports) ---

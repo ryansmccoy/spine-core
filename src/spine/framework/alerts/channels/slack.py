@@ -1,4 +1,16 @@
-"""Slack webhook alert channel."""
+"""Slack webhook alert channel.
+
+Manifesto:
+    Most teams use Slack for ops notifications.  This channel
+    posts structured alerts via incoming webhooks so on-call
+    engineers get actionable context without leaving chat.
+
+Tags:
+    spine-core, framework, alerts, slack, webhook, notifications
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

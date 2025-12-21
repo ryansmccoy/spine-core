@@ -5,7 +5,7 @@
 WHY CATEGORIZED ERRORS?
 ================================================================================
 
-Not all errors are equal. Consider a data pipeline that fails:
+Not all errors are equal. Consider a data operation that fails:
 
     TransientError("Network timeout")      → Retry in 30 seconds
     ValidationError("Invalid date format") → Don't retry, fix the data
@@ -69,8 +69,8 @@ ERROR CATEGORY HIERARCHY
     │  TRANSIENT   │    ✓      │ Retry with exponential backoff              │
     │  SOURCE      │    ✓      │ Retry with longer backoff + alert           │
     │  VALIDATION  │    ✗      │ Dead letter queue + fix data                │
-    │  CONFIG      │    ✗      │ Halt pipeline + notify ops                  │
-    │  INTERNAL    │    ✗      │ Halt pipeline + page developer             │
+    │  CONFIG      │    ✗      │ Halt operation + notify ops                  │
+    │  INTERNAL    │    ✗      │ Halt operation + page developer             │
     └──────────────┴───────────┴─────────────────────────────────────────────┘
 
 
@@ -103,7 +103,7 @@ DEAD LETTER QUEUE INTEGRATION
 Non-retryable errors are routed to the dead letter queue for investigation::
 
     ┌─────────────┐     ┌─────────────┐     ┌─────────────────────┐
-    │  Pipeline   │────►│  Executor   │────►│  is_retryable()?    │
+    │  Operation   │────►│  Executor   │────►│  is_retryable()?    │
     └─────────────┘     └─────────────┘     └──────────┬──────────┘
                                                        │
                                             ┌──────────┴──────────┐

@@ -34,21 +34,21 @@ class TestAddToDlq:
         """Adding creates a DLQ entry."""
         entry = dlq.add_to_dlq(
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
             error="Connection error",
         )
         
         assert entry.id is not None
         assert entry.execution_id == "exec-123"
-        assert entry.workflow == "test.pipeline"
+        assert entry.workflow == "test.operation"
         assert entry.error == "Connection error"
 
     def test_add_uses_default_max_retries(self, dlq):
         """Uses manager's default max_retries."""
         entry = dlq.add_to_dlq(
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             error="Error",
         )
@@ -59,7 +59,7 @@ class TestAddToDlq:
         """Can override max_retries."""
         entry = dlq.add_to_dlq(
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             error="Error",
             max_retries=5,
@@ -71,7 +71,7 @@ class TestAddToDlq:
         """Preserves provided retry count."""
         entry = dlq.add_to_dlq(
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             error="Error",
             retry_count=2,
@@ -87,7 +87,7 @@ class TestGet:
         """Can retrieve existing entry."""
         entry = dlq.add_to_dlq(
             execution_id="exec-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
             error="Error",
         )
@@ -109,8 +109,8 @@ class TestListUnresolved:
 
     def test_list_all_unresolved(self, dlq):
         """Lists all unresolved entries."""
-        dlq.add_to_dlq("exec-1", "pipeline.a", {}, "Error 1")
-        dlq.add_to_dlq("exec-2", "pipeline.b", {}, "Error 2")
+        dlq.add_to_dlq("exec-1", "operation.a", {}, "Error 1")
+        dlq.add_to_dlq("exec-2", "operation.b", {}, "Error 2")
         
         unresolved = dlq.list_unresolved()
         
@@ -152,8 +152,8 @@ class TestListAll:
 
     def test_list_can_exclude_resolved(self, dlq):
         """Can exclude resolved entries."""
-        entry = dlq.add_to_dlq("exec-1", "pipeline.a", {}, "Error")
-        dlq.add_to_dlq("exec-2", "pipeline.b", {}, "Error")
+        entry = dlq.add_to_dlq("exec-1", "operation.a", {}, "Error")
+        dlq.add_to_dlq("exec-2", "operation.b", {}, "Error")
         dlq.resolve(entry.id)
         
         active = dlq.list_all(include_resolved=False)

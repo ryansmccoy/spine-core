@@ -6,9 +6,9 @@ multi-project workflows that combine both.
 
 READING ORDER
 ─────────────
-    01 — EntitySpine integration (entity CRUD via spine pipelines)
-    02 — FeedSpine integration (feed processing via spine pipelines)
+    01 — EntitySpine integration (entity CRUD via spine operations)
+    02 — FeedSpine integration (feed processing via spine operations)
     03 — Combined workflow (EntitySpine + FeedSpine together)
-    04 — Feed ingestion (production-style feed processing pipeline)
+    04 — Feed ingestion (production-style feed processing operation)
     05 — SEC filing workflow (multi-step filing processing)
 """

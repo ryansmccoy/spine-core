@@ -204,7 +204,7 @@ class SyncPgAdapter:
     - Advanced tier (asyncpg via SyncPgAdapter)
     - Full tier (asyncpg via SyncPgAdapter)
 
-    Note: For actual async workloads in pipelines, the tier's infrastructure
+    Note: For actual async workloads in operations, the tier's infrastructure
     handles async orchestration. The spine.core primitives always see sync.
     """
 

@@ -1,50 +1,62 @@
-"""Synchronous pipeline runner."""
+"""Synchronous operation runner.
+
+Manifesto:
+    The runner executes operations with consistent lifecycle hooks
+    (start → execute → record result) so ops code never manages
+    its own timing, error capture, or result storage.
+
+Tags:
+    spine-core, framework, runner, synchronous, lifecycle
+
+Doc-Types:
+    api-reference
+"""
 
 from datetime import UTC, datetime
 from typing import Any
 
-from spine.framework.exceptions import BadParamsError, PipelineNotFoundError
+from spine.framework.exceptions import BadParamsError, OperationNotFoundError
 from spine.framework.logging import get_logger, log_step
-from spine.framework.pipelines import PipelineResult, PipelineStatus
-from spine.framework.registry import get_pipeline
+from spine.framework.operations import OperationResult, OperationStatus
+from spine.framework.registry import get_operation
 
 log = get_logger(__name__)
 
 
-class PipelineRunner:
+class OperationRunner:
     """
-    Synchronous pipeline runner.
+    Synchronous operation runner.
 
-    Executes pipelines immediately in the current thread.
+    Executes operations immediately in the current thread.
     """
 
-    def run(self, pipeline_name: str, params: dict[str, Any] | None = None) -> PipelineResult:
+    def run(self, operation_name: str, params: dict[str, Any] | None = None) -> OperationResult:
         """
-        Run a pipeline by name.
+        Run a operation by name.
 
         Args:
-            pipeline_name: Name of the registered pipeline
-            params: Optional parameters for the pipeline
+            operation_name: Name of the registered operation
+            params: Optional parameters for the operation
 
         Returns:
-            PipelineResult with execution details
+            OperationResult with execution details
 
         Raises:
-            PipelineNotFoundError: If pipeline is not registered
+            OperationNotFoundError: If operation is not registered
             BadParamsError: If parameters are missing or invalid
         """
-        log.debug("runner.start", pipeline=pipeline_name)
+        log.debug("runner.start", operation=operation_name)
 
         try:
-            pipeline_cls = get_pipeline(pipeline_name)
+            operation_cls = get_operation(operation_name)
         except KeyError:
-            raise PipelineNotFoundError(pipeline_name) from None
+            raise OperationNotFoundError(operation_name) from None
 
-        pipeline = pipeline_cls(params=params)
+        operation = operation_cls(params=params)
 
-        # Validate parameters using pipeline spec
-        if pipeline.spec is not None:
-            validation_result = pipeline.spec.validate(params or {})
+        # Validate parameters using operation spec
+        if operation.spec is not None:
+            validation_result = operation.spec.validate(params or {})
             if not validation_result.valid:
                 raise BadParamsError(
                     validation_result.get_error_message(),
@@ -52,19 +64,19 @@ class PipelineRunner:
                     invalid_params=validation_result.invalid_params,
                 )
 
-        # Validate using pipeline's custom validation (if any)
+        # Validate using operation's custom validation (if any)
         try:
-            pipeline.validate_params()
+            operation.validate_params()
         except Exception as e:
             # Wrap any validation errors as BadParamsError
             if not isinstance(e, BadParamsError):
                 raise BadParamsError(str(e)) from e
             raise
 
-        # Run the pipeline
+        # Run the operation
         try:
-            with log_step("pipeline.run", pipeline=pipeline_name):
-                result = pipeline.run()
+            with log_step("operation.run", operation=operation_name):
+                result = operation.run()
 
             log.info(
                 "runner.completed",
@@ -76,31 +88,31 @@ class PipelineRunner:
 
         except Exception as e:
             log.error("runner.error", error=str(e), error_type=type(e).__name__)
-            return PipelineResult(
-                status=PipelineStatus.FAILED,
+            return OperationResult(
+                status=OperationStatus.FAILED,
                 started_at=datetime.now(UTC),
                 completed_at=datetime.now(UTC),
                 error=str(e),
             )
 
-    def run_all(self, pipeline_names: list[str], params: dict[str, Any] | None = None) -> list[PipelineResult]:
+    def run_all(self, operation_names: list[str], params: dict[str, Any] | None = None) -> list[OperationResult]:
         """
-        Run multiple pipelines in sequence.
+        Run multiple operations in sequence.
 
         Args:
-            pipeline_names: List of pipeline names to run in order
+            operation_names: List of operation names to run in order
             params: Optional shared parameters
 
         Returns:
-            List of PipelineResults
+            List of OperationResults
         """
         results = []
-        for name in pipeline_names:
+        for name in operation_names:
             result = self.run(name, params)
             results.append(result)
 
             # Stop on failure
-            if result.status == PipelineStatus.FAILED:
+            if result.status == OperationStatus.FAILED:
                 log.warning("runner.stopped", failed_at=name)
                 break
 
@@ -108,12 +120,12 @@ class PipelineRunner:
 
 
 # Default runner instance
-_runner: PipelineRunner | None = None
+_runner: OperationRunner | None = None
 
 
-def get_runner() -> PipelineRunner:
+def get_runner() -> OperationRunner:
     """Get or create runner instance."""
     global _runner
     if _runner is None:
-        _runner = PipelineRunner()
+        _runner = OperationRunner()
     return _runner

@@ -1,11 +1,11 @@
-"""Webhook Triggers — HTTP-triggered workflow and pipeline execution.
+"""Webhook Triggers — HTTP-triggered workflow and operation execution.
 
 WHY WEBHOOK TRIGGERS
 ────────────────────
-Pipelines shouldn’t only run on a schedule.  GitHub pushes, Slack
+Operations shouldn’t only run on a schedule.  GitHub pushes, Slack
 commands, monitoring alerts, and partner callbacks all need to trigger
 work.  The webhook router exposes HTTP POST endpoints so any external
-system can kick off spine workflows and pipelines without custom
+system can kick off spine workflows and operations without custom
 integration code.
 
 ARCHITECTURE
@@ -34,7 +34,7 @@ WEBHOOK API
     /api/v1/webhooks/trigger/{name}        POST    Fire webhook
     register_webhook(name, kind, desc)     code    Register target
 
-    kind: "workflow" or "pipeline"
+    kind: "workflow" or "operation"
     trigger body: JSON params passed to dispatcher
 
 BEST PRACTICES
@@ -82,16 +82,16 @@ def main():
     register_webhook(
         "sec.daily_ingest",
         kind="workflow",
-        description="Daily SEC filing ingest pipeline",
+        description="Daily SEC filing ingest operation",
     )
     register_webhook(
         "finra.otc_download",
-        kind="pipeline",
+        kind="operation",
         description="Download FINRA OTC transparency data",
     )
     register_webhook(
         "market.price_refresh",
-        kind="pipeline",
+        kind="operation",
         description="Refresh market price cache",
     )
 

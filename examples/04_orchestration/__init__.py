@@ -1,6 +1,6 @@
 """Orchestration — Workflows, step adapters, DAG execution, and YAML specs.
 
-The orchestration engine composes Pipelines (08_framework) into
+The orchestration engine composes Operations (08_framework) into
 multi-step Workflows with context passing, error policies, parallel
 execution, persistence, and declarative YAML definitions.
 
@@ -10,7 +10,7 @@ for a progressive tour, or jump to a section by number.
 FOUNDATIONS — how workflows work
 ──────────────────────────────────
     01 — Workflow basics (sequential lambda steps)
-    02 — Pipeline vs Workflow comparison
+    02 — Operation vs Workflow comparison
     03 — WorkflowContext (cross-step data passing)
 
 STEP CONFIGURATION — how steps are defined
@@ -35,11 +35,11 @@ ADVANCED — specialized execution modes
 ────────────────────────────────────────
     13 — Workflow templates (ETL, fan-out, branch, retry, batch)
     14 — ContainerRunnable (orchestration ↔ container bridge)
-    15 — Runnable protocol (pipeline execution interface)
+    15 — Runnable protocol (operation execution interface)
 
 INTEGRATION — real-world use cases
 ───────────────────────────────────
     16 — Webhook triggers (HTTP-triggered workflows)
-    17 — SEC ETL workflow (9-step pipeline with quality gates)
+    17 — SEC ETL workflow (9-step operation with quality gates)
     18 — Parallel vs multiprocessing (Pool vs DAG threads)
 """

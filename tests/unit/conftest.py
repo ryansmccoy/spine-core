@@ -2,21 +2,21 @@
 from __future__ import annotations
 
 import pytest
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 
 
 class _NoOpRunnable:
     """Minimal Runnable that always returns success (for lambda-only tests)."""
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> PipelineRunResult:
-        return PipelineRunResult(status="completed")
+    ) -> OperationRunResult:
+        return OperationRunResult(status="completed")
 
 
 @pytest.fixture

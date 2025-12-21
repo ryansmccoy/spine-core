@@ -1,7 +1,78 @@
 """Data retention and purge utilities.
 
 Provides functions to purge old records from core tables based on
-configurable retention periods.
+configurable retention periods. Enables automated housekeeping while
+preserving compliance retention windows.
+
+Manifesto:
+    Core infrastructure tables (executions, rejects, quality, anomalies)
+    grow unbounded without active retention management. Financial compliance
+    requires minimum retention periods, but keeping data forever increases
+    storage costs and slows queries. This module provides:
+
+    - **Configurable retention:** Per-table retention periods (days)
+    - **Safe purging:** Only deletes records past retention window
+    - **Audit-aware:** Respects compliance minimums (e.g., 180 days for anomalies)
+    - **Reporting:** RetentionReport with per-table results and errors
+
+Architecture:
+    ::
+
+        ┌──────────────────────────────────────────────────────────┐
+        │                Retention Pipeline                         │
+        └──────────────────────────────────────────────────────────┘
+
+        RetentionConfig                purge_all(conn, config)
+        ┌────────────────┐                    │
+        │ executions: 90 │     ┌──────────────┼──────────────┐
+        │ rejects: 30    │     ▼              ▼              ▼
+        │ quality: 90    │  purge_table()  purge_table()  purge_table()
+        │ anomalies: 180 │     │              │              │
+        │ work_items: 30 │     ▼              ▼              ▼
+        └────────────────┘  PurgeResult    PurgeResult    PurgeResult
+                                    \\         │         /
+                                     ▼        ▼        ▼
+                                   RetentionReport
+
+Features:
+    - **purge_all():** Run purge on all purgeable tables with one call
+    - **RetentionConfig:** Per-table retention period configuration
+    - **RetentionReport:** Aggregated results with error tracking
+    - **purge_table():** Low-level single-table purge with dialect support
+    - **get_table_counts():** Pre/post purge monitoring
+
+Examples:
+    >>> from spine.core.retention import purge_all, RetentionConfig
+    >>> config = RetentionConfig(executions=90, rejects=30, anomalies=180)
+    >>> report = purge_all(conn, config)
+    >>> report.total_deleted
+    42
+    >>> report.success
+    True
+
+Performance:
+    - purge_table(): Single DELETE statement per table, O(n) on deleted rows
+    - purge_all(): Sequential table purges (safe for concurrent access)
+    - Recommended: Run during low-traffic windows for large tables
+
+Guardrails:
+    ❌ DON'T: Set retention below compliance minimums (e.g., 30 days for rejects)
+    ✅ DO: Use RetentionConfig with documented defaults
+
+    ❌ DON'T: Run purge without checking get_table_counts() first
+    ✅ DO: Monitor before/after counts for validation
+
+    ❌ DON'T: Purge anomalies too aggressively (they're audit evidence)
+    ✅ DO: Keep anomalies for at least 180 days (default)
+
+Tags:
+    retention, purge, housekeeping, compliance, spine-core,
+    data-lifecycle, storage-management
+
+Doc-Types:
+    - API Reference
+    - Operations Guide
+    - Compliance Documentation
 """
 
 from __future__ import annotations

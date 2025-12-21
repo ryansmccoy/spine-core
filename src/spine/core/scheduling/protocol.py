@@ -1,5 +1,17 @@
 """Scheduler backend protocol.
 
+Manifesto:
+    Backends control WHEN ticks happen; the service controls WHAT happens.
+    This separation lets you swap timing implementations (thread, APScheduler,
+    Celery Beat) without changing any schedule evaluation logic.
+
+Tags:
+    spine-core, scheduling, protocol, backend, beat-as-poller
+
+Doc-Types:
+    protocol-definition, architecture-diagram
+
+
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  SCHEDULER BACKEND PROTOCOL                                                   │
 │                                                                               │

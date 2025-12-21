@@ -5,14 +5,14 @@ It manages the full lifecycle of containerized workloads — from ephemeral test
 harnesses that verify schema compatibility across 6 database backends to
 long-running multi-service deployments with health-gated readiness.
 
-Why This Matters — Financial Data Pipelines:
-    SEC EDGAR ingestion pipelines must work identically on PostgreSQL, MySQL,
+Why This Matters — Financial Data Operations:
+    SEC EDGAR ingestion operations must work identically on PostgreSQL, MySQL,
     and TimescaleDB. A schema typo that passes on SQLite can silently lose
     temporal columns on PostgreSQL. The testbed runner catches these before
     they reach production by spinning up real database containers and running
     the full test suite against each.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Any multi-backend application benefits from automated compatibility
     testing. deploy-spine provides a "test matrix as code" approach: define
     which databases to test, which phases to run (schema, tests, examples,

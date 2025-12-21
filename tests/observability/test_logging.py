@@ -114,14 +114,14 @@ class TestJsonFormatter:
         # JsonFormatter looks for extra_fields dict attribute
         record.extra_fields = {
             "custom_field": "custom_value",
-            "pipeline_name": "sec.filings",
+            "operation_name": "sec.filings",
         }
         
         output = formatter.format(record)
         data = json.loads(output)
         
         assert data.get("custom_field") == "custom_value"
-        assert data.get("pipeline_name") == "sec.filings"
+        assert data.get("operation_name") == "sec.filings"
 
     def test_formats_exception(self):
         """Test exception formatting."""
@@ -193,13 +193,13 @@ class TestStructuredLogger:
         
         try:
             logger = StructuredLogger("test")
-            logger.info("Processing", pipeline="sec.filings", records=100)
+            logger.info("Processing", operation="sec.filings", records=100)
             
             output = stream.getvalue()
             data = json.loads(output.strip())
             
             # Extra fields are stored in "fields" key
-            assert data["fields"]["pipeline"] == "sec.filings"
+            assert data["fields"]["operation"] == "sec.filings"
             assert data["fields"]["records"] == 100
         finally:
             spine_logging._config.output = old_output

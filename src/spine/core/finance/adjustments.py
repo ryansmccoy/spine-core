@@ -1,18 +1,17 @@
 """
 Factor-based adjustment math for financial time-series.
 
+Manifesto:
+    When Apple executed a 4-for-1 stock split in August 2020, every
+    historical price, EPS, and dividend figure had to be divided by 4
+    to remain comparable with post-split figures.  Without composable
+    adjustment factors as first-class objects, every project invents
+    its own split math and gets it wrong for edge cases.
+
 Provides composable adjustment factors that convert raw per-share
 metrics (price, EPS, dividends) between different adjustment bases.
 Common use-cases: stock splits, reverse splits, spin-offs, rights
 issues, and special dividends.
-
-Why This Matters — Financial Pipelines:
-    When Apple executed a 4-for-1 stock split in August 2020, every
-    historical price, EPS, and dividend figure had to be divided by 4
-    to remain comparable with post-split figures.  If your pipeline
-    stores both adjusted and unadjusted values (common for audit and
-    reconciliation), you need the adjustment factors themselves — not
-    just the result.
 
     Real-world complexity:
     - **Multiple events**: TSLA had a 5-for-1 (2020) then a 3-for-1
@@ -26,7 +25,7 @@ Why This Matters — Financial Pipelines:
       as first-class objects (with provenance via ``metadata``) lets
       you audit the discrepancy.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Any time-series with unit changes over time (currency redenomination,
     sensor recalibration, API version migration) benefits from composable
     factor chains.  The ``adjust_as_of()`` pattern generalises to "apply
@@ -76,6 +75,9 @@ STDLIB ONLY — no Pydantic.
 Tags:
     finance, adjustment, split, dividend, per-share, spine-core,
     corporate-action, time-series, reconciliation
+
+Doc-Types:
+    api-reference, domain-model
 """
 
 from __future__ import annotations

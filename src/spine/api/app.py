@@ -3,6 +3,17 @@ FastAPI application factory.
 
 ``create_app()`` wires middleware, routers, error handlers, and
 lifespan events into a single ``FastAPI`` instance.
+
+Manifesto:
+    The app factory is the single composition root — all middleware,
+    routers, and lifecycle hooks are wired here so the rest of the
+    codebase never touches ``FastAPI`` directly.
+
+Tags:
+    spine-core, api, app-factory, composition-root, FastAPI
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -14,7 +25,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from spine.api.deps import get_settings
+from spine.api.middleware.auth import AuthMiddleware
 from spine.api.middleware.errors import unhandled_exception_handler
+from spine.api.middleware.rate_limit import RateLimitMiddleware
 from spine.api.middleware.request_id import RequestIDMiddleware
 from spine.api.middleware.timing import TimingMiddleware
 
@@ -23,10 +36,9 @@ from spine.api.middleware.timing import TimingMiddleware
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan — startup / shutdown hooks."""
 
-    from spine.core.logging import get_logger
-
     from spine.api.settings import SpineCoreAPISettings
     from spine.core.connection import create_connection
+    from spine.core.logging import get_logger
 
     log = get_logger("spine.api")
     log.info("spine-core API starting", version=app.version)
@@ -43,7 +55,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         log.info("database initialized", backend=info.backend)
     except Exception as e:
-        log.warning("database auto-init failed", error=str(e))
+        log.warning("database auto-init failed: %s", e)
     finally:
         if conn is not None and hasattr(conn, "close"):
             try:
@@ -58,7 +70,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if n:
             log.info("example_workflows_loaded", count=n)
     except Exception as e:
-        log.debug("example_workflow_registration_skipped", error=str(e))
+        log.debug("example_workflow_registration_skipped: %s", e)
 
     yield
     log.info("spine-core API shutting down")
@@ -96,6 +108,12 @@ def create_app(
     # ── Middleware (outermost → innermost) ────────────────────────────
     app.add_middleware(TimingMiddleware)
     app.add_middleware(RequestIDMiddleware)
+    app.add_middleware(AuthMiddleware, api_key=settings.api_key)
+    app.add_middleware(
+        RateLimitMiddleware,
+        enabled=settings.rate_limit_enabled,
+        rpm=settings.rate_limit_rpm,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -116,6 +134,9 @@ def create_app(
         discovery,
         dlq,
         events,
+        examples,
+        functions,
+        playground,
         quality,
         runs,
         schedules,
@@ -148,12 +169,15 @@ def create_app(
     app.include_router(sources.router, prefix=prefix, tags=["sources"])
     app.include_router(events.router, prefix=prefix, tags=["events"])
     app.include_router(deploy.router, prefix=prefix, tags=["deploy"])
+    app.include_router(examples.router, prefix=prefix, tags=["examples"])
+    app.include_router(functions.router, prefix=prefix, tags=["functions"])
+    app.include_router(playground.router, prefix=prefix, tags=["playground"])
 
     # ── Metrics endpoint (root-level, Prometheus format) ─────────
     from fastapi.responses import PlainTextResponse
 
-    @app.get("/metrics", tags=["observability"], include_in_schema=True)
-    async def metrics_endpoint() -> PlainTextResponse:
+    @app.get("/metrics", tags=["observability"], include_in_schema=True, response_class=PlainTextResponse)
+    async def metrics_endpoint():
         """Export Prometheus-compatible metrics."""
         from spine.observability.metrics import get_metrics_registry
 

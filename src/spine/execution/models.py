@@ -1,11 +1,22 @@
 """Execution domain models.
 
 Defines the core data structures for the execution system:
-- Execution: A pipeline/task execution record
+- Execution: A operation/task execution record
 - ExecutionEvent: Event-sourced lifecycle events
 - DeadLetter: Failed execution in the dead letter queue
 
 These models are used by ExecutionLedger, DLQManager, and the API layer.
+
+Manifesto:
+    Execution state must be representable as plain data so it can
+    be serialized, stored, and compared across executor backends
+    without coupling to any one runtime.
+
+Tags:
+    spine-core, execution, models, dataclass, status, events
+
+Doc-Types:
+    api-reference
 """
 
 import uuid
@@ -42,7 +53,7 @@ class InvalidTransitionError(ValueError):
 
 
 class ExecutionStatus(str, Enum):
-    """Status of a pipeline execution.
+    """Status of a operation execution.
 
     State transitions are enforced via ``VALID_TRANSITIONS``.  Use
     ``validate_transition()`` or the ``transition_to()`` helper before

@@ -220,7 +220,7 @@ def demo_budget_gate():
 # ── Section 6: validate_or_raise ──────────────────────────────────────────
 
 def demo_validate_or_raise():
-    """Exception-based API for pipeline integration."""
+    """Exception-based API for operation integration."""
     print("=" * 70)
     print("SECTION 6 — validate_or_raise() Exception API")
     print("=" * 70)

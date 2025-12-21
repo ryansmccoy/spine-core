@@ -1,7 +1,7 @@
 """Tests for EventDispatcher — the central submission/query API.
 
 Covers:
-- submit (canonical), convenience wrappers (submit_task, submit_pipeline, etc.)
+- submit (canonical), convenience wrappers (submit_task, submit_operation, etc.)
 - Idempotency de-duplication
 - Query: get_run, list_runs, get_events, get_children
 - Control: cancel, retry, lifecycle marks
@@ -137,11 +137,11 @@ class TestConvenienceWrappers:
         assert run.spec.name == "email"
 
     @pytest.mark.asyncio
-    async def test_submit_pipeline(self):
+    async def test_submit_operation(self):
         d = EventDispatcher(executor=_make_executor())
-        run_id = await d.submit_pipeline("ingest")
+        run_id = await d.submit_operation("ingest")
         run = await d.get_run(run_id)
-        assert run.spec.kind == "pipeline"
+        assert run.spec.kind == "operation"
 
     @pytest.mark.asyncio
     async def test_submit_workflow(self):
@@ -179,7 +179,7 @@ class TestQuery:
     async def test_list_runs_filter_kind(self):
         d = EventDispatcher(executor=_make_executor())
         await d.submit_task("a")
-        await d.submit_pipeline("b")
+        await d.submit_operation("b")
         tasks = await d.list_runs(kind="task")
         assert len(tasks) == 1
         assert tasks[0].kind == "task"

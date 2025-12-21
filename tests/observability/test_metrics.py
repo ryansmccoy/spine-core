@@ -321,30 +321,30 @@ class TestExecutionMetrics:
         metrics.record_submission("sec.filings")
         metrics.record_submission("market.prices")
         
-        assert metrics.submitted.labels(pipeline="sec.filings").value == 2
-        assert metrics.submitted.labels(pipeline="market.prices").value == 1
+        assert metrics.submitted.labels(operation="sec.filings").value == 2
+        assert metrics.submitted.labels(operation="market.prices").value == 1
 
     def test_record_completion(self):
         """Test recording completion."""
         registry = MetricsRegistry()
         metrics = ExecutionMetrics(registry)
         
-        metrics.record_submission("test.pipeline")
-        metrics.record_completion("test.pipeline", "completed", 1.5)
+        metrics.record_submission("test.operation")
+        metrics.record_completion("test.operation", "completed", 1.5)
         
-        assert metrics.completed.labels(pipeline="test.pipeline", status="completed").value == 1
-        assert metrics.duration.labels(pipeline="test.pipeline").data["count"] == 1
+        assert metrics.completed.labels(operation="test.operation", status="completed").value == 1
+        assert metrics.duration.labels(operation="test.operation").data["count"] == 1
 
     def test_active_executions_tracking(self):
         """Test active executions tracking."""
         registry = MetricsRegistry()
         metrics = ExecutionMetrics(registry)
         
-        metrics.record_submission("test.pipeline")
-        metrics.record_submission("test.pipeline")
+        metrics.record_submission("test.operation")
+        metrics.record_submission("test.operation")
         # Active should be 2
         
-        metrics.record_completion("test.pipeline", "completed", 1.0)
+        metrics.record_completion("test.operation", "completed", 1.0)
         # Active should be 1
 
     def test_dlq_depth_gauge(self):
@@ -352,6 +352,6 @@ class TestExecutionMetrics:
         registry = MetricsRegistry()
         metrics = ExecutionMetrics(registry)
         
-        metrics.dlq_depth.labels(pipeline="test").set(10)
+        metrics.dlq_depth.labels(operation="test").set(10)
         
-        assert metrics.dlq_depth.labels(pipeline="test").value == 10
+        assert metrics.dlq_depth.labels(operation="test").value == 10

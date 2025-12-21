@@ -32,7 +32,7 @@ Architecture:
 Key Concepts:
     - **handler_ref**: ``"spine.orchestration:StepResult"`` format for
       importable callables.  Lambdas return ``None`` (not importable).
-    - **Round-trip safety**: Pipeline steps round-trip losslessly. Lambda
+    - **Round-trip safety**: Operation steps round-trip losslessly. Lambda
       and choice steps preserve refs if named handlers are used.
     - **WorkflowSpec envelope**: ``to_yaml()`` wraps in standard YAML
       with ``apiVersion: spine.io/v1`` and ``kind: Workflow``.
@@ -94,15 +94,15 @@ print("=" * 70)
 print("SECTION 1: Step.to_dict() — Serialize Individual Steps")
 print("=" * 70)
 
-# Pipeline step
-pipeline_step = Step.pipeline("fetch_data", "sec.fetch", params={"limit": 100})
-pipeline_dict = pipeline_step.to_dict()
-print(f"\n1a. Pipeline step as dict:")
-print(f"    {json.dumps(pipeline_dict, indent=4)}")
-assert pipeline_dict["name"] == "fetch_data"
-assert pipeline_dict["type"] == "pipeline"
-assert pipeline_dict["pipeline"] == "sec.fetch"
-print("    ✓ Pipeline step serialized correctly")
+# Operation step
+operation_step = Step.operation("fetch_data", "sec.fetch", params={"limit": 100})
+operation_dict = operation_step.to_dict()
+print(f"\n1a. Operation step as dict:")
+print(f"    {json.dumps(operation_dict, indent=4)}")
+assert operation_dict["name"] == "fetch_data"
+assert operation_dict["type"] == "operation"
+assert operation_dict["operation"] == "sec.fetch"
+print("    ✓ Operation step serialized correctly")
 
 # Lambda step with named handler
 lambda_step = Step.lambda_("validate", validate_record)
@@ -129,7 +129,7 @@ assert choice_dict["condition_ref"] == f"{__name__}:route_by_size"
 print("    ✓ Choice step with condition_ref serialized")
 
 # Step with dependencies
-dep_step = Step.pipeline("process", "processor", depends_on=["fetch_data", "validate"])
+dep_step = Step.operation("process", "processor", depends_on=["fetch_data", "validate"])
 dep_dict = dep_step.to_dict()
 print(f"\n1e. Step with depends_on:")
 print(f"    {json.dumps(dep_dict, indent=4)}")
@@ -152,10 +152,10 @@ workflow = Workflow(
     version=3,
     description="Daily SEC filing ETL workflow",
     steps=[
-        Step.pipeline("fetch", "sec.fetch_filings"),
+        Step.operation("fetch", "sec.fetch_filings"),
         Step.lambda_("validate", validate_record),
-        Step.pipeline("transform", "sec.transform", depends_on=["fetch", "validate"]),
-        Step.pipeline("load", "sec.load_warehouse", depends_on=["transform"]),
+        Step.operation("transform", "sec.transform", depends_on=["fetch", "validate"]),
+        Step.operation("load", "sec.load_warehouse", depends_on=["transform"]),
     ],
     defaults={"environment": "production", "batch_size": 500},
     tags=["production", "daily", "etl"],
@@ -261,7 +261,7 @@ print("\n4b. to_workflow() conversion:")
 print("    ✓ WorkflowSpec.from_workflow() + to_workflow() round-trip works")
 
 # Note about lambda steps
-print("\n4c. Non-pipeline step handling:")
+print("\n4c. Non-operation step handling:")
 print(f"    Lambda step '{workflow.steps[1].name}' → type='lambda'")
 print(f"    Spec step type: '{spec_from_wf.spec.steps[1].type}'")
 print(f"    Spec handler_ref: '{spec_from_wf.spec.steps[1].handler_ref}'")
@@ -350,7 +350,7 @@ print("""
 Serialization capabilities demonstrated:
 
   Step Serialization:
-    • Step.to_dict() — all step types (pipeline, lambda, choice, wait, map)
+    • Step.to_dict() — all step types (operation, lambda, choice, wait, map)
     • handler_ref for named callables (lambdas excluded)
     • depends_on preserves DAG edges
 

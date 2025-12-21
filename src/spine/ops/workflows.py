@@ -12,7 +12,6 @@ from __future__ import annotations
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.core.repositories import WorkflowRunRepository
 from spine.ops.context import OperationContext
 from spine.ops.requests import (
@@ -111,8 +110,8 @@ def get_workflow(
         steps: list[dict[str, Any]] = []
         for step in workflow.steps:
             step_info: dict[str, Any] = {"name": step.name}
-            if hasattr(step, "pipeline_name") and step.pipeline_name:
-                step_info["pipeline"] = step.pipeline_name
+            if hasattr(step, "operation_name") and step.operation_name:
+                step_info["operation"] = step.operation_name
             if hasattr(step, "depends_on") and step.depends_on:
                 step_info["depends_on"] = list(step.depends_on)
             if hasattr(step, "params") and step.params:

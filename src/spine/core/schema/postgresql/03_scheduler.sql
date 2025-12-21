@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS core_schedules (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    target_type TEXT NOT NULL DEFAULT 'pipeline',
+    target_type TEXT NOT NULL DEFAULT 'operation',
     target_name TEXT NOT NULL,
     params JSONB,
     schedule_type TEXT NOT NULL DEFAULT 'cron',

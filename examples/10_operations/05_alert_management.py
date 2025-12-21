@@ -10,7 +10,7 @@ issues.
 
 ARCHITECTURE
 ────────────
-    Pipeline/Workflow failure
+    Operation/Workflow failure
          │
          ▼
     AlertRegistry.send_to_all()        ← 08_framework/05
@@ -43,10 +43,16 @@ See Also:
     06_source_management — source failure alerts
 """
 
-from spine.core.schema import create_core_tables
+import sys
+from pathlib import Path
+
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
 from spine.core.schema_loader import apply_all_schemas
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.alerts import (
     list_alert_channels,
     get_alert_channel,
@@ -71,9 +77,12 @@ def main():
     print("=" * 60)
     print("Operations Layer — Alert Management")
     print("=" * 60)
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
-    create_core_tables(conn)
     apply_all_schemas(conn)
     ctx = OperationContext(conn=conn, caller="example")
 
@@ -194,7 +203,7 @@ def main():
         CreateAlertRequest(
             severity="WARNING",
             title="Disk usage above 80%",
-            message="Pipeline storage volume at 83% capacity",
+            message="Operation storage volume at 83% capacity",
             source="infra.monitor",
         ),
         CreateAlertRequest(

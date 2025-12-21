@@ -13,8 +13,8 @@ try:
     import typer
     from rich.console import Console
     from rich.table import Table
-except ImportError:  # pragma: no cover
-    raise SystemExit("Missing CLI deps.  Install with:  pip install spine-core[cli]")
+except ImportError as e:  # pragma: no cover
+    raise SystemExit("Missing CLI deps.  Install with:  pip install spine-core[cli]") from e
 
 from spine.ops.context import OperationContext
 from spine.ops.result import OperationResult, PagedResult
@@ -75,7 +75,7 @@ def output_result(
     data = result.data
 
     if as_json:
-        payload = _to_dict(data) if not isinstance(data, (list, tuple)) else [_to_dict(d) for d in data]
+        payload = _to_dict(data) if not isinstance(data, list | tuple) else [_to_dict(d) for d in data]
         console.print_json(json.dumps(payload, default=str))
         return
 

@@ -22,9 +22,9 @@ def start(
     """Start the spine-core REST API server."""
     try:
         import uvicorn
-    except ImportError:
+    except ImportError as e:
         console.print("[red]uvicorn is required.  Install with:  pip install spine-core[api][/red]")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
     console.print(f"[bold green]Starting spine-core API[/bold green] on {host}:{port}")
     uvicorn.run(

@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_core_executions_created_at ON core_executions(cre
 CREATE INDEX IF NOT EXISTS idx_core_executions_idempotency ON core_executions(idempotency_key) WHERE idempotency_key IS NOT NULL;
 
 
--- Core manifest (tracks pipeline execution state per domain/partition/stage)
+-- Core manifest (tracks operation execution state per domain/partition/stage)
 CREATE TABLE IF NOT EXISTS core_manifest (
     domain TEXT NOT NULL,           -- e.g., "finra.otc_transparency"
     partition_key TEXT NOT NULL,    -- JSON: {"week_ending": "2025-12-26", "tier": "OTC"}
@@ -75,7 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_core_manifest_updated_at ON core_manifest(updated
 -- QUALITY & REJECTS
 -- =============================================================================
 
--- Core rejects (tracks rejected records during pipeline processing)
+-- Core rejects (tracks rejected records during operation processing)
 CREATE TABLE IF NOT EXISTS core_rejects (
     domain TEXT NOT NULL,
     partition_key TEXT NOT NULL,
@@ -160,16 +160,16 @@ CREATE INDEX IF NOT EXISTS idx_core_anomalies_unresolved ON core_anomalies(resol
 -- WORK SCHEDULING & OPERATIONS
 -- =============================================================================
 
--- Core work items (tracks scheduled/expected pipeline runs for operational automation)
+-- Core work items (tracks scheduled/expected operation runs for operational automation)
 -- Used by cron jobs, Kubernetes CronJobs, and schedulers to manage work queues
 CREATE TABLE IF NOT EXISTS core_work_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     
     -- Work definition
     domain TEXT NOT NULL,           -- e.g., "finra.otc_transparency"
-    pipeline TEXT NOT NULL,         -- e.g., "ingest_week", "normalize_week"
+    workflow TEXT NOT NULL,         -- e.g., "ingest_week", "normalize_week"
     partition_key TEXT NOT NULL,    -- JSON: {"week_ending": "2025-12-26", "tier": "OTC"}
-    params_json TEXT,               -- Additional pipeline parameters (JSON)
+    params_json TEXT,               -- Additional operation parameters (JSON)
     
     -- Scheduling
     desired_at TEXT NOT NULL,       -- When this work should be done (ISO 8601)
@@ -197,13 +197,13 @@ CREATE TABLE IF NOT EXISTS core_work_items (
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     completed_at TEXT,              -- When state became COMPLETE
     
-    UNIQUE(domain, pipeline, partition_key)
+    UNIQUE(domain, workflow, partition_key)
 );
 
 CREATE INDEX IF NOT EXISTS idx_core_work_items_state ON core_work_items(state);
 CREATE INDEX IF NOT EXISTS idx_core_work_items_desired_at ON core_work_items(desired_at);
 CREATE INDEX IF NOT EXISTS idx_core_work_items_next_attempt ON core_work_items(state, next_attempt_at);
-CREATE INDEX IF NOT EXISTS idx_core_work_items_domain_pipeline ON core_work_items(domain, pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_work_items_domain_workflow ON core_work_items(domain, workflow);
 CREATE INDEX IF NOT EXISTS idx_core_work_items_partition ON core_work_items(domain, partition_key);
 
 
@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS core_calc_dependencies (
     
     -- Downstream calculation
     calc_domain TEXT NOT NULL,
-    calc_pipeline TEXT NOT NULL,
+    calc_operation TEXT NOT NULL,
     calc_table TEXT,                -- Specific table (if applicable)
     
     -- Upstream dependency
@@ -228,18 +228,18 @@ CREATE TABLE IF NOT EXISTS core_calc_dependencies (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_core_calc_dependencies_calc ON core_calc_dependencies(calc_domain, calc_pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_calc_dependencies_calc ON core_calc_dependencies(calc_domain, calc_operation);
 CREATE INDEX IF NOT EXISTS idx_core_calc_dependencies_upstream ON core_calc_dependencies(depends_on_domain, depends_on_table);
 
 
--- Core expected schedules (declarative specification of pipeline execution cadence)
+-- Core expected schedules (declarative specification of operation execution cadence)
 -- Used for detecting missed runs, late data, and validating completeness
 CREATE TABLE IF NOT EXISTS core_expected_schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     
-    -- Pipeline identification
+    -- Operation identification
     domain TEXT NOT NULL,
-    pipeline TEXT NOT NULL,
+    workflow TEXT NOT NULL,
     
     -- Schedule specification
     schedule_type TEXT NOT NULL,    -- WEEKLY, DAILY, MONTHLY, ANNUAL, TRIGGERED
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS core_expected_schedules (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_core_expected_schedules_domain ON core_expected_schedules(domain, pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_expected_schedules_domain ON core_expected_schedules(domain, workflow);
 CREATE INDEX IF NOT EXISTS idx_core_expected_schedules_active ON core_expected_schedules(is_active);
 
 
@@ -362,3 +362,31 @@ CREATE TABLE IF NOT EXISTS core_concurrency_locks (
 
 CREATE INDEX IF NOT EXISTS idx_core_concurrency_locks_expires
     ON core_concurrency_locks(expires_at);
+
+
+-- =============================================================================
+-- EXECUTION LOGS (Structured Log Output)
+-- =============================================================================
+
+-- Captures structured log entries from run executions.
+-- Powers the Log Viewer panel in the dashboard.
+CREATE TABLE IF NOT EXISTS core_execution_logs (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id      TEXT NOT NULL,
+    step_name   TEXT,
+    level       TEXT NOT NULL DEFAULT 'INFO',
+    message     TEXT NOT NULL,
+    logger      TEXT DEFAULT '',
+    timestamp   TEXT NOT NULL,
+    line_number INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (run_id) REFERENCES core_executions(id)
+);
+
+-- Indexes for log queries
+CREATE INDEX IF NOT EXISTS idx_exec_logs_run
+    ON core_execution_logs(run_id);
+CREATE INDEX IF NOT EXISTS idx_exec_logs_run_step
+    ON core_execution_logs(run_id, step_name);
+CREATE INDEX IF NOT EXISTS idx_exec_logs_run_level
+    ON core_execution_logs(run_id, level);

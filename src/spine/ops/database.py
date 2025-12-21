@@ -10,9 +10,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from spine.core.logging import get_logger
-
 from spine.core.dialect import Dialect, SQLiteDialect
+from spine.core.logging import get_logger
 
 # The CORE_TABLES dict maps logical names to SQL table names.
 from spine.core.schema import CORE_TABLES

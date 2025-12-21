@@ -1,7 +1,6 @@
 """Test Harness — utilities for testing workflows.
 
-WHY
-───
+Manifesto:
 Testing workflows requires creating ``Runnable`` doubles, setting up
 context, and asserting on step results.  This module provides
 off-the-shelf helpers so test code is concise and expressive.
@@ -13,7 +12,7 @@ ARCHITECTURE
     Test doubles:
       StubRunnable              → always succeeds (configurable outputs)
       FailingRunnable           → always fails (configurable error)
-      ScriptedRunnable          → returns pre-configured results per pipeline
+      ScriptedRunnable          → returns pre-configured results per operation
 
     Assertion helpers:
       assert_workflow_completed(result)
@@ -30,7 +29,7 @@ ARCHITECTURE
 BEST PRACTICES
 ──────────────
 - Use ``StubRunnable`` for workflows that only have lambda steps.
-- Use ``ScriptedRunnable`` to test specific pipeline result handling.
+- Use ``ScriptedRunnable`` to test specific operation result handling.
 - Prefer ``assert_workflow_completed()`` over manual status checks.
 
 Related modules:
@@ -52,17 +51,21 @@ Example::
         result = runner.execute(wf)
         assert_workflow_completed(result)
         assert_step_output(result, "step_1", "count", 42)
+
+Tags:
+    spine-core, orchestration, testing, harness, assertions, mocks
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import Any
 
-from spine.execution.runnable import PipelineRunResult, Runnable
-from spine.orchestration.step_result import StepResult
+from spine.execution.runnable import OperationRunResult
 from spine.orchestration.step_types import Step
 from spine.orchestration.workflow import Workflow
 from spine.orchestration.workflow_context import WorkflowContext
@@ -72,7 +75,6 @@ from spine.orchestration.workflow_runner import (
     WorkflowStatus,
 )
 
-
 # ---------------------------------------------------------------------------
 # Test doubles (Runnable implementations for testing)
 # ---------------------------------------------------------------------------
@@ -81,13 +83,13 @@ from spine.orchestration.workflow_runner import (
 class StubRunnable:
     """Runnable that always returns success.
 
-    Optionally returns pre-configured output for specific pipelines.
+    Optionally returns pre-configured output for specific operations.
 
     Parameters
     ----------
     outputs
-        Mapping of ``pipeline_name → metrics dict`` to return on
-        success.  Pipelines not in the map return empty metrics.
+        Mapping of ``operation_name → metrics dict`` to return on
+        success.  Operations not in the map return empty metrics.
 
     Example::
 
@@ -99,22 +101,22 @@ class StubRunnable:
         self._outputs = outputs or {}
         self.calls: list[dict[str, Any]] = []
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> PipelineRunResult:
+    ) -> OperationRunResult:
         self.calls.append({
-            "pipeline_name": pipeline_name,
+            "operation_name": operation_name,
             "params": params,
             "parent_run_id": parent_run_id,
             "correlation_id": correlation_id,
         })
-        metrics = self._outputs.get(pipeline_name, {})
-        return PipelineRunResult(
+        metrics = self._outputs.get(operation_name, {})
+        return OperationRunResult(
             status="completed",
             metrics=metrics,
             run_id=f"stub-{uuid.uuid4().hex[:8]}",
@@ -128,8 +130,8 @@ class FailingRunnable:
     ----------
     error
         Error message to include in the result.
-    fail_pipelines
-        If set, only these pipelines fail — others succeed.
+    fail_operations
+        If set, only these operations fail — others succeed.
 
     Example::
 
@@ -139,73 +141,73 @@ class FailingRunnable:
     def __init__(
         self,
         error: str = "Simulated failure",
-        fail_pipelines: set[str] | None = None,
+        fail_operations: set[str] | None = None,
     ) -> None:
         self._error = error
-        self._fail_pipelines = fail_pipelines
+        self._fail_operations = fail_operations
         self.calls: list[dict[str, Any]] = []
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> PipelineRunResult:
+    ) -> OperationRunResult:
         self.calls.append({
-            "pipeline_name": pipeline_name,
+            "operation_name": operation_name,
             "params": params,
         })
-        if self._fail_pipelines is None or pipeline_name in self._fail_pipelines:
-            return PipelineRunResult(
+        if self._fail_operations is None or operation_name in self._fail_operations:
+            return OperationRunResult(
                 status="failed",
                 error=self._error,
             )
-        return PipelineRunResult(status="completed")
+        return OperationRunResult(status="completed")
 
 
 class ScriptedRunnable:
-    """Runnable that returns pre-configured results per pipeline.
+    """Runnable that returns pre-configured results per operation.
 
-    Each pipeline can be assigned a specific ``PipelineRunResult``.
-    Unregistered pipelines return a default success.
+    Each operation can be assigned a specific ``OperationRunResult``.
+    Unregistered operations return a default success.
 
     Parameters
     ----------
     scripts
-        Mapping of ``pipeline_name → PipelineRunResult``.
+        Mapping of ``operation_name → OperationRunResult``.
 
     Example::
 
         runnable = ScriptedRunnable(scripts={
-            "data.fetch": PipelineRunResult(status="completed", metrics={"rows": 42}),
-            "data.store": PipelineRunResult(status="failed", error="Disk full"),
+            "data.fetch": OperationRunResult(status="completed", metrics={"rows": 42}),
+            "data.store": OperationRunResult(status="failed", error="Disk full"),
         })
     """
 
     def __init__(
         self,
-        scripts: dict[str, PipelineRunResult] | None = None,
+        scripts: dict[str, OperationRunResult] | None = None,
     ) -> None:
         self._scripts = scripts or {}
         self.calls: list[dict[str, Any]] = []
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> PipelineRunResult:
+    ) -> OperationRunResult:
         self.calls.append({
-            "pipeline_name": pipeline_name,
+            "operation_name": operation_name,
             "params": params,
         })
-        if pipeline_name in self._scripts:
-            return self._scripts[pipeline_name]
-        return PipelineRunResult(status="completed")
+        if operation_name in self._scripts:
+            return self._scripts[operation_name]
+        return OperationRunResult(status="completed")
 
 
 # ---------------------------------------------------------------------------

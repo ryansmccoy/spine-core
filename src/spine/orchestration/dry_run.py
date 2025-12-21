@@ -1,12 +1,11 @@
 """Dry-Run Mode — preview workflow execution without side effects.
 
-WHY
-───
-Before running a workflow against production data, developers need to
+Manifesto:
+    Before running a workflow against production data, developers need to
 verify the execution plan: which steps will run, in what order, and
 what resources will be consumed.  Dry-run mode executes the workflow
 graph *structurally* — evaluating dependencies, validating configs,
-and estimating cost — without actually invoking pipeline backends.
+and estimating cost — without actually invoking operation backends.
 
 ARCHITECTURE
 ────────────
@@ -37,11 +36,11 @@ ARCHITECTURE
 BEST PRACTICES
 ──────────────
 - Always dry-run before deploying to production.
-- Register cost estimators for expensive pipelines.
+- Register cost estimators for expensive operations.
 - Combine with ``lint_workflow()`` for comprehensive pre-flight checks.
 
 Related modules:
-    workflow_runner.py — has ``dry_run=True`` for mock pipeline runs
+    workflow_runner.py — has ``dry_run=True`` for mock operation runs
     linter.py          — static analysis (complementary)
     visualizer.py      — visual representation of the plan
 
@@ -53,6 +52,13 @@ Example::
     print(result.summary())
     if result.is_valid:
         runner.execute(workflow, params=params)
+
+Tags:
+    spine-core, orchestration, dry-run, preview, validation,
+    cost-estimation, side-effect-free
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -63,7 +69,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from spine.orchestration.step_types import Step, StepType
-from spine.orchestration.workflow import ExecutionMode, Workflow
+from spine.orchestration.workflow import Workflow
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +78,7 @@ logger = logging.getLogger(__name__)
 # Cost estimator registry
 # ---------------------------------------------------------------------------
 
-# Maps pipeline_name → estimated seconds
+# Maps operation_name → estimated seconds
 _COST_ESTIMATES: dict[str, float] = {}
 
 # Custom estimator functions: (step, params) → estimated_seconds
@@ -81,24 +87,24 @@ _CUSTOM_ESTIMATORS: dict[str, Callable[[Step, dict[str, Any]], float]] = {}
 # Default per-type estimates
 _DEFAULT_ESTIMATES: dict[str, float] = {
     "lambda": 0.1,
-    "pipeline": 5.0,
+    "operation": 5.0,
     "choice": 0.01,
     "wait": 0.0,  # actual wait time used
     "map": 10.0,
 }
 
 
-def register_cost_estimate(pipeline_name: str, estimated_seconds: float) -> None:
-    """Register an estimated execution time for a pipeline.
+def register_cost_estimate(operation_name: str, estimated_seconds: float) -> None:
+    """Register an estimated execution time for a operation.
 
     Parameters
     ----------
-    pipeline_name
-        The pipeline identifier (e.g. ``"finra.otc.ingest"``).
+    operation_name
+        The operation identifier (e.g. ``"finra.otc.ingest"``).
     estimated_seconds
         Expected duration in seconds.
     """
-    _COST_ESTIMATES[pipeline_name] = estimated_seconds
+    _COST_ESTIMATES[operation_name] = estimated_seconds
 
 
 def register_estimator(
@@ -134,7 +140,7 @@ class DryRunStep:
 
     Attributes:
         step_name: Name of the step.
-        step_type: Type (lambda, pipeline, choice, etc.).
+        step_type: Type (lambda, operation, choice, etc.).
         order: Execution order (1-based).
         estimated_seconds: Estimated duration.
         will_execute: Whether this step will actually run.
@@ -248,10 +254,10 @@ def _estimate_step(step: Step, params: dict[str, Any]) -> float:
     if step.name in _CUSTOM_ESTIMATORS:
         return _CUSTOM_ESTIMATORS[step.name](step, params)
 
-    # Pipeline-specific estimate
-    if step.step_type == StepType.PIPELINE and step.pipeline_name:
-        if step.pipeline_name in _COST_ESTIMATES:
-            return _COST_ESTIMATES[step.pipeline_name]
+    # Operation-specific estimate
+    if step.step_type == StepType.OPERATION and step.operation_name:
+        if step.operation_name in _COST_ESTIMATES:
+            return _COST_ESTIMATES[step.operation_name]
 
     # Wait steps use their configured duration
     if step.step_type == StepType.WAIT and step.duration_seconds:
@@ -268,8 +274,8 @@ def _validate_step(step: Step, params: dict[str, Any]) -> list[str]:
     if step.step_type == StepType.LAMBDA and step.handler is None:
         issues.append(f"Step '{step.name}': lambda has no handler")
 
-    if step.step_type == StepType.PIPELINE and not step.pipeline_name:
-        issues.append(f"Step '{step.name}': pipeline has no pipeline_name")
+    if step.step_type == StepType.OPERATION and not step.operation_name:
+        issues.append(f"Step '{step.name}': operation has no operation_name")
 
     if step.step_type == StepType.CHOICE and step.condition is None:
         issues.append(f"Step '{step.name}': choice has no condition function")
@@ -281,10 +287,10 @@ def _collect_notes(step: Step, params: dict[str, Any]) -> list[str]:
     """Collect informational notes about a step."""
     notes: list[str] = []
 
-    if step.step_type == StepType.PIPELINE:
-        if step.pipeline_name and step.pipeline_name in _COST_ESTIMATES:
-            notes.append(f"Custom cost estimate: {_COST_ESTIMATES[step.pipeline_name]:.1f}s")
-        elif step.pipeline_name:
+    if step.step_type == StepType.OPERATION:
+        if step.operation_name and step.operation_name in _COST_ESTIMATES:
+            notes.append(f"Custom cost estimate: {_COST_ESTIMATES[step.operation_name]:.1f}s")
+        elif step.operation_name:
             notes.append("Using default cost estimate (register_cost_estimate for accuracy)")
 
     if step.on_error == "continue":

@@ -19,6 +19,13 @@ Endpoints:
     DELETE /sources/connections/{id}  Delete a database connection
     POST /sources/connections/{id}/test  Test a database connection
 
+Manifesto:
+    Data sources must be manageable through the API so operators
+    can add, update, and monitor ingestion endpoints dynamically.
+
+Tags:
+    spine-core, api, sources, data-source, ingestion, configuration
+
 Doc-Types: API_REFERENCE
 """
 

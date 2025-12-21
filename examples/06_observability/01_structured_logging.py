@@ -6,7 +6,7 @@ WHY STRUCTURED LOGGING
 Plain-text log lines are impossible to query at scale.  Structured
 logging emits key-value pairs that can be indexed by ELK, Datadog,
 or CloudWatch Insights.  Instead of grepping for a substring you can
-write `pipeline="otc_volume" AND stage="transform" AND rejected>100`.
+write `operation="otc_volume" AND stage="transform" AND rejected>100`.
 
 ARCHITECTURE
 ────────────
@@ -37,8 +37,8 @@ KEY FUNCTIONS
 BEST PRACTICES
 ──────────────
 • Use json_output=True in production for machine-parseable logs.
-• Bind batch_id and domain early in the pipeline function.
-• Log stage transitions to track pipeline progress.
+• Bind batch_id and domain early in the operation function.
+• Log stage transitions to track operation progress.
 • Include record counts and durations in every stage log.
 • Call clear_context() when switching to a new request/batch.
 
@@ -134,16 +134,16 @@ def main():
             error_type=type(e).__name__,
         )
     
-    # === 7. Real-world: Pipeline logging ===
-    print("\n[7] Real-world: Pipeline Logging")
+    # === 7. Real-world: Operation logging ===
+    print("\n[7] Real-world: Operation Logging")
     
-    def run_pipeline(name: str, week: str):
-        """Pipeline with structured logging."""
-        log = get_logger("pipeline")
+    def run_operation(name: str, week: str):
+        """Operation with structured logging."""
+        log = get_logger("operation")
         
-        add_context(pipeline=name, week=week)
+        add_context(operation=name, week=week)
         
-        log.info("Pipeline started")
+        log.info("Operation started")
         
         # Extract stage
         add_context(stage="extract")
@@ -163,11 +163,11 @@ def main():
         log.info("Loading to database")
         log.info("Load complete", inserted=valid)
         
-        log.info("Pipeline complete", total_records=records, success_rate=valid/records)
+        log.info("Operation complete", total_records=records, success_rate=valid/records)
         
         clear_context()
     
-    run_pipeline("otc_volume", "2024-01-19")
+    run_operation("otc_volume", "2024-01-19")
     
     print("\n" + "=" * 60)
     print("[OK] Structured Logging Complete!")

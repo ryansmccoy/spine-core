@@ -28,6 +28,18 @@ Example:
             output={"processed": 100},
             context_updates={"last_step": "my_step"},
         )
+
+Manifesto:
+    Steps need to share state without coupling to each other.
+    WorkflowContext provides a controlled, immutable-snapshot
+    namespace so each step reads a consistent view and writes
+    are batched between steps.
+
+Tags:
+    spine-core, orchestration, context, shared-state, immutable-snapshot
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

@@ -54,8 +54,8 @@ def create_schedule(
 
     ctx, _ = make_context(database)
     request = CreateScheduleRequest(
-        workflow_name=workflow_name,
-        cron=cron,
+        target_name=workflow_name,
+        cron_expression=cron or None,
         interval_seconds=interval,
         enabled=enabled,
     )
@@ -79,7 +79,7 @@ def update_schedule(
     ctx, _ = make_context(database)
     request = UpdateScheduleRequest(
         schedule_id=schedule_id,
-        cron=cron,
+        cron_expression=cron,
         interval_seconds=interval,
         enabled=enabled,
     )

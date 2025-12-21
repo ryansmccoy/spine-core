@@ -5,15 +5,15 @@ testbed runs, job executions, and service health checks. The models
 form a composition hierarchy: individual results (schema, test, example)
 roll up into per-backend results, which roll up into overall run results.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     After a nightly testbed run against PostgreSQL, MySQL, and TimescaleDB,
     every stakeholder needs a different view: CI wants exit code 0/1,
     the team wants an HTML dashboard, ops wants a JSON artifact for
     Elasticsearch ingestion. These models support all three via
     ``mark_complete()`` + ``model_dump_json()`` + ``LogCollector.write_html_report()``.
 
-Why This Matters — General Pipelines:
-    Structured results enable programmatic decision-making. A CI pipeline
+Why This Matters — General Operations:
+    Structured results enable programmatic decision-making. A CI operation
     can check ``result.overall_status == OverallStatus.PASSED`` rather
     than parsing log output. The ``compute_status()`` method on
     ``BackendResult`` derives PASSED/FAILED/PARTIAL from sub-results

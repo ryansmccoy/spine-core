@@ -10,7 +10,7 @@ generic exceptions that lose context, SpineError and its subclasses carry:
 - **Category:** What kind of error (network, validation, config, etc.)
 - **Retryable:** Whether the operation can be retried automatically
 - **Retry-after:** How long to wait before retrying
-- **Context:** Rich metadata including pipeline, source, URL, and custom fields
+- **Context:** Rich metadata including operation, source, URL, and custom fields
 - **Cause:** Chained underlying exception for root cause analysis
 
 Manifesto:
@@ -34,11 +34,11 @@ Architecture:
         │  TimeoutError      SourceNotFound    ConstraintError            │
         │  RateLimitError    SourceUnavailable                            │
         │                                                                  │
-        │  ConfigError       AuthError         PipelineError              │
-        │  (CONFIG)          (AUTH)            (PIPELINE)                 │
+        │  ConfigError       AuthError         OperationError              │
+        │  (CONFIG)          (AUTH)            (operation)                 │
         │       │                │                   │                     │
         │  MissingConfig     Authentication    BadParamsError             │
-        │  InvalidConfig     Authorization     PipelineNotFound           │
+        │  InvalidConfig     Authorization     OperationNotFound           │
         │                                                                  │
         │  StorageError      DatabaseError     OrchestrationError         │
         │  (STORAGE)         (DATABASE)        (ORCHESTRATION)            │
@@ -49,14 +49,14 @@ Architecture:
 
 Features:
     - **ErrorCategory enum:** Standard categories for classification and routing
-    - **ErrorContext dataclass:** Structured metadata (pipeline, source, URL, etc.)
+    - **ErrorContext dataclass:** Structured metadata (operation, source, URL, etc.)
     - **SpineError base class:** Common interface for all errors
     - **Transient errors:** Network, timeout, rate limit - usually retryable
     - **Source errors:** Upstream API/file errors - context-dependent retry
     - **Validation errors:** Schema/constraint violations - never retryable
     - **Config errors:** Missing/invalid settings - never retryable
     - **Auth errors:** Authentication/authorization - never retryable
-    - **Pipeline/Orchestration errors:** Execution failures
+    - **Operation/Orchestration errors:** Execution failures
 
 Examples:
     Creating a retryable network error:
@@ -151,7 +151,7 @@ class ErrorCategory(str, Enum):
     - **Infrastructure (usually transient):** NETWORK, DATABASE, STORAGE
     - **Source/data errors:** SOURCE, PARSE, VALIDATION
     - **Configuration (never retryable):** CONFIG, AUTH
-    - **Application errors:** PIPELINE, ORCHESTRATION
+    - **Application errors:** operation, ORCHESTRATION
     - **Internal errors:** INTERNAL, UNKNOWN
 
     Manifesto:
@@ -168,7 +168,7 @@ class ErrorCategory(str, Enum):
             ├──────────────────────────────────────────────────────────┤
             │  Infrastructure    │  Data           │  Application      │
             │  ───────────────   │  ────           │  ───────────      │
-            │  NETWORK           │  SOURCE         │  PIPELINE         │
+            │  NETWORK           │  SOURCE         │  operation         │
             │  DATABASE          │  PARSE          │  ORCHESTRATION    │
             │  STORAGE           │  VALIDATION     │                   │
             ├──────────────────────────────────────────────────────────┤
@@ -213,7 +213,7 @@ class ErrorCategory(str, Enum):
         VALIDATION: Schema, constraint violations
         CONFIG: Missing config, invalid settings
         AUTH: Authentication, authorization
-        PIPELINE: Pipeline execution failures
+        operation: Operation execution failures
         ORCHESTRATION: Workflow, scheduler errors
         INTERNAL: Bugs, unexpected state
         UNKNOWN: Uncategorized errors
@@ -241,7 +241,7 @@ class ErrorCategory(str, Enum):
     AUTH = "AUTH"  # Authentication, authorization
 
     # Application errors
-    PIPELINE = "PIPELINE"  # Pipeline execution failures
+    operation = "operation"  # Operation execution failures
     ORCHESTRATION = "ORCHESTRATION"  # Workflow, scheduler errors
 
     # Internal errors
@@ -325,7 +325,7 @@ class ErrorContext:
         ✅ DO: Redact sensitive values before adding
 
     Attributes:
-        pipeline: Name of the Pipeline where error occurred
+        operation: Name of the Operation where error occurred
         workflow: Name of the workflow
         step: Name of the step within the workflow
         run_id: Run identifier
@@ -345,7 +345,7 @@ class ErrorContext:
     """
 
     # Execution context
-    pipeline: str | None = None
+    operation: str | None = None
     workflow: str | None = None
     step: str | None = None
     run_id: str | None = None
@@ -366,7 +366,7 @@ class ErrorContext:
         """Convert to dictionary for logging."""
         result = {}
         for key in [
-            "pipeline",
+            "operation",
             "workflow",
             "step",
             "run_id",
@@ -866,27 +866,27 @@ class AuthorizationError(AuthError):
 
 
 # =============================================================================
-# PIPELINE/ORCHESTRATION ERRORS
+# operation/ORCHESTRATION ERRORS
 # =============================================================================
 
 
-class PipelineError(SpineError):
-    """Pipeline execution error."""
+class OperationError(SpineError):
+    """Operation execution error."""
 
-    default_category = ErrorCategory.PIPELINE
+    default_category = ErrorCategory.operation
     default_retryable = False
 
 
-class PipelineNotFoundError(PipelineError):
-    """Pipeline not found in registry."""
+class OperationNotFoundError(OperationError):
+    """Operation not found in registry."""
 
     def __init__(self, name: str):
-        self.pipeline_name = name
-        super().__init__(f"Pipeline not found: {name}")
+        self.operation_name = name
+        super().__init__(f"Operation not found: {name}")
 
 
-class BadParamsError(PipelineError):
-    """Invalid pipeline parameters."""
+class BadParamsError(OperationError):
+    """Invalid operation parameters."""
 
     def __init__(
         self,
@@ -1022,9 +1022,9 @@ __all__ = [
     "AuthError",
     "AuthenticationError",
     "AuthorizationError",
-    # Pipeline/Orchestration
-    "PipelineError",
-    "PipelineNotFoundError",
+    # Operation/Orchestration
+    "OperationError",
+    "OperationNotFoundError",
     "BadParamsError",
     "OrchestrationError",
     "WorkflowError",

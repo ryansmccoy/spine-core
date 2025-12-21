@@ -23,7 +23,7 @@ Architecture:
         ├── AsyncConnection     — async DB protocol (asyncpg, aiosqlite, etc.)
         ├── StorageBackend      — sync storage with connection + transaction mgmt
         ├── DispatcherProtocol  — event/task dispatch contract
-        ├── PipelineProtocol    — data pipeline contract
+        ├── OperationProtocol    — data operation contract
         └── ExecutorProtocol    — task executor contract
 
     Consumers:
@@ -31,8 +31,39 @@ Architecture:
         storage.py, adapters/database.py, framework/db.py,
         orchestration/tracked_runner.py
 
+Features:
+    - **Connection:** Sync DB protocol (execute, fetchone, fetchall, commit)
+    - **AsyncConnection:** Async DB protocol for advanced tier adapters
+    - **StorageBackend:** Connection lifecycle + transaction management
+    - **DispatcherProtocol:** Event/task dispatch contract for decoupled messaging
+    - **OperationProtocol:** Data operation contract for operation steps
+    - **ExecutorProtocol:** Task executor contract for scheduled/queued work
+
+Guardrails:
+    ❌ DON'T: Duplicate Connection(Protocol) in other modules
+    ✅ DO: Import from spine.core.protocols (single source of truth)
+
+    ❌ DON'T: Add async methods to the Connection protocol
+    ✅ DO: Use AsyncConnection for async needs; domain code stays sync
+
+    ❌ DON'T: Add implementation logic to protocol classes
+    ✅ DO: Keep protocols pure contracts — implementations go in adapters
+
+Performance:
+    - Protocol overhead: Zero at runtime (structural subtyping)
+    - isinstance() checks: Enabled via @runtime_checkable, O(n) on methods
+    - No registration needed: Any object matching the shape satisfies the protocol
+
+Context:
+    Problem: Connection(Protocol) was duplicated in 9 files (~400 LOC of pure
+        duplication). Changes to the contract required editing all 9 files.
+    Solution: Single canonical definition with all protocols in one module.
+        Every module imports from here.
+    Alternatives Considered: ABC base classes (require inheritance), zope.interface
+        (external dependency), informal duck typing (no IDE support).
+
 Tags:
-    protocol, connection, async, database, dispatcher, pipeline, executor,
+    protocol, connection, async, database, dispatcher, operation, executor,
     spine-core, contracts
 
 Doc-Types:
@@ -202,25 +233,25 @@ class DispatcherProtocol(Protocol):
         ...
 
 
-class PipelineProtocol(Protocol):
+class OperationProtocol(Protocol):
     """
-    Contract for data pipelines.
+    Contract for data operations.
 
-    Defines the minimal interface that all pipeline implementations must
-    satisfy. Enables the framework to run arbitrary pipelines without
+    Defines the minimal interface that all operation implementations must
+    satisfy. Enables the framework to run arbitrary operations without
     knowing their concrete type.
 
     Tags:
-        protocol, pipeline, data-processing, decoupling
+        protocol, operation, data-processing, decoupling
     """
 
     @property
     def name(self) -> str:
-        """Pipeline name."""
+        """Operation name."""
         ...
 
     def run(self, conn: Connection, **kwargs: Any) -> Any:
-        """Execute the pipeline with a database connection."""
+        """Execute the operation with a database connection."""
         ...
 
 

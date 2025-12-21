@@ -5,7 +5,7 @@ WHY APPLICATION METRICS
 ───────────────────────
 Logs tell you *what happened*; metrics tell you *how much* and
 *how fast*.  A dashboard showing "p95 ingestion latency = 12 s"
-or "4 pipeline failures in the last hour" catches problems that
+or "4 operation failures in the last hour" catches problems that
 would be invisible in log output alone.
 
 METRIC TYPES
@@ -45,7 +45,7 @@ BEST PRACTICES
 ──────────────
 • Use snake_case with _total suffix for counters.
 • Keep label cardinality low (≤ 10 values per label).
-• Use execution_metrics for pre-built pipeline tracking.
+• Use execution_metrics for pre-built operation tracking.
 • Pair histogram buckets with SLO thresholds (e.g., p99 < 5 s).
 
 Run: python examples/06_observability/02_metrics.py
@@ -142,18 +142,18 @@ def main():
     # === 5. Labeled metrics ===
     print("\n[5] Labeled Metrics")
     
-    pipeline_runs = counter(
-        name="pipeline_runs_total",
-        description="Total pipeline runs",
-        labels=["pipeline", "status"],
+    operation_runs = counter(
+        name="operation_runs_total",
+        description="Total operation runs",
+        labels=["operation", "status"],
     )
     
-    # Different pipelines
-    pipeline_runs.labels(pipeline="otc_volume", status="success").inc(10)
-    pipeline_runs.labels(pipeline="otc_volume", status="failure").inc(2)
-    pipeline_runs.labels(pipeline="price_fetch", status="success").inc(50)
+    # Different operations
+    operation_runs.labels(operation="otc_volume", status="success").inc(10)
+    operation_runs.labels(operation="otc_volume", status="failure").inc(2)
+    operation_runs.labels(operation="price_fetch", status="success").inc(50)
     
-    print("  Pipeline run counts:")
+    print("  Operation run counts:")
     print("    otc_volume: 10 success, 2 failure")
     print("    price_fetch: 50 success")
     
@@ -183,7 +183,7 @@ def main():
     
     # === 7. Execution Metrics (pre-defined) ===
     print("\n[7] Execution Metrics (pre-defined)")
-    print("  execution_metrics provides pre-built pipeline tracking metrics")
+    print("  execution_metrics provides pre-built operation tracking metrics")
     
     # execution_metrics is an ExecutionMetrics instance with:
     #   .submitted (counter), .completed (counter), .duration (histogram)
@@ -198,53 +198,53 @@ def main():
     print(f"  Duration: {duration*1000:.1f}ms")
     print("  Metrics tracked: submitted count, completed count, duration histogram")
     
-    # === 8. Real-world: Pipeline metrics ===
-    print("\n[8] Real-world: Pipeline Metrics")
+    # === 8. Real-world: Operation metrics ===
+    print("\n[8] Real-world: Operation Metrics")
     
-    # Define pipeline metrics
+    # Define operation metrics
     records_processed = counter(
         name="records_processed_total",
         description="Total records processed",
-        labels=["pipeline", "stage"],
+        labels=["operation", "stage"],
     )
     
     processing_errors = counter(
         name="processing_errors_total",
         description="Processing errors",
-        labels=["pipeline", "error_type"],
+        labels=["operation", "error_type"],
     )
     
     batch_size = histogram(
         name="batch_size",
         description="Batch size distribution",
-        labels=["pipeline"],
+        labels=["operation"],
     )
     
-    def run_pipeline_with_metrics(name: str, data: list):
-        """Pipeline with comprehensive metrics."""
+    def run_operation_with_metrics(name: str, data: list):
+        """Operation with comprehensive metrics."""
         # Record batch size
-        batch_size.labels(pipeline=name).observe(len(data))
+        batch_size.labels(operation=name).observe(len(data))
         
         # Extract stage
-        records_processed.labels(pipeline=name, stage="extract").inc(len(data))
+        records_processed.labels(operation=name, stage="extract").inc(len(data))
         
         # Transform stage (simulate some errors)
         valid = int(len(data) * 0.95)
         invalid = len(data) - valid
         
-        records_processed.labels(pipeline=name, stage="transform").inc(valid)
-        processing_errors.labels(pipeline=name, error_type="validation").inc(invalid)
+        records_processed.labels(operation=name, stage="transform").inc(valid)
+        processing_errors.labels(operation=name, error_type="validation").inc(invalid)
         
         # Load stage
-        records_processed.labels(pipeline=name, stage="load").inc(valid)
+        records_processed.labels(operation=name, stage="load").inc(valid)
         
         return {"processed": valid, "errors": invalid}
     
-    # Run pipeline
+    # Run operation
     data = list(range(100))
-    result = run_pipeline_with_metrics("otc_volume", data)
+    result = run_operation_with_metrics("otc_volume", data)
     
-    print(f"  Pipeline complete:")
+    print(f"  Operation complete:")
     print(f"    Processed: {result['processed']}")
     print(f"    Errors: {result['errors']}")
     

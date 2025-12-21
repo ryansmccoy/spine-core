@@ -1,0 +1,24 @@
+{
+  "phases": {
+    "1": {
+      "name": "Project Bootstrap",
+      "commits": ["aaa0001"]
+    },
+    "2": {
+      "name": "Core Primitives",
+      "commits": ["bbb0002"]
+    },
+    "3": {
+      "name": "Data Layer",
+      "commits": ["ccc0003", "ddd0004"]
+    },
+    "4": {
+      "name": "Execution Engine",
+      "commits": ["eee0005"]
+    },
+    "5": {
+      "name": "Bug Fixes & Testing",
+      "commits": ["fff0006", "ggg0007"]
+    }
+  }
+}

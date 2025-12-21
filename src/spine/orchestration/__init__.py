@@ -1,9 +1,8 @@
 """
 Spine Orchestration — Workflow execution engine.
 
-WHY
-───
-Raw pipelines (``Runnable.submit_pipeline_sync``) execute one unit of work.
+Manifesto:
+    Raw operations (``Runnable.submit_operation_sync``) execute one unit of work.
 Orchestration layers **multiple** units into a directed workflow with context
 passing, conditional branching, error policies, and optional persistence.
 
@@ -13,7 +12,7 @@ ARCHITECTURE
 
     Workflow (DAG of Steps)
       ├── Step.lambda_()          ─ inline handler
-      ├── Step.pipeline()         ─ wraps registered Pipeline
+      ├── Step.operation()         ─ wraps registered Operation
       ├── Step.from_function()    ─ plain-function adapter
       ├── Step.choice()           ─ conditional branch
       ├── Step.wait()             ─ timed pause
@@ -50,7 +49,7 @@ MODULE MAP (recommended reading order)
 14. container_runnable.py ─ DI-container Runnable bridge
 
 Tier availability:
-- Basic: Workflow, Step (lambda, pipeline, from_function), WorkflowRunner
+- Basic: Workflow, Step (lambda, operation, from_function), WorkflowRunner
 - Intermediate: + ChoiceStep (conditional branching)
 - Advanced: + WaitStep, MapStep, Checkpointing, Resume
 
@@ -71,9 +70,9 @@ Example (classic — framework-aware handler):
     workflow = Workflow(
         name="finra.weekly_refresh",
         steps=[
-            Step.pipeline("ingest", "finra.otc_transparency.ingest_week"),
+            Step.operation("ingest", "finra.otc_transparency.ingest_week"),
             Step.lambda_("validate", validate_fn),
-            Step.pipeline("normalize", "finra.otc_transparency.normalize_week"),
+            Step.operation("normalize", "finra.otc_transparency.normalize_week"),
         ],
     )
 
@@ -93,22 +92,43 @@ Example (plain function — framework-agnostic):
 
     # As a workflow step:
     workflow = Workflow(
-        name="my.pipeline",
+        name="my.operation",
         steps=[
             Step.from_function("ingest", fetch_data),
             validate_records.as_step(),
         ],
     )
+
+Tags:
+    spine-core, orchestration, workflow, execution-engine,
+    DAG, context-passing, error-policies, persistence
+
+Doc-Types:
+    package-overview, architecture-map, module-index
 """
 
-from spine.orchestration.step_adapters import (
-    WorkflowStepMeta,
-    adapt_function,
-    get_step_meta,
-    is_workflow_step,
-    workflow_step,
+# Composition operators
+from spine.orchestration.composition import (
+    chain,
+    conditional,
+    merge_workflows,
+    parallel,
+    retry,
 )
 
+# workflow_yaml is lazy-loaded — requires pydantic (optional dep)
+# Access WorkflowSpec or validate_yaml_workflow via __getattr__
+from spine.orchestration.container_runnable import ContainerRunnable
+
+# Dry-run analysis
+from spine.orchestration.dry_run import (
+    DryRunResult,
+    DryRunStep,
+    clear_cost_registry,
+    dry_run,
+    register_cost_estimate,
+    register_estimator,
+)
 from spine.orchestration.exceptions import (
     CycleDetectedError,
     GroupError,
@@ -116,6 +136,55 @@ from spine.orchestration.exceptions import (
     InvalidGroupSpecError,
     PlanResolutionError,
     StepNotFoundError,
+)
+
+# Linter (static analysis)
+from spine.orchestration.linter import (
+    LintDiagnostic,
+    LintResult,
+    Severity,
+    clear_custom_rules,
+    lint_workflow,
+    list_lint_rules,
+    register_lint_rule,
+)
+
+# LLM provider protocol
+from spine.orchestration.llm import (
+    BudgetExhaustedError,
+    LLMProvider,
+    LLMResponse,
+    LLMRouter,
+    Message,
+    MockLLMProvider,
+    Role,
+    TokenBudget,
+    TokenUsage,
+)
+
+# Managed workflows (high-level import-and-manage API)
+from spine.orchestration.managed_workflow import (
+    ManagedOperation,
+    ManagedWorkflow,
+    manage,
+)
+from spine.orchestration.playground import StepSnapshot, WorkflowPlayground
+
+# Recorder (capture and replay)
+from spine.orchestration.recorder import (
+    RecordingRunner,
+    ReplayResult,
+    StepDiff,
+    StepRecording,
+    WorkflowRecording,
+    replay,
+)
+from spine.orchestration.step_adapters import (
+    WorkflowStepMeta,
+    adapt_function,
+    get_step_meta,
+    is_workflow_step,
+    workflow_step,
 )
 from spine.orchestration.step_result import (
     ErrorCategory,
@@ -129,6 +198,33 @@ from spine.orchestration.step_types import (
     StepType,
     resolve_callable_ref,
 )
+from spine.orchestration.templates import (
+    conditional_branch,
+    etl_operation,
+    fan_out_fan_in,
+    get_template,
+    list_templates,
+    register_template,
+    retry_wrapper,
+    scheduled_batch,
+)
+
+# Test harness
+from spine.orchestration.testing import (
+    FailingRunnable,
+    ScriptedRunnable,
+    StubRunnable,
+    WorkflowAssertionError,
+    assert_no_failures,
+    assert_step_count,
+    assert_step_output,
+    assert_steps_ran,
+    assert_workflow_completed,
+    assert_workflow_failed,
+    make_context,
+    make_runner,
+    make_workflow,
+)
 
 # Tracked runner (with database persistence)
 from spine.orchestration.tracked_runner import (
@@ -137,13 +233,12 @@ from spine.orchestration.tracked_runner import (
     list_workflow_failures,
 )
 
-# Managed workflows (high-level import-and-manage API)
-from spine.orchestration.managed_workflow import (
-    ManagedPipeline,
-    ManagedWorkflow,
-    manage,
+# Visualizer (Mermaid, ASCII, summary)
+from spine.orchestration.visualizer import (
+    visualize_ascii,
+    visualize_mermaid,
+    visualize_summary,
 )
-
 from spine.orchestration.workflow import (
     ExecutionMode,
     FailurePolicy,
@@ -165,99 +260,6 @@ from spine.orchestration.workflow_runner import (
     WorkflowRunner,
     WorkflowStatus,
     get_workflow_runner,
-)
-
-# workflow_yaml is lazy-loaded — requires pydantic (optional dep)
-# Access WorkflowSpec or validate_yaml_workflow via __getattr__
-
-from spine.orchestration.container_runnable import ContainerRunnable
-from spine.orchestration.playground import StepSnapshot, WorkflowPlayground
-from spine.orchestration.templates import (
-    conditional_branch,
-    etl_pipeline,
-    fan_out_fan_in,
-    get_template,
-    list_templates,
-    register_template,
-    retry_wrapper,
-    scheduled_batch,
-)
-
-# Linter (static analysis)
-from spine.orchestration.linter import (
-    LintDiagnostic,
-    LintResult,
-    Severity,
-    clear_custom_rules,
-    lint_workflow,
-    list_lint_rules,
-    register_lint_rule,
-)
-
-# Recorder (capture and replay)
-from spine.orchestration.recorder import (
-    RecordingRunner,
-    ReplayResult,
-    StepDiff,
-    StepRecording,
-    WorkflowRecording,
-    replay,
-)
-
-# Visualizer (Mermaid, ASCII, summary)
-from spine.orchestration.visualizer import (
-    visualize_ascii,
-    visualize_mermaid,
-    visualize_summary,
-)
-
-# Composition operators
-from spine.orchestration.composition import (
-    chain,
-    conditional,
-    merge_workflows,
-    parallel,
-    retry,
-)
-
-# Dry-run analysis
-from spine.orchestration.dry_run import (
-    DryRunResult,
-    DryRunStep,
-    clear_cost_registry,
-    dry_run,
-    register_cost_estimate,
-    register_estimator,
-)
-
-# Test harness
-from spine.orchestration.testing import (
-    FailingRunnable,
-    ScriptedRunnable,
-    StubRunnable,
-    WorkflowAssertionError,
-    assert_no_failures,
-    assert_step_count,
-    assert_step_output,
-    assert_steps_ran,
-    assert_workflow_completed,
-    assert_workflow_failed,
-    make_context,
-    make_runner,
-    make_workflow,
-)
-
-# LLM provider protocol
-from spine.orchestration.llm import (
-    BudgetExhaustedError,
-    LLMProvider,
-    LLMResponse,
-    LLMRouter,
-    Message,
-    MockLLMProvider,
-    Role,
-    TokenBudget,
-    TokenUsage,
 )
 
 __all__ = [
@@ -310,7 +312,7 @@ __all__ = [
     "list_workflow_failures",
     # Managed Workflows (high-level import-and-manage API)
     "ManagedWorkflow",
-    "ManagedPipeline",
+    "ManagedOperation",
     "manage",
     # YAML support
     "WorkflowSpec",
@@ -321,7 +323,7 @@ __all__ = [
     "WorkflowPlayground",
     "StepSnapshot",
     # Templates
-    "etl_pipeline",
+    "etl_operation",
     "fan_out_fan_in",
     "conditional_branch",
     "retry_wrapper",

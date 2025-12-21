@@ -1,7 +1,6 @@
 """Async Local Executor — asyncio-based bounded concurrency.
 
-WHY
-───
+Manifesto:
 I/O-bound work (HTTP downloads, DB queries, LLM API calls) benefits
 from async concurrency without OS threads.  ``AsyncLocalExecutor``
 uses ``asyncio.Semaphore`` for bounded parallelism on a single
@@ -36,6 +35,12 @@ Example::
     executor.register("task", "download", download_handler)
     ref = await executor.submit(task_spec("download", {"url": url}))
     await executor.wait(ref)
+
+Tags:
+    spine-core, execution, executor, async-local, asyncio, IO-bound
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -46,14 +51,13 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.execution.spec import WorkSpec
 
 logger = get_logger(__name__)
 
 
 class AsyncLocalExecutor:
-    """asyncio-native executor for I/O-bound pipelines.
+    """asyncio-native executor for I/O-bound operations.
 
     Unlike :class:`~spine.execution.executors.local.LocalExecutor`
     (``ThreadPoolExecutor``), this runs handlers as native coroutines on
@@ -90,7 +94,7 @@ class AsyncLocalExecutor:
         """Register an async handler.
 
         Args:
-            kind: Work type (``task``, ``pipeline``, ``workflow``, ``step``).
+            kind: Work type (``task``, ``operation``, ``workflow``, ``step``).
             name: Handler name.
             handler: Async function ``(params: dict) -> dict``.
         """

@@ -50,6 +50,17 @@ Example:
     >>> router = RuntimeAdapterRouter()
     >>> router.register(StubRuntimeAdapter())
     >>> adapter = router.route(spec)  # uses spec.runtime or default
+
+Manifesto:
+    A single router selects the right runtime adapter for each
+    spec based on declared requirements (GPU, memory, runtime
+    label).  Adding a new backend is just registering an adapter.
+
+Tags:
+    spine-core, execution, runtimes, router, adapter-selection, strategy
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

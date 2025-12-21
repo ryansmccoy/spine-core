@@ -1,8 +1,21 @@
 """Scheduler service - main orchestrator.
 
+Manifesto:
+    The SchedulerService is the central coordinator that combines backend
+    (timing), repository (data), lock manager (safety), and dispatcher
+    (execution) into a unified scheduling system.  The beat-as-poller
+    pattern decouples timing from schedule evaluation for testability.
+
 The SchedulerService is the central coordinator for schedule execution.
 It combines backend (timing), repository (data), lock manager (safety),
 and dispatcher (execution) into a unified scheduling system.
+
+Tags:
+    spine-core, scheduling, orchestrator, beat-as-poller, service
+
+Doc-Types:
+    api-reference, architecture-diagram
+
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  SCHEDULER SERVICE ARCHITECTURE                                               │
@@ -294,8 +307,8 @@ class SchedulerService:
             run_id = await self.dispatcher.submit_workflow(
                 schedule.target_name, {**params, "trigger_source": "schedule"}
             )
-        elif schedule.target_type == "pipeline":
-            run_id = await self.dispatcher.submit_pipeline(
+        elif schedule.target_type == "operation":
+            run_id = await self.dispatcher.submit_operation(
                 schedule.target_name, {**params, "trigger_source": "schedule"}
             )
         else:

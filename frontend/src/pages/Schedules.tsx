@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import cronstrue from 'cronstrue';
 import PageHeader from '../components/PageHeader';
 import { Button, Spinner, ErrorBox, EmptyState, Modal } from '../components/UI';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
+import { formatRelativeTime } from '../lib/formatters';
 import {
   useSchedules,
   useCreateSchedule,
@@ -224,14 +226,14 @@ export default function Schedules() {
   const update = useUpdateSchedule();
   const toast = useToast();
 
-  /** Human-readable cron description */
+  /** Human-readable cron description using cronstrue */
   const describeCron = (cron: string | null | undefined, intervalSec: number | null | undefined) => {
     if (cron) {
-      const parts = cron.split(' ');
-      if (cron === '* * * * *') return 'Every minute';
-      if (parts[0] === '0' && parts[1] === '*') return 'Every hour';
-      if (parts[0] === '0' && parts[1] === '0') return 'Daily at midnight';
-      return cron;
+      try {
+        return cronstrue.toString(cron, { use24HourTimeFormat: true });
+      } catch {
+        return cron; // fallback to raw expression
+      }
     }
     if (intervalSec) {
       if (intervalSec < 60) return `Every ${intervalSec}s`;
@@ -264,27 +266,35 @@ export default function Schedules() {
       )}
 
       {schedules.data?.data && schedules.data.data.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs text-gray-500">
+            <thead className="bg-gray-50/80 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Workflow</th>
-                <th className="px-4 py-3">Schedule</th>
-                <th className="px-4 py-3">Enabled</th>
-                <th className="px-4 py-3">Next Run</th>
-                <th className="px-4 py-3">Actions</th>
+                <th className="px-5 py-3">ID</th>
+                <th className="px-5 py-3">Workflow</th>
+                <th className="px-5 py-3">Schedule</th>
+                <th className="px-5 py-3">Enabled</th>
+                <th className="px-5 py-3">Next Run</th>
+                <th className="px-5 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100/80">
               {schedules.data.data.map((s) => (
                 <tr key={s.schedule_id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-xs">
                     {s.schedule_id.slice(0, 8)}
                   </td>
                   <td className="px-4 py-3">{s.workflow_name}</td>
-                  <td className="px-4 py-3 font-mono text-xs" title={s.cron || `${s.interval_seconds}s`}>
-                    {describeCron(s.cron, s.interval_seconds)}
+                  <td className="px-4 py-3">
+                    <div className="space-y-0.5">
+                      <p className="text-sm text-gray-900">{describeCron(s.cron, s.interval_seconds)}</p>
+                      {s.cron && (
+                        <p className="font-mono text-[11px] text-gray-400" title="Raw cron expression">{s.cron}</p>
+                      )}
+                      {!s.cron && s.interval_seconds && (
+                        <p className="font-mono text-[11px] text-gray-400" title="Interval in seconds">{s.interval_seconds}s interval</p>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <button
@@ -303,8 +313,8 @@ export default function Schedules() {
                       {s.enabled ? 'On' : 'Off'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">
-                    {s.next_run || '—'}
+                  <td className="px-4 py-3 text-xs text-gray-500" title={s.next_run || undefined}>
+                    {s.next_run ? formatRelativeTime(s.next_run) : '—'}
                   </td>
                   <td className="px-4 py-3 flex gap-1">
                     <Button

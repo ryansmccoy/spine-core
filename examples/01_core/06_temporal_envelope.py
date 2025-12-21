@@ -9,10 +9,10 @@ Demonstrates spine-core's temporal envelope primitives:
 5. Supersede workflow for corrections (close old, create new)
 
 Real-World Context:
-    Every financial data pipeline faces the "which timestamp?" problem.
+    Every financial data operation faces the "which timestamp?" problem.
     When Apple reports EPS on Jan 30 for its Q4 ending Dec 31, the SEC
     filing is published Jan 31, Bloomberg distributes it Feb 1, and your
-    pipeline ingests it Feb 2.  Four different dates — and using the wrong
+    operation ingests it Feb 2.  Four different dates — and using the wrong
     one causes look-ahead bias in backtests or stale data in live dashboards.
 
     TemporalEnvelope makes these four timestamps explicit on every record.

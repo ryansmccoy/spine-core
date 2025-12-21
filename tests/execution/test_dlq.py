@@ -51,7 +51,7 @@ class TestAddToDLQ:
     def test_add_returns_dead_letter(self, dlq):
         entry = dlq.add_to_dlq(
             execution_id="e1",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"k": "v"},
             error="boom",
         )
@@ -113,7 +113,7 @@ class TestList:
         entries = dlq.list_unresolved()
         assert len(entries) == 0
 
-    def test_list_unresolved_filter_pipeline(self, dlq):
+    def test_list_unresolved_filter_operation(self, dlq):
         dlq.add_to_dlq("e1", "a.pipe", {}, "err1")
         dlq.add_to_dlq("e2", "b.pipe", {}, "err2")
         entries = dlq.list_unresolved(workflow="a.pipe")
@@ -200,7 +200,7 @@ class TestCountAndCleanup:
         dlq.add_to_dlq("e2", "p2", {}, "err")
         assert dlq.count_unresolved() == 2
 
-    def test_count_unresolved_by_pipeline(self, dlq):
+    def test_count_unresolved_by_operation(self, dlq):
         dlq.add_to_dlq("e1", "a.pipe", {}, "err")
         dlq.add_to_dlq("e2", "b.pipe", {}, "err")
         assert dlq.count_unresolved(workflow="a.pipe") == 1

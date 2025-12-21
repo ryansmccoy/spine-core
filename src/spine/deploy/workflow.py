@@ -4,14 +4,14 @@ Provides high-level orchestrators that coordinate the full testbed
 and deployment lifecycle: validation → container startup → execution
 → log collection → teardown → result aggregation.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     A testbed run against 3 backends involves 15+ operations (validate
     Docker, resolve specs, create network, start 3 containers, wait for
     health, run schema × 3, run tests × 3, collect logs × 3, tear down).
     ``TestbedRunner`` encapsulates this into a single ``run()`` call that
     returns a structured ``TestbedRunResult``.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     The runner pattern separates orchestration logic from execution logic.
     ``TestbedRunner`` uses ``ContainerManager`` for containers and
     ``TestbedExecutor`` for workloads — swapping either is straightforward.
@@ -280,7 +280,7 @@ class TestbedRunner:
 
     def _teardown(self) -> None:
         """Stop all containers and remove network."""
-        for spec, info in self._containers:
+        for _spec, info in self._containers:
             try:
                 self.container_mgr.stop_container(info)
             except Exception as e:
@@ -507,8 +507,8 @@ def create_testbed_workflow(backends: list[str] | None = None) -> Any:
             Workflow,
             WorkflowExecutionPolicy,
         )
-    except ImportError:
-        raise ImportError("spine.orchestration is required for workflow creation")
+    except ImportError as e:
+        raise ImportError("spine.orchestration is required for workflow creation") from e
 
     backends = backends or ["postgresql"]
 
@@ -576,8 +576,8 @@ def create_deployment_workflow(
             Workflow,
             WorkflowExecutionPolicy,
         )
-    except ImportError:
-        raise ImportError("spine.orchestration is required for workflow creation")
+    except ImportError as e:
+        raise ImportError("spine.orchestration is required for workflow creation") from e
 
     def deploy_services(ctx: Any, config: dict[str, Any]) -> Any:
         from spine.deploy.config import DeploymentConfig

@@ -52,7 +52,7 @@ See Also:
     15_runnable_protocol — how context flows through runnables
 """
 
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 from spine.orchestration import (
     WorkflowContext,
     Workflow,
@@ -65,8 +65,8 @@ from spine.orchestration import (
 class _NoOpRunnable:
     """Minimal Runnable for examples that only use lambda steps."""
 
-    def submit_pipeline_sync(self, pipeline_name, params=None, *, parent_run_id=None, correlation_id=None):
-        return PipelineRunResult(status="completed")
+    def submit_operation_sync(self, operation_name, params=None, *, parent_run_id=None, correlation_id=None):
+        return OperationRunResult(status="completed")
 
 
 def main():
@@ -79,7 +79,7 @@ def main():
     
     # Create context with initial parameters
     ctx = WorkflowContext.create(
-        workflow_name="data.pipeline",
+        workflow_name="data.operation",
         params={
             "source": "api",
             "tier": "NMS_TIER_1",

@@ -1,4 +1,21 @@
-"""Database adapter registry and factory."""
+"""Database adapter registry and factory.
+
+Manifesto:
+    Consumers should never hard-code adapter class names.  The registry
+    maps ``DatabaseType`` strings to adapter classes and the ``get_adapter()``
+    factory creates a configured instance from a config dict or URL.
+
+Features:
+    - ``AdapterRegistry`` singleton with pre-registered defaults
+    - ``register()`` for custom / third-party adapters
+    - ``get_adapter()`` factory: type + config → connected adapter
+
+Tags:
+    spine-core, database, registry, factory, singleton
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

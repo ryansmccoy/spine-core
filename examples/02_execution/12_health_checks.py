@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""ExecutionHealthChecker — System Health Monitoring for Pipeline Infrastructure.
+"""ExecutionHealthChecker — System Health Monitoring for Operation Infrastructure.
 
 ================================================================================
 WHY HEALTH CHECKS?
 ================================================================================
 
-Pipeline infrastructure needs continuous health monitoring beyond
+Operation infrastructure needs continuous health monitoring beyond
 "is the process alive?"::
 
     Kubernetes liveness:  "Is the container running?"  (basic)
-    Execution health:     "Are pipelines actually succeeding?" (what matters)
+    Execution health:     "Are operations actually succeeding?" (what matters)
 
 ExecutionHealthChecker answers operational questions:
     - "Are there stale executions stuck in RUNNING?"
@@ -117,7 +117,7 @@ def main():
     
     for i in range(10):
         exec = Execution.create(
-            workflow=f"pipeline.test.{i % 3}",
+            workflow=f"operation.test.{i % 3}",
             params={"batch": i},
         )
         ledger.create_execution(exec)
@@ -136,7 +136,7 @@ def main():
     for i in range(3):
         dlq.add_to_dlq(
             execution_id=f"exec-{i}",
-            workflow=f"pipeline.failed.{i}",
+            workflow=f"operation.failed.{i}",
             params={"batch": i},
             error=f"Error message {i}",
         )

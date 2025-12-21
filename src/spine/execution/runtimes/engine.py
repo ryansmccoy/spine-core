@@ -86,14 +86,25 @@ Example:
     ... )
     >>> result = await engine.submit(spec)
     >>> print(result.execution_id, result.external_ref)
+
+Manifesto:
+    The JobEngine is the single entry-point for submitting work.
+    It resolves the right runtime adapter, validates the spec,
+    and records the execution — callers never interact with
+    adapters directly.
+
+Tags:
+    spine-core, execution, runtimes, engine, facade, submission
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 

@@ -97,9 +97,9 @@ class TestDryRunResult:
             workflow_name="test",
             execution_mode="parallel",
             execution_plan=[
-                DryRunStep("a", "pipeline", 1, 5.0),
-                DryRunStep("b", "pipeline", 2, 3.0),
-                DryRunStep("c", "pipeline", 3, 2.0, dependencies=("a", "b")),
+                DryRunStep("a", "operation", 1, 5.0),
+                DryRunStep("b", "operation", 2, 3.0),
+                DryRunStep("c", "operation", 3, 2.0, dependencies=("a", "b")),
             ],
         )
         # Critical path: max(a=5, b=3) + c=2 = 7
@@ -141,7 +141,7 @@ class TestDryRun:
             name="test.basic",
             steps=[
                 Step.lambda_("step_a", _ok_handler),
-                Step.pipeline("step_b", "data.process"),
+                Step.operation("step_b", "data.process"),
             ],
         )
         result = dry_run(wf)
@@ -164,14 +164,14 @@ class TestDryRun:
         assert not result.is_valid
         assert any("no handler" in i for i in result.validation_issues)
 
-    def test_missing_pipeline_name_detected(self):
+    def test_missing_operation_name_detected(self):
         wf = Workflow(
             name="test.bad",
-            steps=[Step(name="bad_pipe", step_type=StepType.PIPELINE)],
+            steps=[Step(name="bad_pipe", step_type=StepType.OPERATION)],
         )
         result = dry_run(wf)
         assert not result.is_valid
-        assert any("no pipeline_name" in i for i in result.validation_issues)
+        assert any("no operation_name" in i for i in result.validation_issues)
 
     def test_missing_condition_detected(self):
         wf = Workflow(
@@ -186,7 +186,7 @@ class TestDryRun:
         register_cost_estimate("data.expensive", 30.0)
         wf = Workflow(
             name="test.cost",
-            steps=[Step.pipeline("expensive", "data.expensive")],
+            steps=[Step.operation("expensive", "data.expensive")],
         )
         result = dry_run(wf)
         assert result.execution_plan[0].estimated_seconds == 30.0
@@ -225,8 +225,8 @@ class TestDryRun:
         wf = Workflow(
             name="test.parallel",
             steps=[
-                Step.pipeline("a", "pipe.a"),
-                Step.pipeline("b", "pipe.b"),
+                Step.operation("a", "pipe.a"),
+                Step.operation("b", "pipe.b"),
             ],
             execution_policy=WorkflowExecutionPolicy(
                 mode=ExecutionMode.PARALLEL,
@@ -241,7 +241,7 @@ class TestDryRun:
             Workflow(
                 name="test.bad_dep",
                 steps=[
-                    Step.pipeline("a", "pipe.a", depends_on=["nonexistent"]),
+                    Step.operation("a", "pipe.a", depends_on=["nonexistent"]),
                 ],
             )
 

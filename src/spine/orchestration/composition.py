@@ -1,8 +1,7 @@
 """Composition Operators — functional builders for workflow construction.
 
-WHY
-───
-Constructing ``Workflow`` objects by hand with ``Step.pipeline()`` and
+Manifesto:
+    Constructing ``Workflow`` objects by hand with ``Step.operation()`` and
 ``Step.lambda_()`` is verbose for common patterns.  Composition operators
 provide concise, composable functions that produce well-formed
 workflows from building blocks.
@@ -41,17 +40,24 @@ Example::
 
     wf = chain(
         "my.etl",
-        Step.pipeline("extract", "my.extract"),
-        Step.pipeline("transform", "my.transform"),
-        Step.pipeline("load", "my.load"),
+        Step.operation("extract", "my.extract"),
+        Step.operation("transform", "my.transform"),
+        Step.operation("load", "my.load"),
     )
 
     wf = parallel(
         "my.parallel_ingest",
-        Step.pipeline("source_a", "ingest.source_a"),
-        Step.pipeline("source_b", "ingest.source_b"),
-        Step.pipeline("source_c", "ingest.source_c"),
+        Step.operation("source_a", "ingest.source_a"),
+        Step.operation("source_b", "ingest.source_b"),
+        Step.operation("source_c", "ingest.source_c"),
     )
+
+Tags:
+    spine-core, orchestration, composition, functional-builders,
+    pipeline, fan-out, map-reduce, workflow-construction
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -60,12 +66,10 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from spine.orchestration.step_result import StepResult
 from spine.orchestration.step_types import (
     ConditionFn,
     ErrorPolicy,
     Step,
-    StepType,
 )
 from spine.orchestration.workflow import (
     ExecutionMode,
@@ -124,9 +128,9 @@ def chain(
 
         wf = chain(
             "my.etl",
-            Step.pipeline("extract", "data.extract"),
+            Step.operation("extract", "data.extract"),
             Step.lambda_("validate", validate_fn),
-            Step.pipeline("load", "data.load"),
+            Step.operation("load", "data.load"),
         )
     """
     if len(steps) < 1:
@@ -203,9 +207,9 @@ def parallel(
 
         wf = parallel(
             "multi.ingest",
-            Step.pipeline("source_a", "ingest.a"),
-            Step.pipeline("source_b", "ingest.b"),
-            Step.pipeline("source_c", "ingest.c"),
+            Step.operation("source_a", "ingest.a"),
+            Step.operation("source_b", "ingest.b"),
+            Step.operation("source_c", "ingest.c"),
             merge_fn=combine_results,
         )
     """
@@ -296,8 +300,8 @@ def conditional(
         wf = conditional(
             "check.quality",
             condition=lambda ctx: ctx.params.get("valid", False),
-            then_steps=[Step.pipeline("publish", "data.publish")],
-            else_steps=[Step.pipeline("quarantine", "data.quarantine")],
+            then_steps=[Step.operation("publish", "data.publish")],
+            else_steps=[Step.operation("quarantine", "data.quarantine")],
         )
     """
     if not then_steps:
@@ -389,7 +393,7 @@ def retry(
 
         wf = retry(
             "resilient.ingest",
-            Step.pipeline("fetch", "data.fetch"),
+            Step.operation("fetch", "data.fetch"),
             max_attempts=3,
         )
     """
@@ -406,7 +410,7 @@ def retry(
             config={**step.config, "__attempt__": attempt + 1},
             on_error=ErrorPolicy.CONTINUE if attempt < max_attempts - 1 else on_exhaust,
             handler=step.handler,
-            pipeline_name=step.pipeline_name,
+            operation_name=step.operation_name,
             condition=step.condition,
             then_step=step.then_step,
             else_step=step.else_step,
@@ -470,7 +474,7 @@ def merge_workflows(
     Example::
 
         merged = merge_workflows(
-            "full.pipeline",
+            "full.operation",
             ingest_workflow,
             transform_workflow,
             load_workflow,
@@ -501,7 +505,7 @@ def merge_workflows(
                     config=step.config,
                     on_error=step.on_error,
                     handler=step.handler,
-                    pipeline_name=step.pipeline_name,
+                    operation_name=step.operation_name,
                     condition=step.condition,
                     then_step=step.then_step,
                     else_step=step.else_step,

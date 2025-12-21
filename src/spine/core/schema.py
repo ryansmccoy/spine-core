@@ -92,6 +92,21 @@ Context:
     - Storage: Shared across all domains
     - Paired With: Primitives that read/write these tables
 
+Performance:
+    - create_tables(): One-time DDL execution, O(n) where n = table count
+    - Index creation: Included in DDL for common query patterns
+    - Table lookups: CORE_TABLES dict access is O(1)
+
+Guardrails:
+    ❌ DON'T: Create domain-specific infrastructure tables (manifest, rejects, etc.)
+    ✅ DO: Use shared core tables with domain column as partition key
+
+    ❌ DON'T: Modify DDL without a migration (see spine.core.migrations)
+    ✅ DO: Use the migrations framework for schema changes
+
+    ❌ DON'T: Query across domains without explicit WHERE domain = X
+    ✅ DO: Always filter by domain to prevent cross-contamination
+
 Tags:
     schema, ddl, infrastructure, tables, spine-core, database,
     manifest, rejects, quality, anomalies
@@ -446,7 +461,7 @@ CORE_DDL = {
         CREATE TABLE IF NOT EXISTS core_schedules (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL UNIQUE,
-            target_type TEXT NOT NULL DEFAULT 'pipeline',
+            target_type TEXT NOT NULL DEFAULT 'operation',
             target_name TEXT NOT NULL,
             params TEXT,
             schedule_type TEXT NOT NULL DEFAULT 'cron',

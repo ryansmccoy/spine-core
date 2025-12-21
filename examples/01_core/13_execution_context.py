@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ExecutionContext — Lineage Tracking and Correlation IDs for Data Pipelines.
+"""ExecutionContext — Lineage Tracking and Correlation IDs for Data Operations.
 
 ================================================================================
 WHY EXECUTION CONTEXT?
@@ -7,14 +7,14 @@ WHY EXECUTION CONTEXT?
 
 In distributed data systems, you need to answer questions like:
 
-    - "Which pipeline run produced this row?"
+    - "Which operation run produced this row?"
     - "Why is this data different from yesterday?"
     - "Did the 9am run and 10am run overlap?"
     - "Which stage failed for batch XYZ?"
 
 **ExecutionContext** provides the correlation IDs that link:
-- Pipeline runs → Data rows
-- Parent pipelines → Child pipelines
+- Operation runs → Data rows
+- Parent operations → Child operations
 - Log entries → Database records
 
 Without ExecutionContext::
@@ -45,7 +45,7 @@ CONTEXT HIERARCHY
 
     batch_id: "ingest-2024-01-19"
     │
-    └── execution_id: "abc123"  (parent pipeline)
+    └── execution_id: "abc123"  (parent operation)
         │
         ├── execution_id: "def456"  (child: extract stage)
         │   └── parent_execution_id: "abc123"
@@ -57,10 +57,10 @@ CONTEXT HIERARCHY
             └── parent_execution_id: "abc123"
 
 
-    batch_id — Groups related pipeline runs
+    batch_id — Groups related operation runs
     │          "All runs in the January 19th daily batch"
     │
-    └── execution_id — Unique identifier for ONE pipeline run
+    └── execution_id — Unique identifier for ONE operation run
         │              "This specific invocation of ingest_filings"
         │
         └── parent_execution_id — Links child runs to parent
@@ -98,7 +98,7 @@ Every data table should include execution lineage columns::
     │  started_at          TIMESTAMP    NOT NULL                              │
     │  completed_at        TIMESTAMP                                          │
     │  status              VARCHAR(20)  NOT NULL  -- pending/running/done    │
-    │  pipeline_name       VARCHAR(100) NOT NULL                              │
+    │  operation_name       VARCHAR(100) NOT NULL                              │
     │  parameters          JSON                   -- Input params            │
     │  result              JSON                   -- Output summary          │
     └─────────────────────────────────────────────────────────────────────────┘
@@ -116,7 +116,7 @@ Find all runs in a batch::
 
     SELECT * FROM core_executions WHERE batch_id = 'ingest-2024-01-19'
 
-Trace data back to its root pipeline::
+Trace data back to its root operation::
 
     WITH RECURSIVE lineage AS (
         SELECT * FROM core_executions WHERE execution_id = 'child-xyz'
@@ -142,8 +142,8 @@ ExecutionContext should be bound to your logger::
         batch_id=ctx.batch_id,
     )
 
-    log.info("Starting pipeline")
-    # → {"event": "Starting pipeline",
+    log.info("Starting operation")
+    # → {"event": "Starting operation",
     #    "execution_id": "abc123",
     #    "batch_id": "ingest-2024-01-19"}
 
@@ -157,7 +157,7 @@ This allows you to:
 BEST PRACTICES
 ================================================================================
 
-1. **Create context at pipeline entry**::
+1. **Create context at operation entry**::
 
        def run_daily_ingest():
            ctx = new_context(batch_id=f"daily-{date.today()}")
@@ -165,7 +165,7 @@ BEST PRACTICES
            transform(ctx)
            load(ctx)
 
-2. **Use child contexts for sub-pipelines**::
+2. **Use child contexts for sub-operations**::
 
        def extract(ctx: ExecutionContext):
            child = ctx.child()  # Links to parent
@@ -232,7 +232,7 @@ def main():
     # === 3. Context with custom batch ID ===
     print("\n[3] Context with Custom Batch ID")
     
-    custom_batch = "my-pipeline-2024-01-19-001"
+    custom_batch = "my-operation-2024-01-19-001"
     ctx = new_context(batch_id=custom_batch)
     print(f"  Execution ID: {ctx.execution_id[:8]}...")
     print(f"  Batch ID: {ctx.batch_id}")
@@ -251,8 +251,8 @@ def main():
     print(f"  Child parent ID: {child.parent_execution_id[:8]}...")
     print(f"  Parent matches: {child.parent_execution_id == ctx.execution_id}")
     
-    # === 5. Real-world: Pipeline with context ===
-    print("\n[5] Real-world: Pipeline with Context")
+    # === 5. Real-world: Operation with context ===
+    print("\n[5] Real-world: Operation with Context")
     
     def extract(ctx: ExecutionContext) -> list:
         """Extract stage - fetch data."""
@@ -269,16 +269,16 @@ def main():
         print(f"    [Load] exec_id={ctx.execution_id[:8]}...")
         return len(data)
     
-    # Run pipeline
+    # Run operation
     batch_id = new_batch_id("etl")
     ctx = new_context(batch_id=batch_id)
-    print(f"  Starting pipeline with batch_id={ctx.batch_id[:20]}...")
+    print(f"  Starting operation with batch_id={ctx.batch_id[:20]}...")
     
     raw = extract(ctx)
     transformed = transform(ctx, raw)
     count = load(ctx, transformed)
     
-    print(f"  Pipeline complete: {count} records processed")
+    print(f"  Operation complete: {count} records processed")
     
     # === 6. Context for logging ===
     print("\n[6] Context for Logging")

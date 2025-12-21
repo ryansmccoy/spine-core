@@ -1,22 +1,25 @@
 """Optional SQLAlchemy 2.0 ORM layer for spine-core.
 
-Why This Package Exists
------------------------
-The raw ``Connection`` protocol is sufficient for simple queries, but
-complex joins, eager loading, and unit-of-work patterns benefit from
-a full ORM.  This package provides SQLAlchemy 2.0 declarative models
-that mirror every ``spine.core.schema/*.sql`` table.
+Manifesto:
+    The raw ``Connection`` protocol is sufficient for simple queries, but
+    complex joins, eager loading, and unit-of-work patterns benefit from
+    a full ORM.  This package provides SQLAlchemy 2.0 declarative models
+    that mirror every ``spine.core.schema/*.sql`` table.
 
-Strictly **optional** -- all core primitives continue to work with
-raw SQL.  Install with::
-
-    pip install spine-core[sqlalchemy]
+    Strictly **optional** -- all core primitives continue to work with
+    raw SQL.  Install with ``pip install spine-core[sqlalchemy]``.
 
 Modules
 -------
 base        SpineBase (declarative base) + TimestampMixin
 session     Engine factory, SpineSession, SAConnectionBridge
 tables      All 30 mapped table classes (MigrationTable, ExecutionTable, ...)
+
+Tags:
+    spine-core, orm, sqlalchemy, optional, declarative, import-guarded
+
+Doc-Types:
+    package-overview, module-index
 """
 
 from __future__ import annotations

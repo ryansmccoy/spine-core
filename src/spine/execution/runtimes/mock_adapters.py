@@ -48,6 +48,17 @@ See Also:
     spine.execution.runtimes._base — BaseRuntimeAdapter and StubRuntimeAdapter
     spine.execution.runtimes._types — Protocol and type definitions
     spine.execution.runtimes.engine — JobEngine facade
+
+Manifesto:
+    Tests should run instantly without real infrastructure.
+    Mock adapters simulate runtime behaviour — success, failure,
+    timeout — so test suites cover all edge cases in-memory.
+
+Tags:
+    spine-core, execution, runtimes, mock, testing, deterministic
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -56,14 +67,12 @@ import asyncio
 import logging
 import random
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
 
 from spine.execution.runtimes._base import BaseRuntimeAdapter
 from spine.execution.runtimes._types import (
     ContainerJobSpec,
     ErrorCategory,
-    JobArtifact,
     JobError,
     JobStatus,
     RuntimeCapabilities,

@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [{name = "Ryan McCoy"}]
-keywords = ["data-pipeline", "temporal", "registry", "capture", "quality-gates", "spine"]
+keywords = ["data-operation", "temporal", "registry", "capture", "quality-gates", "spine"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -28,8 +28,9 @@ dependencies = []
 models = ["pydantic>=2.0.0"]
 structured = ["structlog>=24.0.0"]
 settings = ["pydantic-settings>=2.0.0"]
-mcp = ["mcp>=1.26.0"]
+mcp = ["mcp>=1.26.0,<2.0.0"]
 sqlalchemy = ["sqlalchemy>=2.0.0"]
+migrations = ["alembic>=1.13.0", "sqlalchemy>=2.0.0"]
 scheduler = ["croniter>=2.0.0"]
 apscheduler = ["apscheduler>=3.10.0", "croniter>=2.0.0"]
 postgresql = ["psycopg2-binary>=2.9.0"]
@@ -38,7 +39,7 @@ mysql = ["mysql-connector-python>=8.0.0"]
 oracle = ["oracledb>=2.0.0"]
 api = ["fastapi>=0.109", "uvicorn[standard]>=0.27", "sse-starlette>=1.8"]
 cli = ["typer>=0.9", "rich>=13"]
-all = ["spine-core[models,settings,mcp,sqlalchemy,scheduler,postgresql,api,cli]"]
+all = ["spine-core[models,structured,settings,mcp,sqlalchemy,migrations,scheduler,postgresql,api,cli]"]
 
 [project.scripts]
 spine-core = "spine.cli:app"
@@ -151,6 +152,7 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "B008",  # function-call-in-default-argument (Typer/FastAPI pattern)
 ]
 
 [tool.ruff.lint.isort]

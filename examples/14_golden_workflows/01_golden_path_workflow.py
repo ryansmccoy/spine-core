@@ -31,19 +31,25 @@ Tier: Basic (spine-core only, no Docker required)
 
 from __future__ import annotations
 
+import sys
 import json
 import time
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
 
-# ── 1. Database initialization ───────────────────────────────────────────
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
+# ── 1. Database initialization ───────────────────────────────────────
 #
-# create_connection() is the single entry point for all DB access.
+# get_demo_connection() respects SPINE_EXAMPLES_PERSIST env var.
 # Pass init_schema=True to auto-create core tables on first run.
 
-from spine.core.connection import create_connection
-
-conn, info = create_connection(init_schema=True)  # in-memory SQLite
+load_env()
+conn, info = get_demo_connection()
 
 print("=" * 72)
 print("PHASE 1 — Database Initialization")
@@ -259,7 +265,7 @@ def check_debt_ratio(ctx: dict) -> QualityResult:
 
 
 # Use the workflow's own connection for quality recording
-q_conn, q_info = create_connection(init_schema=True)
+q_conn, q_info = get_demo_connection(init_schema=True)
 quality = QualityRunner(q_conn, domain="sec.filings", execution_id=result.run_id)
 quality.add(QualityCheck("profit_margin", QualityCategory.BUSINESS_RULE, check_profit_margin))
 quality.add(QualityCheck("filing_count", QualityCategory.COMPLETENESS, check_filing_count))

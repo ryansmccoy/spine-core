@@ -7,6 +7,13 @@ Anomalies represent values that breach expected thresholds.
 Endpoints:
     GET /anomalies    List detected anomalies with filtering
 
+Manifesto:
+    Surfacing data anomalies through the API gives dashboards
+    real-time visibility into quality issues without polling the DB.
+
+Tags:
+    spine-core, api, anomalies, data-quality, detection
+
 Doc-Types: API_REFERENCE
 """
 

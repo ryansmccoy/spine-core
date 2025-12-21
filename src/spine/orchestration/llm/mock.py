@@ -1,7 +1,6 @@
 """Mock LLM Provider — deterministic provider for testing.
 
-WHY
-───
+Manifesto:
 Testing LLM-powered workflows requires a provider that returns
 predictable results without network calls.  ``MockLLMProvider``
 supports canned responses, response scripting, and call tracking.
@@ -30,6 +29,12 @@ Example::
     provider = MockLLMProvider(sequence=["first", "second"])
     assert provider.complete([Message.user("1")]).content == "first"
     assert provider.complete([Message.user("2")]).content == "second"
+
+Tags:
+    spine-core, orchestration, llm, mock, testing, deterministic
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

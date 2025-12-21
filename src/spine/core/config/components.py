@@ -1,22 +1,22 @@
 """
 Component backend enumerations and compatibility validation.
 
+Manifesto:
+    Each pluggable dimension (database, cache, scheduler, metrics, tracing,
+    worker, events) has a finite set of supported backends.  Enumerating
+    them as typed enums prevents typo-driven misconfigurations, and
+    ``validate_component_combination()`` catches incompatible selections
+    (e.g. Celery Beat requires Redis) before anything starts.
+
 Each enum represents a pluggable backend dimension.  The
 :func:`validate_component_combination` function checks that a set of
 chosen backends is consistent (e.g. Celery-beat requires Redis).
 
-Example::
+Tags:
+    spine-core, configuration, enums, validation, backends, compatibility
 
-    from spine.core.config.components import (
-        DatabaseBackend, SchedulerBackend, validate_component_combination,
-    )
-
-    warnings = validate_component_combination(
-        database=DatabaseBackend.SQLITE,
-        scheduler=SchedulerBackend.CELERY_BEAT,
-    )
-    for w in warnings:
-        print(w.severity, w.message)
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

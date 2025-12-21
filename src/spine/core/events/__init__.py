@@ -1,15 +1,14 @@
 """Event system for cross-app communication.
 
-Why This Package Exists
------------------------
-Pipeline modules (ops, scheduling, execution) need to notify each other
-when things happen -- run completed, quality check failed, schedule fired.
-Without a shared event bus, modules either import each other directly
-(creating circular dependencies) or silently lose events.
+Manifesto:
+    Operation modules (ops, scheduling, execution) need to notify each other
+    when things happen -- run completed, quality check failed, schedule fired.
+    Without a shared event bus, modules either import each other directly
+    (creating circular dependencies) or silently lose events.
 
-The ``EventBus`` protocol with pluggable backends (in-memory, Redis)
-decouples producers from consumers.  In-memory works for single-process
-deployments; Redis Pub/Sub enables multi-node event delivery.
+    The ``EventBus`` protocol with pluggable backends (in-memory, Redis)
+    decouples producers from consumers.  In-memory works for single-process
+    deployments; Redis Pub/Sub enables multi-node event delivery.
 
 Usage::
 
@@ -20,7 +19,7 @@ Usage::
     # Publish
     event = Event(
         event_type="run.completed",
-        source="pipeline-runner",
+        source="operation-runner",
         payload={"run_id": "abc-123", "status": "success"},
     )
     await bus.publish(event)
@@ -34,6 +33,21 @@ Modules
 -------
 memory      InMemoryEventBus -- asyncio queues, single-node
 redis       RedisEventBus -- Redis Pub/Sub, multi-node
+
+Guardrails:
+    ❌ Importing modules directly to send notifications
+    ✅ ``await bus.publish(Event(event_type="run.completed", ...))``
+    ❌ Passing raw dicts as event payloads without type info
+    ✅ Using typed ``Event`` dataclass with ``event_type`` taxonomy
+    ❌ Creating event bus instances per-module
+    ✅ ``get_event_bus()`` singleton with ``set_event_bus()`` override
+
+Tags:
+    spine-core, events, pub-sub, async, protocol-first,
+    in-memory, redis, decoupling, wildcard-patterns
+
+Doc-Types:
+    package-overview, protocol-definition, api-reference
 """
 
 from __future__ import annotations
@@ -203,7 +217,7 @@ def publish_event(
         publish_event(
             "run.submitted",
             "ops.runs",
-            {"run_id": "abc-123", "pipeline": "daily_etl"},
+            {"run_id": "abc-123", "operation": "daily_etl"},
         )
     """
     import asyncio

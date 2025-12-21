@@ -44,10 +44,15 @@ See Also:
     10_full_table_population — populate all 27 tables
 """
 
-import sqlite3
+import sys
+from pathlib import Path
+
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.database import (
     check_database_health,
     get_table_counts,
@@ -64,8 +69,12 @@ def main():
 
     # --- 1. Create an OperationContext ------------------------------------
     print("\n[1] OperationContext")
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection(init_schema=False)  # We'll use initialize_database
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
     ctx = OperationContext(conn=conn, caller="example")
     print(f"  request_id : {ctx.request_id}")
     print(f"  caller     : {ctx.caller}")

@@ -20,7 +20,7 @@ from spine.ops.requests import ListScheduleLocksRequest
 
 def _insert_lock(
     ctx,
-    lock_key="pipeline:finance-ingest",
+    lock_key="operation:finance-ingest",
     execution_id="exec_001",
 ):
     """Insert a concurrency lock row."""
@@ -72,7 +72,7 @@ class TestListLocks:
         assert result.success is True
         assert result.total == 1
         assert len(result.data) == 1
-        assert result.data[0].lock_key == "pipeline:finance-ingest"
+        assert result.data[0].lock_key == "operation:finance-ingest"
         assert result.data[0].owner == "exec_001"
 
     def test_multiple_locks(self, ctx):
@@ -214,7 +214,7 @@ class TestReleaseScheduleLock:
 class TestLockEdgeCases:
     def test_lock_with_special_characters_in_key(self, ctx):
         initialize_database(ctx)
-        special_key = "pipeline:finance/Q1:2026-revenue"
+        special_key = "operation:finance/Q1:2026-revenue"
         _insert_lock(ctx, lock_key=special_key)
         result = list_locks(ctx)
         assert result.success is True

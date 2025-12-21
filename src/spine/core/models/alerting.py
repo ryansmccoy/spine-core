@@ -1,13 +1,23 @@
 """Alerting table models (04_alerting.sql).
 
+Manifesto:
+    Alert channels, alerts, deliveries, and throttle state need typed
+    representations so the alerting ops layer and API can work with
+    structured objects instead of raw SQL rows.
+
 Models for alert channel configuration and delivery tracking:
 channels, alerts, delivery logs, and throttle state.
+
+Tags:
+    spine-core, models, alerting, dataclasses, schema-mapping
+
+Doc-Types:
+    api-reference, data-model
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 
 # ---------------------------------------------------------------------------
 # core_alert_channels
@@ -24,7 +34,7 @@ class AlertChannel:
     config_json: str = ""  # JSON type-specific configuration
     min_severity: str = "ERROR"  # INFO, WARNING, ERROR, CRITICAL
     domains: str | None = None  # JSON array of domain patterns
-    enabled: int = 1
+    enabled: bool = True
     throttle_minutes: int = 5
     last_success_at: str | None = None
     last_failure_at: str | None = None

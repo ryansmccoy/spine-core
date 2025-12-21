@@ -11,12 +11,19 @@ Response Envelope Conventions:
     - ``elapsed_ms`` tracks server-side processing time
     - ``warnings`` contains non-fatal issues to display to users
 
+Manifesto:
+    Every API response uses the same envelope so clients parse
+    success, pagination, and errors with one set of models.
+
+Tags:
+    spine-core, api, schemas, envelope, RFC-7807, pagination
+
 Doc-Types: API_REFERENCE
 """
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -146,7 +153,7 @@ class PageMeta(BaseModel):
         )
 
 
-class SuccessResponse(BaseModel, Generic[T]):
+class SuccessResponse[T](BaseModel):
     """Standard success envelope for single-item responses.
 
     All 2xx responses (except paged lists) use this envelope.
@@ -169,7 +176,7 @@ class SuccessResponse(BaseModel, Generic[T]):
     )
 
 
-class PagedResponse(BaseModel, Generic[T]):
+class PagedResponse[T](BaseModel):
     """Paged success envelope for list responses.
 
     Used for all paginated list endpoints.

@@ -47,7 +47,7 @@ class TestGetStaleExecutions:
     def test_finds_stale_running(self, ledger, repo, conn):
         """Finds running executions older than threshold."""
         # Create an execution and mark running
-        exec1 = ledger.create_execution(make_execution("stale.pipeline"))
+        exec1 = ledger.create_execution(make_execution("stale.operation"))
         ledger.update_status(exec1.id, ExecutionStatus.RUNNING)
         
         # Manually backdate the started_at
@@ -65,7 +65,7 @@ class TestGetStaleExecutions:
 
     def test_ignores_recent_executions(self, ledger, repo):
         """Does not return recent executions."""
-        exec1 = ledger.create_execution(make_execution("recent.pipeline"))
+        exec1 = ledger.create_execution(make_execution("recent.operation"))
         ledger.update_status(exec1.id, ExecutionStatus.RUNNING)
         
         stale = repo.get_stale_executions(older_than_minutes=60)
@@ -119,10 +119,10 @@ class TestGetRecentFailures:
 
     def test_returns_failed_executions(self, ledger, repo):
         """Returns recently failed executions."""
-        e1 = ledger.create_execution(make_execution("failing.pipeline"))
+        e1 = ledger.create_execution(make_execution("failing.operation"))
         ledger.update_status(e1.id, ExecutionStatus.FAILED)
         
-        e2 = ledger.create_execution(make_execution("success.pipeline"))
+        e2 = ledger.create_execution(make_execution("success.operation"))
         ledger.update_status(e2.id, ExecutionStatus.COMPLETED)
         
         failures = repo.get_recent_failures(hours=24)
@@ -132,7 +132,7 @@ class TestGetRecentFailures:
 
     def test_respects_hours_limit(self, ledger, repo, conn):
         """Only returns failures within hours limit."""
-        e1 = ledger.create_execution(make_execution("old.pipeline"))
+        e1 = ledger.create_execution(make_execution("old.operation"))
         ledger.update_status(e1.id, ExecutionStatus.FAILED)
         
         # Backdate the failure
@@ -163,16 +163,16 @@ class TestGetWorkflowThroughput:
 
     def test_includes_failure_rate(self, ledger, repo):
         """Includes failure rate in metrics."""
-        e1 = ledger.create_execution(make_execution("mixed.pipeline"))
+        e1 = ledger.create_execution(make_execution("mixed.operation"))
         ledger.update_status(e1.id, ExecutionStatus.COMPLETED)
         
-        e2 = ledger.create_execution(make_execution("mixed.pipeline"))
+        e2 = ledger.create_execution(make_execution("mixed.operation"))
         ledger.update_status(e2.id, ExecutionStatus.FAILED)
         
         stats = repo.get_execution_stats(hours=1)
         
         # 1 failure out of 2 total = 50% failure rate
-        assert stats["failure_rate_by_workflow"].get("mixed.pipeline", 0) == 50.0
+        assert stats["failure_rate_by_workflow"].get("mixed.operation", 0) == 50.0
 
 
 class TestGetQueueDepth:
@@ -195,7 +195,7 @@ class TestCleanupOldExecutions:
 
     def test_deletes_old_completed(self, ledger, repo, conn):
         """Deletes old completed executions."""
-        e = ledger.create_execution(make_execution("old.pipeline"))
+        e = ledger.create_execution(make_execution("old.operation"))
         ledger.update_status(e.id, ExecutionStatus.COMPLETED)
         
         # Backdate it
@@ -214,7 +214,7 @@ class TestCleanupOldExecutions:
 
     def test_preserves_recent(self, ledger, repo):
         """Preserves recent executions."""
-        e = ledger.create_execution(make_execution("recent.pipeline"))
+        e = ledger.create_execution(make_execution("recent.operation"))
         ledger.update_status(e.id, ExecutionStatus.COMPLETED)
         
         deleted = repo.cleanup_old_executions(days=30)

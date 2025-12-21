@@ -1,28 +1,21 @@
 """Spine Core -- Reusable, domain-agnostic platform primitives.
 
-Why This Package Exists
------------------------
-Every spine project (feedspine, entityspine, capture-spine, market-spine)
-needs the same foundational capabilities: database connections, structured
-errors, idempotent processing, quality checks, manifest tracking, temporal
-primitives, and secrets management.  Without a shared core, each project
-reinvents these patterns -- with subtle incompatibilities that surface as
-production bugs.
+Manifesto:
+    Every spine project (feedspine, entityspine, capture-spine, market-spine)
+    needs the same foundational capabilities: database connections, structured
+    errors, idempotent processing, quality checks, manifest tracking, temporal
+    primitives, and secrets management.  Without a shared core, each project
+    reinvents these patterns -- with subtle incompatibilities that surface as
+    production bugs.
 
-``spine.core`` is the **zero-dependency-on-other-spines** foundation layer.
-All 36+ root modules use synchronous APIs and stdlib types so they compose
-cleanly into any async or sync application.  Optional sub-packages (ORM,
-scheduling, events) are import-guarded behind extras.
+    ``spine.core`` is the **zero-dependency-on-other-spines** foundation layer.
+    All 36+ root modules use synchronous APIs and stdlib types so they compose
+    cleanly into any async or sync application.
 
-Design Principles
------------------
-- **Sync-only primitives** -- higher tiers wrap async drivers, core stays simple
-- **Schema ownership** -- core infrastructure tables (manifest, rejects, quality)
-  are defined once in ``spine.core.schema`` and shared by all domains
-- **Protocol-first** -- ``Connection``, ``Dialect``, ``CacheBackend`` are protocols,
-  not base classes; any matching object works
-- **Import-guarded extras** -- asyncpg, SQLAlchemy, Redis, APScheduler are
-  loaded lazily so ``import spine.core`` never crashes
+    - **Sync-only primitives:** Higher tiers wrap async drivers, core stays simple
+    - **Schema ownership:** Core infrastructure tables defined once, shared by all
+    - **Protocol-first:** Connection, Dialect, CacheBackend are protocols, not classes
+    - **Import-guarded extras:** asyncpg, SQLAlchemy, Redis loaded lazily
 
 Architecture::
 
@@ -46,7 +39,7 @@ Architecture::
         orm/               Optional SQLAlchemy 2.0 ORM layer
         migrations/        SQL migration runner (_migrations table)
 
-    Layer 3 -- Pipeline Primitives
+    Layer 3 -- Operation Primitives
         execution.py       ExecutionContext for lineage tracking
         hashing.py         Deterministic record hashing (dedup)
         idempotency.py     Skip/force checks, delete+insert helpers
@@ -102,10 +95,10 @@ Module Map (recommended reading order)
   schema            Core infrastructure DDL registry
   schema_loader     SQL file application utilities
 
-**Pipeline Primitives**
+**Operation Primitives**
   execution         ExecutionContext for lineage + tracing
   hashing           Deterministic content hashing for dedup
-  idempotency       Skip/force checks for restartable pipelines
+  idempotency       Skip/force checks for restartable operations
   manifest          WorkManifest for multi-stage tracking
   rejects           Reject sink with audit trail
   quality           Composable quality check framework
@@ -134,6 +127,13 @@ Module Map (recommended reading order)
 **Infrastructure Services**
   scheduling/       Production cron scheduler (3 backends)
   config/           Centralized settings + DI container + profiles
+
+Tags:
+    spine-core, foundation, platform-primitives, zero-dependency,
+    sync-only, protocol-first, domain-agnostic
+
+Doc-Types:
+    package-overview, architecture-map, module-index
 """
 
 # Dataclass models for all schema tables (always available)
@@ -246,7 +246,7 @@ from spine.core.protocols import (
     Connection,
     DispatcherProtocol,
     ExecutorProtocol,
-    PipelineProtocol,
+    OperationProtocol,
 )
 from spine.core.quality import (
     QualityCategory,
@@ -269,8 +269,8 @@ from spine.core.secrets import (
     MissingSecretError,
     SecretBackend,
     SecretResolutionError,
-    SecretValue,
     SecretsResolver,
+    SecretValue,
     get_resolver,
     resolve_config_secrets,
     resolve_secret,
@@ -294,7 +294,7 @@ from spine.core.timestamps import (
 # Versioned content (stdlib-only domain models)
 from spine.core.versioned_content import ContentVersion, VersionedContent
 
-# Watermark tracking for incremental pipelines
+# Watermark tracking for incremental operations
 from spine.core.watermarks import Watermark, WatermarkGap, WatermarkStore
 
 
@@ -402,7 +402,7 @@ __all__ = [
     "Connection",
     "AsyncConnection",
     "DispatcherProtocol",
-    "PipelineProtocol",
+    "OperationProtocol",
     "ExecutorProtocol",
     # schema
     "CORE_TABLES",
@@ -489,6 +489,17 @@ __all__ = [
     "AdjustmentMethod",
     "CorrectionReason",
     "CorrectionRecord",
+    # backfill (NEW)
+    "BackfillPlan",
+    "BackfillReason",
+    "BackfillStatus",
+    # temporal envelope (NEW)
+    "BiTemporalRecord",
+    "TemporalEnvelope",
+    # watermarks (NEW)
+    "Watermark",
+    "WatermarkGap",
+    "WatermarkStore",
     # feature flags (NEW)
     "FeatureFlags",
     "FlagDefinition",

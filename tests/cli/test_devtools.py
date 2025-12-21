@@ -197,7 +197,7 @@ class TestDryRunCommand:
                 name="test.dryrun",
                 steps=[
                     Step.lambda_("a", handler),
-                    Step.pipeline("b", "data.process"),
+                    Step.operation("b", "data.process"),
                 ],
             )
         """)

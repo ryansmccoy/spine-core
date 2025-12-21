@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Idempotency — Safe, Re-runnable Data Pipelines.
+"""Idempotency — Safe, Re-runnable Data Operations.
 
 ================================================================================
 WHAT IS IDEMPOTENCY?
@@ -10,7 +10,7 @@ same result as running it once.
 
     f(f(x)) = f(x)
 
-For data pipelines, this means:
+For data operations, this means:
 - Re-running an ingest job doesn't create duplicate records
 - A crashed job can be safely restarted without side effects
 - Backfills can be re-run if something went wrong
@@ -190,8 +190,13 @@ See Also:
     - :mod:`spine.core.hashing` — compute_hash for record deduplication
     - :mod:`spine.core.manifest` — WorkManifest for stage tracking
 """
-import sqlite3
+import sys
+from pathlib import Path
 
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 from spine.core import IdempotencyHelper, IdempotencyLevel
 from spine.core.hashing import compute_hash
 
@@ -215,12 +220,14 @@ def main():
     # === 2. Creating IdempotencyHelper ===
     print("\n[2] Creating IdempotencyHelper")
     
-    # IdempotencyHelper takes a database connection
-    conn = sqlite3.connect(":memory:")
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
     
-    # Create demo tables
+    # Create demo tables for this example
     conn.execute("""
-        CREATE TABLE bronze_raw (
+        CREATE TABLE IF NOT EXISTS bronze_raw (
             record_hash TEXT,
             symbol TEXT,
             date TEXT,
@@ -228,7 +235,7 @@ def main():
         )
     """)
     conn.execute("""
-        CREATE TABLE silver_volume (
+        CREATE TABLE IF NOT EXISTS silver_volume (
             week TEXT,
             tier TEXT,
             volume INTEGER
@@ -237,7 +244,7 @@ def main():
     conn.commit()
     
     helper = IdempotencyHelper(conn)
-    print("  Helper created with SQLite connection")
+    print("  Helper created with database connection")
     
     # === 3. L1 Append pattern ===
     print("\n[3] L1 APPEND Pattern")
@@ -334,11 +341,11 @@ def main():
     print(f"  After: {count_after} rows in silver_volume")
     print("  Result: Same final state regardless of how many times run")
     
-    # === 6. Real-world: Pipeline with idempotency ===
-    print("\n[6] Real-world: Pipeline with Idempotency")
+    # === 6. Real-world: Operation with idempotency ===
+    print("\n[6] Real-world: Operation with Idempotency")
     
-    def run_pipeline(conn, helper, week: str, data: list):
-        """L3 idempotent pipeline."""
+    def run_operation(conn, helper, week: str, data: list):
+        """L3 idempotent operation."""
         key = {"week": week}
         
         # Delete existing
@@ -364,7 +371,7 @@ def main():
     
     # First run
     print("  First run:")
-    run_pipeline(conn, helper, week, data)
+    run_operation(conn, helper, week, data)
     total = conn.execute(
         "SELECT COUNT(*) FROM silver_volume WHERE week = ?", (week,)
     ).fetchone()[0]
@@ -372,7 +379,7 @@ def main():
     
     # Re-run (should produce same result)
     print("  Re-run (idempotent):")
-    run_pipeline(conn, helper, week, data)
+    run_operation(conn, helper, week, data)
     total = conn.execute(
         "SELECT COUNT(*) FROM silver_volume WHERE week = ?", (week,)
     ).fetchone()[0]

@@ -1,3 +1,5 @@
+import { AlertCircle, RefreshCw, Inbox, Loader2 } from 'lucide-react';
+
 export function Card({
   title,
   value,
@@ -11,7 +13,7 @@ export function Card({
 }) {
   const ring: Record<string, string> = {
     blue: 'border-l-spine-500',
-    green: 'border-l-green-500',
+    green: 'border-l-emerald-500',
     red: 'border-l-red-500',
     yellow: 'border-l-yellow-500',
     gray: 'border-l-gray-400',
@@ -33,8 +35,8 @@ export function Card({
 
 export function Spinner() {
   return (
-    <div className="flex items-center justify-center py-12">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-spine-200 border-t-spine-600" />
+    <div className="flex items-center justify-center py-16">
+      <Loader2 size={24} className="animate-spin text-spine-500" />
     </div>
   );
 }
@@ -60,18 +62,20 @@ export function ErrorBox({
 
   return (
     <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start gap-3">
+        <AlertCircle size={18} className="shrink-0 mt-0.5 text-red-500" />
+        <div className="flex-1">
           <p className="font-medium">{message}</p>
-          {detail && <p className="mt-1 text-xs text-red-600">{detail}</p>}
+          {detail && <p className="mt-1 text-xs text-red-600/80">{detail}</p>}
           {helpText && <p className="mt-2 text-xs text-red-500 italic">{helpText}</p>}
         </div>
         {onRetry && (
           <button 
             onClick={onRetry}
-            className="ml-4 px-2 py-1 text-xs bg-red-100 hover:bg-red-200 rounded transition-colors"
+            className="ml-2 p-1.5 rounded-md text-red-500 hover:bg-red-100 transition-colors"
+            title="Retry"
           >
-            Retry
+            <RefreshCw size={14} />
           </button>
         )}
       </div>
@@ -79,9 +83,12 @@ export function ErrorBox({
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
+export function EmptyState({ message, icon }: { message: string; icon?: React.ReactNode }) {
   return (
-    <div className="text-center py-12 text-gray-400 text-sm">{message}</div>
+    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+      {icon ?? <Inbox size={40} className="mb-3 text-gray-300" />}
+      <p className="text-sm">{message}</p>
+    </div>
   );
 }
 
@@ -95,20 +102,22 @@ export function Button({
 }: {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'xs' | 'sm';
   disabled?: boolean;
   type?: 'button' | 'submit';
 }) {
-  const base = 'inline-flex items-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1';
-  const sz = size === 'xs' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm';
+  const base = 'inline-flex items-center font-medium rounded-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1';
+  const sz = size === 'xs' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-2 text-sm';
   const variants: Record<string, string> = {
     primary:
-      'bg-spine-600 text-white hover:bg-spine-700 focus:ring-spine-500 disabled:bg-spine-300',
+      'bg-spine-600 text-white hover:bg-spine-700 active:bg-spine-800 focus:ring-spine-500 disabled:bg-spine-300 shadow-sm',
     secondary:
-      'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400',
+      'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 active:bg-gray-100 focus:ring-gray-400 shadow-sm',
     danger:
-      'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-red-300',
+      'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus:ring-red-500 disabled:bg-red-300 shadow-sm',
+    ghost:
+      'bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200 focus:ring-gray-400',
   };
   return (
     <button

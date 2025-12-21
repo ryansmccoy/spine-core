@@ -3,7 +3,7 @@
 
 WHY DEAD LETTER QUEUES MATTER
 ─────────────────────────────
-In a pipeline that runs hundreds of jobs nightly, some will fail due to
+In a operation that runs hundreds of jobs nightly, some will fail due to
 API outages, bad data, or transient bugs.  Without a DLQ those failures
 are silently lost — the data gap remains until someone notices days later.
 A Dead Letter Queue captures every failure with full context so that
@@ -13,7 +13,7 @@ batch.
 ARCHITECTURE
 ────────────
     ┌──────────┐  success   ┌──────────┐
-    │ Pipeline │───────────▶│  Result  │
+    │ Operation │───────────▶│  Result  │
     └────┬─────┘            └──────────┘
          │ failure
          ▼
@@ -37,7 +37,7 @@ DATABASE SCHEMA
     ├───────────────┼─────────┼──────────────────────────────┤
     │ id            │ TEXT PK │ Unique dead-letter ID        │
     │ execution_id  │ TEXT    │ Original execution reference │
-    │ pipeline      │ TEXT    │ Which pipeline failed        │
+    │ operation      │ TEXT    │ Which operation failed        │
     │ params        │ TEXT    │ JSON serialised parameters   │
     │ error         │ TEXT    │ Full error message           │
     │ retry_count   │ INT     │ How many retries attempted   │
@@ -50,14 +50,14 @@ DATABASE SCHEMA
 
 DLQ LIFECYCLE
 ─────────────
-    add_to_dlq(exec_id, pipeline, params, error)
+    add_to_dlq(exec_id, operation, params, error)
         → DeadLetter created with retry_count=0
 
     mark_retry_attempted(id)  → retry_count += 1, last_retry_at = now
     resolve(id, resolved_by)  → resolved_at = now
 
     list_unresolved()         → all entries where resolved_at IS NULL
-    list_all(pipeline=...)    → filter by pipeline name
+    list_all(operation=...)    → filter by operation name
 
 BEST PRACTICES
 ──────────────
@@ -130,19 +130,19 @@ def main():
         failures = [
             {
                 "execution_id": "exec-001",
-                "pipeline": "otc_volume",
+                "operation": "otc_volume",
                 "error": "ConnectionError: API timeout",
                 "params": {"week": "2024-01-19"},
             },
             {
                 "execution_id": "exec-002",
-                "pipeline": "price_fetch",
+                "operation": "price_fetch",
                 "error": "ValidationError: Invalid symbol",
                 "params": {"symbol": "INVALID"},
             },
             {
                 "execution_id": "exec-003",
-                "pipeline": "otc_volume",
+                "operation": "otc_volume",
                 "error": "RateLimitError: Too many requests",
                 "params": {"week": "2024-01-26"},
             },
@@ -151,11 +151,11 @@ def main():
         for f in failures:
             entry = dlq.add_to_dlq(
                 execution_id=f["execution_id"],
-                workflow=f["pipeline"],
+                workflow=f["operation"],
                 params=f["params"],
                 error=f["error"],
             )
-            print(f"    Added: {f['execution_id']} ({f['pipeline']})")
+            print(f"    Added: {f['execution_id']} ({f['operation']})")
         
         # === 3. Query DLQ ===
         print("\n[3] Query DLQ")
@@ -172,12 +172,12 @@ def main():
         if all_items:
             entry = dlq.get(all_items[0].id)
             print(f"  Entry ID: {entry.id}")
-            print(f"  Pipeline: {entry.workflow}")
+            print(f"  Operation: {entry.workflow}")
             print(f"  Error: {entry.error}")
             print(f"  Retry count: {entry.retry_count}/{entry.max_retries}")
         
-        # === 5. Filter by pipeline ===
-        print("\n[5] Filter by Pipeline")
+        # === 5. Filter by operation ===
+        print("\n[5] Filter by Operation")
         
         otc_failures = dlq.list_all(workflow="otc_volume")
         print(f"  OTC volume failures: {len(otc_failures)}")

@@ -5,6 +5,26 @@ Enums in this module are used by multiple spines and should not
 be owned by any single domain spine. Import from here to avoid
 cross-spine coupling.
 
+Manifesto:
+    Domain enums (vendor namespaces, event types, jurisdictions) are
+    shared vocabulary across the ecosystem. Without a canonical home,
+    each spine defines its own copies, leading to drift and breakage.
+    This module is the single source of truth for cross-spine enums.
+
+Features:
+    - **VendorNamespace:** SEC, Bloomberg, FactSet, Reuters, OpenFIGI, etc.
+    - **EventType:** M&A, bankruptcy, earnings, dividends, splits, etc.
+    - **Jurisdiction / Market / InstrumentType:** Financial domain enums
+    - **str Enum base:** All enums serialize to string naturally
+
+Tags:
+    enums, domain, vendor, events, shared-vocabulary, spine-core,
+    financial-domain, cross-spine
+
+Doc-Types:
+    - API Reference
+    - Domain Model Documentation
+
 STDLIB ONLY - NO PYDANTIC.
 """
 

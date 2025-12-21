@@ -16,6 +16,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from spine.core.logging import get_logger
 from spine.core.repositories import (
     CalcDependencyRepository,
     DataReadinessRepository,
@@ -39,7 +40,7 @@ from spine.ops.responses import (
     ScheduleDetail,
     ScheduleSummary,
 )
-from spine.ops.result import OperationResult, PagedResult, start_timer
+from spine.ops.result import OperationError, OperationResult, PagedResult, start_timer
 
 
 def _sched_repo(ctx: OperationContext) -> ScheduleOpsRepository:
@@ -70,7 +71,7 @@ def list_schedules(ctx: OperationContext) -> PagedResult[ScheduleSummary]:
             ScheduleSummary(
                 schedule_id=r.get("id", ""),
                 name=r.get("name", ""),
-                target_type=r.get("target_type", "pipeline"),
+                target_type=r.get("target_type", "operation"),
                 target_name=r.get("target_name", ""),
                 cron_expression=r.get("cron_expression"),
                 interval_seconds=r.get("interval_seconds"),
@@ -114,7 +115,7 @@ def get_schedule(
         detail = ScheduleDetail(
             schedule_id=row.get("id", ""),
             name=row.get("name", ""),
-            target_type=row.get("target_type", "pipeline"),
+            target_type=row.get("target_type", "operation"),
             target_name=row.get("target_name", ""),
             cron_expression=row.get("cron_expression"),
             interval_seconds=row.get("interval_seconds"),
@@ -212,7 +213,6 @@ def update_schedule(
             elapsed_ms=timer.elapsed_ms,
         )
 
-    sets: list[str] = []
     updates_dict: dict[str, Any] = {}
 
     if request.cron_expression is not None:
@@ -297,7 +297,7 @@ def list_calc_dependencies(
 ) -> PagedResult[CalcDependencySummary]:
     """List calculation dependencies.
 
-    Shows which pipelines depend on which upstream data sources,
+    Shows which operations depend on which upstream data sources,
     enabling dependency graph visualization and cascade invalidation.
     """
     from spine.ops.responses import CalcDependencySummary
@@ -310,7 +310,7 @@ def list_calc_dependencies(
         repo = _calc_dep_repo(ctx)
         rows, total = repo.list_deps(
             calc_domain=request.calc_domain if request else None,
-            calc_pipeline=request.calc_pipeline if request else None,
+            calc_operation=request.calc_operation if request else None,
             depends_on_domain=request.depends_on_domain if request else None,
             limit=limit,
             offset=offset,
@@ -320,7 +320,7 @@ def list_calc_dependencies(
             CalcDependencySummary(
                 id=r.get("id", 0),
                 calc_domain=r.get("calc_domain", ""),
-                calc_pipeline=r.get("calc_pipeline", ""),
+                calc_operation=r.get("calc_operation", ""),
                 calc_table=r.get("calc_table"),
                 depends_on_domain=r.get("depends_on_domain", ""),
                 depends_on_table=r.get("depends_on_table", ""),
@@ -471,9 +471,5 @@ def check_data_readiness(
             elapsed_ms=timer.elapsed_ms,
         )
 
-
-# Bring OperationError into scope for use in check_data_readiness
-from spine.core.logging import get_logger
-from spine.ops.result import OperationError
 
 logger = get_logger(__name__)

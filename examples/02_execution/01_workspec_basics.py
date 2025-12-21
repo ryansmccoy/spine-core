@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WorkSpec — The Universal Work Description for Tasks, Pipelines, and Workflows.
+"""WorkSpec — The Universal Work Description for Tasks, Operations, and Workflows.
 
 ================================================================================
 WHY WORKSPEC?
@@ -9,14 +9,14 @@ Every job engine needs to answer: "What work should be done?"  WorkSpec is
 spine-core's answer — a single dataclass that describes ALL types of work::
 
     WorkSpec(kind="task",     name="fetch_filing",    params={...})
-    WorkSpec(kind="pipeline", name="ingest_10k",      params={...})
+    WorkSpec(kind="operation", name="ingest_10k",      params={...})
     WorkSpec(kind="workflow", name="daily_etl",       params={...})
     WorkSpec(kind="step",     name="normalize_prices", params={...})
 
 Why one type instead of four?  Because the execution infrastructure
 (dispatcher, executor, ledger, DLQ) treats all work uniformly::
 
-    dispatcher.submit(spec)     # Same method for task, pipeline, or workflow
+    dispatcher.submit(spec)     # Same method for task, operation, or workflow
     executor.execute(spec)      # Same executor interface
     ledger.record(spec, result) # Same audit trail
 
@@ -25,7 +25,7 @@ execution layer.
 
 
 ================================================================================
-ARCHITECTURE: WorkSpec IN THE EXECUTION PIPELINE
+ARCHITECTURE: WorkSpec IN THE EXECUTION operation
 ================================================================================
 
 ::
@@ -40,7 +40,7 @@ ARCHITECTURE: WorkSpec IN THE EXECUTION PIPELINE
 
     WorkSpec Fields:
     ┌──────────────┬──────────────────────────────────────────────────────────┐
-    │ kind         │ "task" | "pipeline" | "workflow" | "step"               │
+    │ kind         │ "task" | "operation" | "workflow" | "step"               │
     │ name         │ Handler name (matches registry key)                     │
     │ params       │ Dict of parameters passed to the handler                │
     │ description  │ Optional human-readable description                     │
@@ -80,19 +80,19 @@ def main():
     print(f"  Name: {task_spec.name}")
     print(f"  Params: {task_spec.params}")
     
-    # === 2. Create a pipeline spec with priority ===
-    print("\n[2] Pipeline Spec with Priority")
-    pipeline_spec = WorkSpec(
-        kind="pipeline",
+    # === 2. Create a operation spec with priority ===
+    print("\n[2] Operation Spec with Priority")
+    operation_spec = WorkSpec(
+        kind="operation",
         name="data_ingestion",
         params={"source": "sec-edgar", "batch_size": 100},
         priority="high",
         lane="ingestion",
     )
-    print(f"  Kind: {pipeline_spec.kind}")
-    print(f"  Name: {pipeline_spec.name}")
-    print(f"  Priority: {pipeline_spec.priority}")
-    print(f"  Lane: {pipeline_spec.lane}")
+    print(f"  Kind: {operation_spec.kind}")
+    print(f"  Name: {operation_spec.name}")
+    print(f"  Priority: {operation_spec.priority}")
+    print(f"  Lane: {operation_spec.lane}")
     
     # === 3. Create a workflow spec with idempotency ===
     print("\n[3] Workflow Spec with Idempotency Key")

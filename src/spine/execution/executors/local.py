@@ -1,7 +1,6 @@
 """Local Executor — ThreadPool-based concurrent execution.
 
-WHY
-───
+Manifesto:
 ``MemoryExecutor`` is blocking; ``CeleryExecutor`` requires Redis +
 worker processes.  ``LocalExecutor`` sits in between — it uses
 ``ThreadPoolExecutor`` for real concurrency without external
@@ -20,6 +19,12 @@ Related modules:
     protocol.py       — Executor protocol
     async_local.py    — asyncio version for I/O-bound work
     process.py        — ProcessPool for CPU-bound work
+
+Tags:
+    spine-core, execution, executor, local, thread-pool, development
+
+Doc-Types:
+    api-reference
 """
 
 import asyncio
@@ -69,7 +74,7 @@ class LocalExecutor:
         """Register a handler at runtime.
 
         Args:
-            kind: Work kind (task, pipeline, workflow, step)
+            kind: Work kind (task, operation, workflow, step)
             name: Handler name
             handler: Callable(params: dict) -> Any (sync only for ThreadPool)
         """

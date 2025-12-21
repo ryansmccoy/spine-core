@@ -1,8 +1,19 @@
 """Work specification - what to run.
 
 This module defines WorkSpec, the canonical contract for specifying work
-in spine-core. All execution types (tasks, pipelines, workflows, steps)
+in spine-core. All execution types (tasks, operations, workflows, steps)
 use this single specification format.
+
+Manifesto:
+    A single WorkSpec schema means any executor can accept any
+    work request without format translation.  This eliminates
+    per-executor request models and keeps submission uniform.
+
+Tags:
+    spine-core, execution, spec, work-spec, request-model
+
+Doc-Types:
+    api-reference
 """
 
 from dataclasses import dataclass, field
@@ -11,7 +22,7 @@ from typing import Any, Literal
 
 @dataclass
 class WorkSpec:
-    """Universal work specification for tasks, pipelines, workflows, and steps.
+    """Universal work specification for tasks, operations, workflows, and steps.
 
     This is the canonical contract that makes spine-core runtime-agnostic.
     Whether you execute with Celery, Airflow, K8s Jobs, or local threads,
@@ -23,12 +34,12 @@ class WorkSpec:
     """
 
     # === WHAT TO RUN ===
-    kind: Literal["task", "pipeline", "workflow", "step"]
-    """Type of work: task (single unit), pipeline (registered pipeline),
+    kind: Literal["task", "operation", "workflow", "step"]
+    """Type of work: task (single unit), operation (registered operation),
     workflow (multi-step), or step (workflow sub-task)"""
 
     name: str
-    """Handler name, pipeline name, workflow name, or step name"""
+    """Handler name, operation name, workflow name, or step name"""
 
     params: dict[str, Any] = field(default_factory=dict)
     """Execution parameters passed to the handler"""
@@ -75,13 +86,13 @@ def task_spec(name: str, params: dict | None = None, **kwargs) -> WorkSpec:
     return WorkSpec(kind="task", name=name, params=params or {}, **kwargs)
 
 
-def pipeline_spec(name: str, params: dict | None = None, **kwargs) -> WorkSpec:
-    """Convenience constructor for pipeline specs.
+def operation_spec(name: str, params: dict | None = None, **kwargs) -> WorkSpec:
+    """Convenience constructor for operation specs.
 
     Example:
-        >>> spec = pipeline_spec("ingest_otc", {"date": "2026-01-15"})
+        >>> spec = operation_spec("ingest_otc", {"date": "2026-01-15"})
     """
-    return WorkSpec(kind="pipeline", name=name, params=params or {}, **kwargs)
+    return WorkSpec(kind="operation", name=name, params=params or {}, **kwargs)
 
 
 def workflow_spec(name: str, params: dict | None = None, **kwargs) -> WorkSpec:

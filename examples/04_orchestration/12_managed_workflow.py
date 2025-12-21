@@ -1,18 +1,18 @@
-"""Managed Pipelines — import existing code, get full lifecycle management.
+"""Managed Operations — import existing code, get full lifecycle management.
 
 **This is spine-core's primary integration pattern.**
 
 Take any existing Python functions — from notebooks, scripts, other
-projects, or shared libraries — and wrap them into managed pipelines
+projects, or shared libraries — and wrap them into managed operations
 that give you persistence, idempotency, observability, and queryable
 execution history.  Your functions never import spine types.
 
 Key concepts:
 
 - ``ManagedWorkflow`` — fluent builder: ``.step().step().build()``
-- ``ManagedPipeline``  — the built result: ``.run()``, ``.show()``,
+- ``ManagedOperation``  — the built result: ``.run()``, ``.show()``,
   ``.history()``, ``.query_db()``
-- ``manage()`` — one-liner shortcut for simple sequential pipelines
+- ``manage()`` — one-liner shortcut for simple sequential operations
 
 Database modes (set ``SPINE_EXAMPLES_DB`` env var):
 
@@ -26,13 +26,13 @@ Sections:
     3 — Persistent mode with SQLite file
     4 — Partition-based idempotency
     5 — Querying execution data
-    6 — Importing existing pipelines from external code
+    6 — Importing existing operations from external code
 
 Run:
     python examples/04_orchestration/12_managed_workflow.py
 
 Expected Output:
-    Six sections demonstrating the full managed pipeline lifecycle.
+    Six sections demonstrating the full managed operation lifecycle.
 
 See Also:
     - ``04_step_adapters.py`` — low-level adapter mechanics
@@ -98,13 +98,13 @@ def validate_data(record_count: int, min_required: int = 1) -> bool:
 
 
 # ============================================================================
-# Now the spine imports — ONLY where we build managed pipelines
+# Now the spine imports — ONLY where we build managed operations
 # ============================================================================
 
 # Add examples/ to path so _db.py is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from spine.orchestration.managed_workflow import ManagedWorkflow, ManagedPipeline, manage
+from spine.orchestration.managed_workflow import ManagedWorkflow, ManagedOperation, manage
 
 
 # ============================================================================
@@ -112,11 +112,11 @@ from spine.orchestration.managed_workflow import ManagedWorkflow, ManagedPipelin
 # ============================================================================
 
 def demo_managed_builder() -> None:
-    """Build a managed pipeline with the fluent builder API."""
+    """Build a managed operation with the fluent builder API."""
     print("\n--- Section 1: ManagedWorkflow Builder ---\n")
 
-    # Build a pipeline from plain functions — no framework coupling
-    pipeline = (
+    # Build a operation from plain functions — no framework coupling
+    operation = (
         ManagedWorkflow("sec.risk_analysis")
         .step("fetch", fetch_sec_filing, config={"cik": "0000320193"})
         .step("score", calculate_risk, config={
@@ -128,20 +128,20 @@ def demo_managed_builder() -> None:
         .build()
     )
 
-    print(f"  Built: {pipeline}")
-    print(f"  Persistent: {pipeline.is_persistent}")
+    print(f"  Built: {operation}")
+    print(f"  Persistent: {operation.is_persistent}")
 
     # Run it
-    result = pipeline.run()
+    result = operation.run()
 
     # Pretty-print results
-    pipeline.show()
+    operation.show()
 
     assert result.status.value == "completed"
     assert len(result.completed_steps) == 3
     print(f"\n  [OK] ManagedWorkflow builder — 3 steps completed")
 
-    pipeline.close()
+    operation.close()
 
 
 # ============================================================================
@@ -149,11 +149,11 @@ def demo_managed_builder() -> None:
 # ============================================================================
 
 def demo_manage_shortcut() -> None:
-    """Use the manage() shortcut for quick sequential pipelines."""
+    """Use the manage() shortcut for quick sequential operations."""
     print("\n--- Section 2: manage() One-Liner ---\n")
 
     # One-liner: functions become steps named after the function
-    pipeline = manage(
+    operation = manage(
         fetch_sec_filing,
         classify_sector,
         validate_data,
@@ -164,28 +164,28 @@ def demo_manage_shortcut() -> None:
         },
     )
 
-    result = pipeline.run()
-    pipeline.show()
+    result = operation.run()
+    operation.show()
 
     assert result.status.value == "completed"
     # validate_data returns True → StepResult.ok()
-    print(f"\n  [OK] manage() shortcut — 3 functions as sequential pipeline")
+    print(f"\n  [OK] manage() shortcut — 3 functions as sequential operation")
 
-    pipeline.close()
+    operation.close()
 
 
 # ============================================================================
 # SECTION 3 — Persistent mode (SQLite file)
 # ============================================================================
 
-def demo_persistent_mode() -> ManagedPipeline:
+def demo_persistent_mode() -> ManagedOperation:
     """Show data persisting to a SQLite file."""
     print("\n--- Section 3: Persistent Mode (SQLite File) ---\n")
 
     db_path = str(Path(__file__).resolve().parent.parent / "spine_examples.db")
 
     # Build with persistence
-    pipeline = (
+    operation = (
         ManagedWorkflow("sec.persistent_demo", db=db_path)
         .step("fetch", fetch_sec_filing, config={"cik": "0001018724"})
         .step("score", calculate_risk, config={
@@ -197,19 +197,19 @@ def demo_persistent_mode() -> ManagedPipeline:
         .build()
     )
 
-    print(f"  Pipeline  : {pipeline}")
-    print(f"  Persistent: {pipeline.is_persistent}")
+    print(f"  Operation  : {operation}")
+    print(f"  Persistent: {operation.is_persistent}")
     print(f"  DB file   : {db_path}")
 
     # Run with a partition key (enables tracking + idempotency)
-    result = pipeline.run(
+    result = operation.run(
         partition={"company": "Amazon", "quarter": "Q4-2025"},
     )
 
-    pipeline.show()
+    operation.show()
 
     # Verify data is in the database
-    counts = pipeline.table_counts()
+    counts = operation.table_counts()
     non_empty = {k: v for k, v in counts.items() if v > 0}
     print(f"\n  Tables with data: {len(non_empty)}")
     for table, count in sorted(non_empty.items()):
@@ -219,19 +219,19 @@ def demo_persistent_mode() -> ManagedPipeline:
     assert len(non_empty) > 0, "Expected data in at least one table"
     print(f"\n  [OK] Persistent mode — data written to SQLite file")
 
-    return pipeline  # keep open for Section 4
+    return operation  # keep open for Section 4
 
 
 # ============================================================================
 # SECTION 4 — Idempotent re-execution
 # ============================================================================
 
-def demo_idempotency(pipeline: ManagedPipeline) -> None:
+def demo_idempotency(operation: ManagedOperation) -> None:
     """Show that re-running with the same partition is idempotent."""
     print("\n--- Section 4: Idempotent Re-execution ---\n")
 
     # Run again with the SAME partition — should be skipped
-    result2 = pipeline.run(
+    result2 = operation.run(
         partition={"company": "Amazon", "quarter": "Q4-2025"},
     )
 
@@ -240,14 +240,14 @@ def demo_idempotency(pipeline: ManagedPipeline) -> None:
     print(f"  Steps  : {result2.step_executions}")
 
     # Different partition — runs normally
-    result3 = pipeline.run(
+    result3 = operation.run(
         partition={"company": "Amazon", "quarter": "Q3-2025"},
     )
 
-    pipeline.show()
+    operation.show()
 
     # Check history
-    history = pipeline.history()
+    history = operation.history()
     print(f"\n  Total runs: {len(history)}")
     for h in history:
         print(f"    {h['run_id'][:8]}… status={h['status']} steps={h['completed_steps']}")
@@ -255,7 +255,7 @@ def demo_idempotency(pipeline: ManagedPipeline) -> None:
     assert len(history) == 3  # run1 + skipped + run3
     print(f"\n  [OK] Idempotency — same partition skipped, new partition ran")
 
-    pipeline.close()
+    operation.close()
 
 
 # ============================================================================
@@ -268,14 +268,14 @@ def demo_querying() -> None:
 
     db_path = str(Path(__file__).resolve().parent.parent / "spine_examples.db")
 
-    # Build a multi-company pipeline
+    # Build a multi-company operation
     companies = [
         ("0000320193", "Apple"),
         ("0000789019", "Microsoft"),
         ("0001326801", "Meta"),
     ]
 
-    pipeline = (
+    operation = (
         ManagedWorkflow("sec.multi_company", db=db_path)
         .step("fetch", fetch_sec_filing, config={"cik": "0000320193"})
         .step("score", calculate_risk, config={
@@ -287,13 +287,13 @@ def demo_querying() -> None:
 
     # Run for each company (with unique partitions)
     for cik, name in companies:
-        pipeline.run(partition={"company": name, "analysis": "risk"})
+        operation.run(partition={"company": name, "analysis": "risk"})
 
-    pipeline.show()
+    operation.show()
 
     # Query the manifest table
     print(f"\n  Querying core_manifest:")
-    rows = pipeline.query_db(
+    rows = operation.query_db(
         "SELECT domain, partition_key, stage FROM core_manifest "
         "ORDER BY domain, stage_rank"
     )
@@ -304,7 +304,7 @@ def demo_querying() -> None:
 
     # Show overall table counts
     print(f"\n  Database table summary:")
-    counts = pipeline.table_counts()
+    counts = operation.table_counts()
     non_empty = {k: v for k, v in counts.items() if v > 0}
     for table, count in sorted(non_empty.items()):
         print(f"    {table}: {count} rows")
@@ -312,16 +312,16 @@ def demo_querying() -> None:
     assert len(rows) > 0, "Expected manifest rows"
     print(f"\n  [OK] Query API — {len(rows)} manifest entries found")
 
-    pipeline.close()
+    operation.close()
 
 
 # ============================================================================
-# SECTION 6 — Importing existing pipelines
+# SECTION 6 — Importing existing operations
 # ============================================================================
 
 def demo_import_existing() -> None:
     """Show the full import-and-manage pattern for external code."""
-    print("\n--- Section 6: Import Existing Pipelines ---\n")
+    print("\n--- Section 6: Import Existing Operations ---\n")
 
     # Imagine these functions come from another project:
     #   from market_spine.analysis import fetch_sec_filing, calculate_risk
@@ -338,10 +338,10 @@ def demo_import_existing() -> None:
     print("    5. Partition keys give you idempotency for free")
 
     # Full example with all four functions
-    pipeline = (
+    operation = (
         ManagedWorkflow(
             "sec.full_analysis",
-            description="Complete SEC filing analysis pipeline",
+            description="Complete SEC filing analysis operation",
         )
         .step("fetch", fetch_sec_filing, config={"cik": "0000320193"})
         .step("score", calculate_risk, config={
@@ -359,8 +359,8 @@ def demo_import_existing() -> None:
         .build()
     )
 
-    result = pipeline.run()
-    pipeline.show()
+    result = operation.run()
+    operation.show()
 
     # The report step returns a string → StepResult.ok(output={"message": ...})
     report_out = result.context.get_output("report")
@@ -370,7 +370,7 @@ def demo_import_existing() -> None:
     assert "Apple" in report_out.get("message", "")
     print(f"\n  [OK] Import-and-manage pattern — 4 external functions managed")
 
-    pipeline.close()
+    operation.close()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -391,10 +391,10 @@ def _cleanup_db() -> None:
 # ── Main ─────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    """Run all managed pipeline demonstrations."""
+    """Run all managed operation demonstrations."""
 
     print("=" * 60)
-    print("Managed Pipelines — Import & Manage Existing Code")
+    print("Managed Operations — Import & Manage Existing Code")
     print("=" * 60)
 
     # Clean up from previous runs
@@ -402,8 +402,8 @@ def main() -> None:
 
     demo_managed_builder()
     demo_manage_shortcut()
-    pipeline = demo_persistent_mode()
-    demo_idempotency(pipeline)
+    operation = demo_persistent_mode()
+    demo_idempotency(operation)
     demo_querying()
     demo_import_existing()
 
@@ -434,12 +434,12 @@ def main() -> None:
     PostgreSQL  → ManagedWorkflow("name", db="postgresql://…")
 
   One-liner shortcut:
-    pipeline = manage(fn1, fn2, fn3, db="runs.db")
+    operation = manage(fn1, fn2, fn3, db="runs.db")
 
   Your functions never import spine types.
   The adapter handles everything.
 """)
-    print("[OK] All managed pipeline demonstrations passed")
+    print("[OK] All managed operation demonstrations passed")
     print("=" * 60)
 
 

@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS core_workflow_steps (
     
     -- Step definition
     step_name TEXT NOT NULL,                -- e.g., "fetch_data", "validate", "compute"
-    step_type TEXT NOT NULL,                -- e.g., "pipeline", "task", "condition", "parallel"
+    step_type TEXT NOT NULL,                -- e.g., "operation", "task", "condition", "parallel"
     step_order INTEGER NOT NULL,            -- Execution order (0-based)
     
     -- State (PENDING → RUNNING → COMPLETED | FAILED | SKIPPED)
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS core_workflow_steps (
     max_attempts INTEGER NOT NULL DEFAULT 1,
     
     -- Execution linkage
-    execution_id TEXT,                      -- FK to core_executions (if pipeline step)
+    execution_id TEXT,                      -- FK to core_executions (if operation step)
     
     -- Audit
     created_at TEXT NOT NULL DEFAULT (datetime('now')),

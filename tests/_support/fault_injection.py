@@ -1,7 +1,7 @@
 """
 Fault injection system for deterministic test failures.
 
-When ``SPINE_FAULT_INJECTION=1`` is set, specific pipeline steps can be
+When ``SPINE_FAULT_INJECTION=1`` is set, specific operation steps can be
 made to fail with controlled error types.  This is activated from
 scenario fixtures — never in production.
 

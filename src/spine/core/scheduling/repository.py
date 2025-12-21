@@ -1,7 +1,20 @@
 """Schedule repository - CRUD and cron evaluation.
 
+Manifesto:
+    Schedule persistence and next-run computation are pure data operations
+    that belong in a repository, not in the service layer.  Separating
+    them enables testing with in-memory connections and keeps the service
+    focused on orchestration.
+
 This module provides the data access layer for schedules, plus cron
 expression evaluation using croniter.
+
+Tags:
+    spine-core, scheduling, repository, CRUD, cron, croniter
+
+Doc-Types:
+    api-reference, architecture-diagram
+
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  SCHEDULE REPOSITORY                                                          │
@@ -65,7 +78,7 @@ class ScheduleCreate:
     """DTO for creating a new schedule."""
 
     name: str
-    target_type: str  # pipeline, workflow
+    target_type: str  # operation, workflow
     target_name: str
     schedule_type: str = "cron"  # cron, interval, date
     cron_expression: str | None = None
@@ -470,7 +483,7 @@ class ScheduleRepository:
 
         Args:
             schedule_id: Schedule ID
-            run_id: The workflow/pipeline run ID
+            run_id: The workflow/operation run ID
             scheduled_at: When it was scheduled (default: now)
 
         Returns:

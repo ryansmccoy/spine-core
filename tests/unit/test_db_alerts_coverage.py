@@ -147,7 +147,7 @@ class TestAlert:
         alert = Alert(
             severity=AlertSeverity.ERROR,
             title="Fail",
-            message="Pipeline failed",
+            message="Operation failed",
             source="ingest",
             domain="finra",
             execution_id="e1",

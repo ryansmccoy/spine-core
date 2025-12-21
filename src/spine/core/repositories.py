@@ -5,6 +5,15 @@ typed, dialect-aware CRUD for a specific domain aggregate.  Operations
 in ``spine.ops`` should use these repositories instead of
 inline raw SQL.
 
+Manifesto:
+    Raw SQL scattered across ops modules is unmaintainable, untestable,
+    and dialect-dependent. Repositories centralize data access:
+
+    - **Typed methods:** create(), list(), update() with clear signatures
+    - **Dialect-aware:** SQL generated via Dialect, not hardcoded
+    - **Testable:** Mock at repository boundary, not SQL strings
+    - **Auditable:** One place per table for all SQL operations
+
 Architecture::
 
     ┌───────────────────────────────────────────────────────────────────┐
@@ -34,8 +43,27 @@ Architecture::
     │   .execute()  .query()  .insert()  .ph()  .commit()               │
     └───────────────────────────────────────────────────────────────────┘
 
+Features:
+    - **14 repository classes:** One per domain table/aggregate
+    - **Consistent API:** list() returns (list[dict], int) tuples
+    - **Factory helpers:** _xxx_repo(ctx) pattern for ops modules
+    - **Dialect portability:** All SQL via BaseRepository helpers
+
+Guardrails:
+    ❌ DON'T: Write raw SQL in ops modules
+    ✅ DO: Use the appropriate repository class
+
+    ❌ DON'T: Return raw cursor results from repositories
+    ✅ DO: Return typed dicts or (list[dict], int) tuples
+
 Tags:
-    repository, sql, domain, refactoring
+    repository, sql, domain, refactoring, spine-core,
+    data-access, crud, dialect-aware
+
+Doc-Types:
+    - API Reference
+    - Architecture Documentation
+    - Repository Pattern Guide
 """
 
 from __future__ import annotations
@@ -349,7 +377,7 @@ class WorkItemRepository(BaseRepository):
     TABLE = "core_work_items"
 
     COLUMNS = (
-        "id, domain, pipeline AS workflow, partition_key, params_json, desired_at, "
+        "id, domain, workflow, partition_key, params_json, desired_at, "
         "priority, state, attempt_count, max_attempts, last_error, "
         "last_error_at, next_attempt_at, current_execution_id, "
         "latest_execution_id, locked_by, locked_at, "
@@ -367,7 +395,7 @@ class WorkItemRepository(BaseRepository):
     ) -> tuple[list[dict[str, Any]], int]:
         """List work items.  Returns ``(rows, total)``."""
         where, params = _build_where(
-            {"domain": domain, "pipeline": workflow, "state": state},
+            {"domain": domain, "workflow": workflow, "state": state},
             self.ph,
         )
         count_row = self.query_one(
@@ -451,7 +479,7 @@ class WorkItemRepository(BaseRepository):
     ) -> int:
         """Reset all failed items back to PENDING.  Returns count affected."""
         where, params = _build_where(
-            {"domain": domain, "pipeline": workflow},
+            {"domain": domain, "workflow": workflow},
             self.ph,
             extra_clauses=["state='FAILED'"],
         )
@@ -1165,7 +1193,7 @@ class CalcDependencyRepository(BaseRepository):
     TABLE = "core_calc_dependencies"
 
     COLUMNS = (
-        "id, calc_domain, calc_pipeline, calc_table, "
+        "id, calc_domain, calc_operation, calc_table, "
         "depends_on_domain, depends_on_table, dependency_type, "
         "description, created_at"
     )
@@ -1174,7 +1202,7 @@ class CalcDependencyRepository(BaseRepository):
         self,
         *,
         calc_domain: str | None = None,
-        calc_pipeline: str | None = None,
+        calc_operation: str | None = None,
         depends_on_domain: str | None = None,
         limit: int = 50,
         offset: int = 0,
@@ -1182,7 +1210,7 @@ class CalcDependencyRepository(BaseRepository):
         where, params = _build_where(
             {
                 "calc_domain": calc_domain,
-                "calc_pipeline": calc_pipeline,
+                "calc_operation": calc_operation,
                 "depends_on_domain": depends_on_domain,
             },
             self.ph,
@@ -1193,7 +1221,7 @@ class CalcDependencyRepository(BaseRepository):
         total = (count_row or {}).get("cnt", 0)
         rows = self.query(
             f"SELECT {self.COLUMNS} FROM {self.TABLE} WHERE {where} "
-            f"ORDER BY calc_domain, calc_pipeline "
+            f"ORDER BY calc_domain, calc_operation "
             f"LIMIT {self.ph(1)} OFFSET {self.ph(1)}",
             (*params, limit, offset),
         )
@@ -1206,7 +1234,7 @@ class ExpectedScheduleRepository(BaseRepository):
     TABLE = "core_expected_schedules"
 
     COLUMNS = (
-        "id, domain, pipeline AS workflow, schedule_type, cron_expression, "
+        "id, domain, workflow, schedule_type, cron_expression, "
         "partition_template, partition_values, expected_delay_hours, "
         "preliminary_hours, description, is_active, created_at, updated_at"
     )
@@ -1223,7 +1251,7 @@ class ExpectedScheduleRepository(BaseRepository):
     ) -> tuple[list[dict[str, Any]], int]:
         conds: dict[str, Any] = {
             "domain": domain,
-            "pipeline": workflow,
+            "workflow": workflow,
             "schedule_type": schedule_type,
         }
         if is_active is not None:
@@ -1236,7 +1264,7 @@ class ExpectedScheduleRepository(BaseRepository):
         total = (count_row or {}).get("cnt", 0)
         rows = self.query(
             f"SELECT {self.COLUMNS} FROM {self.TABLE} WHERE {where} "
-            f"ORDER BY domain, pipeline "
+            f"ORDER BY domain, workflow "
             f"LIMIT {self.ph(1)} OFFSET {self.ph(1)}",
             (*params, limit, offset),
         )

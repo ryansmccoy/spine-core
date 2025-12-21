@@ -105,9 +105,9 @@ def populate_executions(ctx, conn):
     print("\n  [executions]")
 
     runs = [
-        SubmitRunRequest(kind="pipeline", name="finra.otc.ingest"),
-        SubmitRunRequest(kind="pipeline", name="equity.price.ingest"),
-        SubmitRunRequest(kind="pipeline", name="options.chain.ingest"),
+        SubmitRunRequest(kind="operation", name="finra.otc.ingest"),
+        SubmitRunRequest(kind="operation", name="equity.price.ingest"),
+        SubmitRunRequest(kind="operation", name="options.chain.ingest"),
     ]
     for req in runs:
         res = submit_run(ctx, req)
@@ -197,7 +197,7 @@ def populate_work_items(ctx, conn):
     print("\n  [work_items]")
     now = _now()
     count = _seed_raw(conn, "core_work_items",
-        ["id", "domain", "pipeline", "partition_key", "desired_at", "state",
+        ["id", "domain", "workflow", "partition_key", "desired_at", "state",
          "locked_by", "created_at", "updated_at"],
         [
             (1, "otc", "finra.otc.ingest", '{"date":"2026-02-15"}', now, "PENDING", None, now, now),
@@ -237,8 +237,8 @@ def populate_locks(conn):
     count = _seed_raw(conn, "core_concurrency_locks",
         ["lock_key", "execution_id", "acquired_at", "expires_at"],
         [
-            ("pipeline:otc.ingest", "exec-001", now.isoformat(), (now + timedelta(minutes=30)).isoformat()),
-            ("pipeline:equity.eod", "exec-002", now.isoformat(), (now + timedelta(minutes=20)).isoformat()),
+            ("operation:otc.ingest", "exec-001", now.isoformat(), (now + timedelta(minutes=30)).isoformat()),
+            ("operation:equity.eod", "exec-002", now.isoformat(), (now + timedelta(minutes=20)).isoformat()),
         ])
     print(f"    + {count} concurrency locks")
 
@@ -260,9 +260,9 @@ def populate_schedules(ctx):
     """Populate core_schedules via ops layer."""
     print("\n  [schedules]")
     scheds = [
-        CreateScheduleRequest(name="otc-daily-ingest", target_type="pipeline",
+        CreateScheduleRequest(name="otc-daily-ingest", target_type="operation",
                              target_name="finra.otc.ingest", cron_expression="0 18 * * 1-5"),
-        CreateScheduleRequest(name="equity-eod-calc", target_type="pipeline",
+        CreateScheduleRequest(name="equity-eod-calc", target_type="operation",
                              target_name="equity.eod.calc", cron_expression="0 19 * * 1-5"),
         CreateScheduleRequest(name="weekly-recon", target_type="workflow",
                              target_name="full.reconciliation", cron_expression="0 6 * * 6", enabled=False),
@@ -278,7 +278,7 @@ def populate_calc_dependencies(conn):
     print("\n  [calc_dependencies]")
     now = _now()
     count = _seed_raw(conn, "core_calc_dependencies",
-        ["calc_domain", "calc_pipeline", "calc_table", "depends_on_domain",
+        ["calc_domain", "calc_operation", "calc_table", "depends_on_domain",
          "depends_on_table", "dependency_type", "description", "created_at"],
         [
             ("equity", "eod.calc", None, "market", "price.ingest", "REQUIRED", "EOD depends on prices", now),
@@ -294,7 +294,7 @@ def populate_expected_schedules(conn):
     print("\n  [expected_schedules]")
     now = _now()
     count = _seed_raw(conn, "core_expected_schedules",
-        ["domain", "pipeline", "schedule_type", "cron_expression", "partition_template",
+        ["domain", "workflow", "schedule_type", "cron_expression", "partition_template",
          "expected_delay_hours", "preliminary_hours", "description", "is_active", "created_at", "updated_at"],
         [
             ("otc", "finra.otc.ingest", "daily", "0 18 * * 1-5", '{"date":"${DATE}"}', 2, None, "OTC daily ingest", 1, now, now),
@@ -452,12 +452,12 @@ def populate_workflows(conn):
     _seed_raw(conn, "core_workflow_runs",
         ["run_id", "workflow_name", "workflow_version", "status", "started_at", "completed_at",
          "triggered_by", "created_at"],
-        [(run_id, "wf-daily-pipeline", 1, "COMPLETED", now, now, "manual", now)])
+        [(run_id, "wf-daily-operation", 1, "COMPLETED", now, now, "manual", now)])
 
     steps = [
-        (f"step_{uuid.uuid4().hex[:8]}", run_id, "ingest", "pipeline", 1, "COMPLETED", now, now, None),
-        (f"step_{uuid.uuid4().hex[:8]}", run_id, "validate", "pipeline", 2, "COMPLETED", now, now, None),
-        (f"step_{uuid.uuid4().hex[:8]}", run_id, "transform", "pipeline", 3, "COMPLETED", now, now, None),
+        (f"step_{uuid.uuid4().hex[:8]}", run_id, "ingest", "operation", 1, "COMPLETED", now, now, None),
+        (f"step_{uuid.uuid4().hex[:8]}", run_id, "validate", "operation", 2, "COMPLETED", now, now, None),
+        (f"step_{uuid.uuid4().hex[:8]}", run_id, "transform", "operation", 3, "COMPLETED", now, now, None),
     ]
     _seed_raw(conn, "core_workflow_steps",
         ["step_id", "run_id", "step_name", "step_type", "step_order", "status",

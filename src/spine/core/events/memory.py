@@ -1,8 +1,18 @@
 """
 In-memory event bus implementation.
 
+Manifesto:
+    Single-process deployments and test suites need a zero-dependency event
+    bus that delivers events immediately without external infrastructure.
+
 Uses asyncio queues for single-node deployments. Events are processed
 immediately and not persisted.
+
+Tags:
+    spine-core, events, in-memory, asyncio, testing, single-node
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

@@ -1,46 +1,55 @@
 """Generalized Taggable Content Model for spine-core.
 
-Provides base classes for taggable content entities.
+Provides base classes for taggable content entities with multi-dimensional
+tagging that can be applied to ANY content type — chat messages, news
+articles, SEC filings, LLM prompts, and documents.
 
-This module provides multi-dimensional tagging that can be applied to
-ANY content type - not just chat messages:
+Manifesto:
+    Content in the spine ecosystem needs multi-dimensional classification
+    for discovery, filtering, and similarity matching. Without a shared
+    tagging model, each project invents its own taxonomy with incompatible
+    structures. TagGroupSet provides:
 
-- Chat messages/sessions (topics, technologies, intent)
-- News articles (tickers, sectors, event types)
-- SEC filings (companies, filing types, risk categories)
-- LLM prompts (capabilities, use cases, models)
-- Documents (projects, departments, sensitivity)
+    - **Orthogonal dimensions:** Independent tag groups (topics, sectors, etc.)
+    - **Faceted search:** Multiple independent filters on any axis
+    - **Hierarchical taxonomies:** topic > subtopic nesting support
+    - **Similarity matching:** Compare tagsets for content similarity
 
-Design inspired by:
-- MetricSpec pattern (orthogonal axes: code, category, basis, presentation)
-- Faceted search (multiple independent filters)
-- Hierarchical taxonomies (topic > subtopic)
+Architecture:
+    ::
 
-Key Concepts:
-    TagGroup: A named dimension with values (topics, technologies, etc.)
-    TagGroupSet: Collection of orthogonal tag dimensions
-    Taggable: Protocol for anything that can be tagged
-    TaggableContent: Mixin that adds tagging to any content
+        TagGroupSet
+        ├── TagGroup("tickers", ["AAPL", "MSFT"])
+        ├── TagGroup("sectors", ["Technology"])
+        ├── TagGroup("event_types", ["earnings"])
+        └── TagGroup("sentiment", ["positive"])
 
-Example:
-    # News article tags
-    tags = TagGroupSet.create(
-        tickers=["AAPL", "MSFT"],
-        sectors=["Technology"],
-        event_types=["earnings", "guidance"],
-        sentiment="positive",
-    )
+        Taggable Protocol → TaggableContent Mixin
+              │
+              └── Any content class can gain tagging via mixin
 
-    # SEC filing tags
-    tags = TagGroupSet.create(
-        companies=["Apple Inc."],
-        filing_types=["10-K"],
-        risk_categories=["competition", "supply_chain"],
-        regions=["US", "China"],
-    )
+Features:
+    - **TagGroup:** Named dimension with values (topics, tickers, etc.)
+    - **TagGroupSet:** Collection of orthogonal tag dimensions
+    - **Taggable:** Protocol for anything that can be tagged
+    - **TaggableContent:** Mixin that adds tagging to any content class
+    - **Similarity matching:** matches() for content-based discovery
 
-    # Find similar content
-    similarity = article_tags.matches(other_tags)
+Examples:
+    >>> tags = TagGroupSet.create(
+    ...     tickers=["AAPL", "MSFT"],
+    ...     sectors=["Technology"],
+    ...     event_types=["earnings", "guidance"],
+    ... )
+
+Tags:
+    tagging, faceted-search, taxonomy, content-model, spine-core,
+    multi-dimensional, similarity, discovery
+
+Doc-Types:
+    - API Reference
+    - Content Model Guide
+    - Search & Discovery Documentation
 """
 
 from __future__ import annotations

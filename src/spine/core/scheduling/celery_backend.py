@@ -1,5 +1,11 @@
 """Celery Beat scheduler backend (experimental).
 
+Manifesto:
+    Deployments already using Celery as a task broker can drive scheduler
+    ticks from Celery Beat instead of a local thread.  This backend
+    registers a periodic Celery task but does NOT start Beat itself --
+    you must run ``celery -A <app> beat`` separately.
+
 Wraps Celery Beat periodic task scheduling to provide the
 ``SchedulerBackend`` protocol.  This is intended for deployments that
 already use Celery as a task broker and want the scheduler tick to be
@@ -11,10 +17,13 @@ Requires a Celery application instance and the ``celery`` package::
 
 .. warning::
 
-    This backend is **experimental**.  Celery Beat integration requires
-    a running Celery worker and Beat process.  The ``start()`` method
-    only *registers* the periodic task — it does **not** start Beat.
-    You must run ``celery -A <app> beat`` separately.
+    This backend is **experimental**.
+
+Tags:
+    spine-core, scheduling, celery, experimental, import-guarded
+
+Doc-Types:
+    api-reference
 
 Architecture
 ~~~~~~~~~~~~

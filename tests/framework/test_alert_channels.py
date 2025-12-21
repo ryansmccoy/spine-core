@@ -27,7 +27,7 @@ def _alert(**overrides) -> Alert:
         severity=AlertSeverity.ERROR,
         title="Something broke",
         message="Details about the failure",
-        source="test_pipeline",
+        source="test_operation",
         domain="sec",
         execution_id="exec-123",
         created_at=datetime(2026, 1, 15, 12, 0, 0),

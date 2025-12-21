@@ -36,6 +36,17 @@ Example::
     # Later, update the config:
     hot.update_config({"image": "spine:v2"})
     # Next operation uses the new adapter automatically
+
+Manifesto:
+    In development, restarting the engine to pick up config
+    changes wastes time.  HotReload watches for adapter config
+    changes and swaps them in-place without downtime.
+
+Tags:
+    spine-core, execution, runtimes, hot-reload, development, config-watch
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

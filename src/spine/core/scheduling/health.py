@@ -1,7 +1,19 @@
 """Scheduler health checks and drift detection.
 
+Manifesto:
+    Cron schedules depend on accurate time.  If the system clock drifts,
+    schedules fire late (or early), distributed locks expire incorrectly,
+    and audit logs become unreliable.  Active health monitoring catches
+    drift before it causes silent data gaps.
+
 This module provides health monitoring for the scheduler system,
 including time drift detection and NTP synchronization checks.
+
+Tags:
+    spine-core, scheduling, health, NTP, time-drift, monitoring
+
+Doc-Types:
+    api-reference, architecture-diagram
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  SCHEDULER HEALTH MONITORING                                                  │

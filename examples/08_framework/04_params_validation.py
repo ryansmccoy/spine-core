@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""Parameter Validation — PipelineSpec with ParamDef.
+"""Parameter Validation — OperationSpec with ParamDef.
 
 WHY PARAMETER VALIDATION
 ────────────────────────
-Pipelines and workflow steps accept user-supplied dicts, and bad values
+Operations and workflow steps accept user-supplied dicts, and bad values
 cause crashes deep in business logic where the error message is
-unhelpful.  Spine’s PipelineSpec validates inputs *before* execution and
+unhelpful.  Spine’s OperationSpec validates inputs *before* execution and
 produces clear, actionable error messages plus auto-generated help text.
 
-This validation layer works the same whether you call a Pipeline
-directly, run it via PipelineRunner, or wire it into a Workflow.
+This validation layer works the same whether you call a Operation
+directly, run it via OperationRunner, or wire it into a Workflow.
 The Workflow engine calls validate_params() on each step before
-execution, so defining a PipelineSpec is the single place to
+execution, so defining a OperationSpec is the single place to
 enforce contracts across all invocation paths.
 
 ARCHITECTURE
 ────────────
-    PipelineSpec
+    OperationSpec
     ┌─────────────────────────────────────┐
     │ required_params:                    │
     │   ticker:  ParamDef(str, ...)       │
@@ -34,8 +34,8 @@ ARCHITECTURE
     └─────────────────────────────────────┘
 
     Used by:
-      Pipeline.validate_params()   — direct call
-      PipelineRunner.run()         — auto-validated
+      Operation.validate_params()   — direct call
+      OperationRunner.run()         — auto-validated
       WorkflowRunner.execute()     — each step validated
       ManagedWorkflow.run()        — validated before dispatch
 
@@ -50,17 +50,17 @@ BUILT-IN VALIDATORS
 
 BEST PRACTICES
 ──────────────
-• Define PipelineSpec as a class constant for reuse.
-• Call spec.validate() before pipeline.run().
+• Define OperationSpec as a class constant for reuse.
+• Call spec.validate() before operation.run().
 • Use spec.get_help_text() for CLI --help output.
 • Set error_message on ParamDef for user-friendly errors.
-• Works with both Pipeline classes and plain @workflow_step functions.
+• Works with both Operation classes and plain @workflow_step functions.
 
 Run: python examples/08_framework/04_params_validation.py
 
 See Also:
-    01_pipeline_basics — Pipeline with validate_params()
-    02_pipeline_runner — runner calls validation automatically
+    01_operation_basics — Operation with validate_params()
+    02_operation_runner — runner calls validation automatically
     04_orchestration/04_step_adapters — validated plain functions
 """
 
@@ -70,7 +70,7 @@ from pathlib import Path
 from spine.core.enums import EventType
 from spine.framework.params import (
     ParamDef,
-    PipelineSpec,
+    OperationSpec,
     date_format,
     enum_value,
     positive_int,
@@ -79,12 +79,12 @@ from spine.framework.params import (
 
 def main():
     print("=" * 60)
-    print("Pipeline Parameter Validation")
+    print("Operation Parameter Validation")
     print("=" * 60)
 
-    # ── 1. Define a PipelineSpec ────────────────────────────────
-    print("\n--- 1. Define PipelineSpec ---")
-    spec = PipelineSpec(
+    # ── 1. Define a OperationSpec ────────────────────────────────
+    print("\n--- 1. Define OperationSpec ---")
+    spec = OperationSpec(
         required_params={
             "ticker": ParamDef(
                 name="ticker",

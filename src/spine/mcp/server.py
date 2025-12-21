@@ -64,7 +64,7 @@ Capabilities:
 - List alerts and anomalies
 - Health checks
 
-Use these tools to orchestrate data pipelines, track execution status,
+Use these tools to orchestrate data operations, track execution status,
 and monitor data quality across your spine-based workflows.
 """,
     lifespan=lifespan,
@@ -82,7 +82,7 @@ async def list_runs(
     workflow: str | None = None,
     limit: int = 20,
 ) -> dict[str, Any]:
-    """List workflow and pipeline runs.
+    """List workflow and operation runs.
 
     Args:
         status: Filter by status (PENDING, RUNNING, COMPLETED, FAILED)
@@ -176,11 +176,11 @@ async def submit_run(
     params: dict[str, Any] | None = None,
     priority: str = "normal",
 ) -> dict[str, Any]:
-    """Submit a new workflow or pipeline run.
+    """Submit a new workflow or operation run.
 
     Args:
-        kind: Type of work ('workflow' or 'pipeline')
-        name: Workflow or pipeline name
+        kind: Type of work ('workflow' or 'operation')
+        name: Workflow or operation name
         params: Optional parameters for the run
         priority: Priority level (realtime, high, normal, low)
 
@@ -212,7 +212,7 @@ async def submit_run(
 
 @mcp.tool()
 async def cancel_run(run_id: str, reason: str | None = None) -> dict[str, Any]:
-    """Cancel a running workflow or pipeline.
+    """Cancel a running workflow or operation.
 
     Args:
         run_id: Unique run identifier
@@ -390,7 +390,7 @@ async def create_schedule(
 
     Args:
         name: Schedule name
-        target_name: Workflow or pipeline to execute
+        target_name: Workflow or operation to execute
         cron_expression: Cron expression (e.g., '0 */4 * * *')
         interval_seconds: Alternative to cron, interval in seconds
         enabled: Whether schedule is active
@@ -442,8 +442,8 @@ async def list_quality_results(
         Dictionary with quality results
     """
     from spine.ops.context import OperationContext
-    from spine.ops.requests import ListQualityResultsRequest
     from spine.ops.quality import list_quality_results as _list_quality_results
+    from spine.ops.requests import ListQualityResultsRequest
 
     ctx = _get_context()
     if not ctx.initialized:
@@ -607,9 +607,9 @@ def _get_context() -> AppContext:
     """Get current MCP context."""
     # Context is available via mcp.request_context in actual tool execution
     # For now, create a new connection each time
-    from spine.core.database import get_connection
-
     try:
+        from spine.core.database import get_connection
+
         conn = get_connection()
         return AppContext(conn=conn, initialized=True)
     except Exception:

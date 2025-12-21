@@ -5,12 +5,12 @@
 WHY AN EXECUTION LEDGER?
 ================================================================================
 
-The ExecutionLedger provides an **append-only audit trail** of all pipeline
+The ExecutionLedger provides an **append-only audit trail** of all operation
 executions.  Unlike RunRecord (which tracks individual tasks), the ledger
 tracks **high-level executions** — a workflow run comprising many tasks::
 
     execution = Execution(
-        pipeline_name="daily_ingest",
+        operation_name="daily_ingest",
         trigger_source=TriggerSource.SCHEDULE,
         status=ExecutionStatus.RUNNING,
     )
@@ -19,7 +19,7 @@ tracks **high-level executions** — a workflow run comprising many tasks::
     ledger.complete(execution.id, ExecutionStatus.COMPLETED)
 
 Key capabilities:
-    - **Create/Update/Query** executions by ID, status, pipeline, time
+    - **Create/Update/Query** executions by ID, status, operation, time
     - **Lifecycle tracking** — PENDING → RUNNING → COMPLETED/FAILED
     - **Duration recording** — started_at, completed_at, duration_sec
     - **Trigger provenance** — SCHEDULE, MANUAL, WEBHOOK, BACKFILL
@@ -35,7 +35,7 @@ DATABASE: core_executions TABLE
     │  Table: core_executions                                                 │
     ├─────────────────────────────────────────────────────────────────────────┤
     │  id              VARCHAR(36)  PRIMARY KEY  -- ULID                     │
-    │  pipeline_name   VARCHAR(255) NOT NULL     -- "daily_ingest"           │
+    │  operation_name   VARCHAR(255) NOT NULL     -- "daily_ingest"           │
     │  status          VARCHAR(20)  NOT NULL     -- ExecutionStatus enum     │
     │  trigger_source  VARCHAR(20)               -- SCHEDULE/MANUAL/WEBHOOK │
     │  event_type      VARCHAR(20)               -- EventType enum          │

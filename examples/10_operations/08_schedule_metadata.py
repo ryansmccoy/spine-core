@@ -31,7 +31,7 @@ DEPENDENCY GRAPH EXAMPLE
 
 BEST PRACTICES
 ──────────────
-• Register calc dependencies at pipeline build time.
+• Register calc dependencies at operation build time.
 • Use data_readiness to avoid running workflows on stale data.
 • Configure expected_schedules for SLA alerting.
 • Combine with 11_scheduling/ for automated triggers.
@@ -43,12 +43,17 @@ See Also:
     09_locks_dlq_quality — lock management for scheduled runs
 """
 
+import sys
+from pathlib import Path
 from datetime import datetime, timezone
 
-from spine.core.schema import create_core_tables
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
 from spine.core.schema_loader import apply_all_schemas
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.schedules import (
     list_schedules,
     get_schedule,
@@ -80,13 +85,13 @@ def _seed_calc_dependencies(conn) -> None:
         ("otc", "otc.valuation", None, "market", "rate.ingest", "OPTIONAL", "otc valuation depends on rates"),
         ("options", "greeks.calc", None, "equity", "eod.calc", "REQUIRED", "options greeks depend on equity eod"),
     ]
-    for calc_domain, calc_pipeline, calc_table, dep_domain, dep_table, dep_type, desc in deps:
+    for calc_domain, calc_operation, calc_table, dep_domain, dep_table, dep_type, desc in deps:
         conn.execute(
             "INSERT INTO core_calc_dependencies "
-            "(calc_domain, calc_pipeline, calc_table, depends_on_domain, depends_on_table, "
+            "(calc_domain, calc_operation, calc_table, depends_on_domain, depends_on_table, "
             "dependency_type, description, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (calc_domain, calc_pipeline, calc_table, dep_domain, dep_table, dep_type, desc, now),
+            (calc_domain, calc_operation, calc_table, dep_domain, dep_table, dep_type, desc, now),
         )
     conn.commit()
 
@@ -101,13 +106,13 @@ def _seed_expected_schedules(conn) -> None:
         ("options", "greeks.calc", "daily", "30 19 * * 1-5", '{"date": "${DATE}"}', 3, None, "Options greeks"),
         ("recon", "full.recon", "weekly", "0 6 * * 6", '{"week_ending": "${SATURDAY}"}', 24, 48, "Weekly recon"),
     ]
-    for domain, pipeline, stype, cron, part_tmpl, delay_h, prelim_h, desc in schedules:
+    for domain, workflow, stype, cron, part_tmpl, delay_h, prelim_h, desc in schedules:
         conn.execute(
             "INSERT INTO core_expected_schedules "
-            "(domain, pipeline, schedule_type, cron_expression, partition_template, "
+            "(domain, workflow, schedule_type, cron_expression, partition_template, "
             "expected_delay_hours, preliminary_hours, description, is_active, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
-            (domain, pipeline, stype, cron, part_tmpl, delay_h, prelim_h, desc, now, now),
+            (domain, workflow, stype, cron, part_tmpl, delay_h, prelim_h, desc, now, now),
         )
     conn.commit()
 
@@ -138,9 +143,12 @@ def main():
     print("=" * 60)
     print("Operations Layer — Schedule Metadata")
     print("=" * 60)
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
-    create_core_tables(conn)
     apply_all_schemas(conn)
     ctx = OperationContext(conn=conn, caller="example")
 
@@ -162,14 +170,14 @@ def main():
     schedule_data = [
         CreateScheduleRequest(
             name="otc-daily-ingest",
-            target_type="pipeline",
+            target_type="operation",
             target_name="finra.otc.ingest",
             cron_expression="0 18 * * 1-5",
             enabled=True,
         ),
         CreateScheduleRequest(
             name="equity-eod-calc",
-            target_type="pipeline",
+            target_type="operation",
             target_name="equity.eod.calc",
             cron_expression="0 19 * * 1-5",
             enabled=True,
@@ -249,7 +257,7 @@ def main():
     assert result.success
     print(f"  total : {result.total}")
     for d in result.data:
-        print(f"  {d.calc_domain}.{d.calc_pipeline} → {d.depends_on_domain}.{d.depends_on_table}  (type={d.dependency_type})")
+        print(f"  {d.calc_domain}.{d.calc_operation} → {d.depends_on_domain}.{d.depends_on_table}  (type={d.dependency_type})")
 
     # --- 9. Filter by calc domain -----------------------------------------
     print("\n[9] Filter Dependencies for Domain = 'equity'")

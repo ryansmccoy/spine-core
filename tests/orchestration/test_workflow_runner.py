@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 from spine.orchestration.step_result import StepResult
 from spine.orchestration.step_types import ErrorPolicy, Step
 from spine.orchestration.workflow import ExecutionMode, WorkflowExecutionPolicy, Workflow
@@ -31,17 +31,17 @@ from spine.orchestration.workflow_runner import (
 
 
 class StubRunnable:
-    """Minimal Runnable for testing pipeline steps."""
+    """Minimal Runnable for testing operation steps."""
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         partition: dict[str, Any] | None = None,
         context: Any = None,
         **kwargs: Any,
-    ) -> PipelineRunResult:
-        return PipelineRunResult(
+    ) -> OperationRunResult:
+        return OperationRunResult(
             run_id="test-run",
             status="completed",
             metrics=params or {},
@@ -130,10 +130,10 @@ class TestSequentialExecution:
         result = runner.execute(wf)
         assert result.context.get_output("b", "doubled") == 84
 
-    def test_pipeline_step(self):
+    def test_operation_step(self):
         wf = Workflow(
             name="test.wf",
-            steps=[Step.pipeline("ingest", "my.pipeline", params={"x": 1})],
+            steps=[Step.operation("ingest", "my.operation", params={"x": 1})],
         )
         runner = WorkflowRunner(runnable=StubRunnable())
         result = runner.execute(wf)

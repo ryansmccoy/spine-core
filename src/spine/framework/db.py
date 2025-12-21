@@ -10,7 +10,7 @@ Usage in tier-specific code (e.g., my_app/db.py):
     from spine.framework.db import set_connection_provider
     set_connection_provider(get_sqlite_connection)
 
-Usage in domain pipelines:
+Usage in domain operations:
     from spine.framework.db import get_connection
     conn = get_connection()
 """

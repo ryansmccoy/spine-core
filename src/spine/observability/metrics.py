@@ -15,7 +15,7 @@ Example:
     >>> from spine.observability.metrics import counter, gauge, histogram
     >>>
     >>> # Increment a counter
-    >>> counter("executions_total", labels={"pipeline": "sec.filings"}).inc()
+    >>> counter("executions_total", labels={"operation": "sec.filings"}).inc()
     >>>
     >>> # Set a gauge
     >>> gauge("queue_depth").set(42)
@@ -493,32 +493,32 @@ class ExecutionMetrics:
         self.submitted = reg.counter(
             "spine_executions_submitted_total",
             "Total executions submitted",
-            ["pipeline"],
+            ["operation"],
         )
 
         self.completed = reg.counter(
             "spine_executions_completed_total",
             "Total executions completed",
-            ["pipeline", "status"],
+            ["operation", "status"],
         )
 
         self.duration = reg.histogram(
             "spine_execution_duration_seconds",
             "Execution duration in seconds",
-            ["pipeline"],
+            ["operation"],
             buckets=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, float("inf")),
         )
 
         self.dlq_depth = reg.gauge(
             "spine_dlq_depth",
             "Number of items in dead letter queue",
-            ["pipeline"],
+            ["operation"],
         )
 
         self.active_executions = reg.gauge(
             "spine_active_executions",
             "Number of currently running executions",
-            ["pipeline"],
+            ["operation"],
         )
 
         self.locks_held = reg.gauge(
@@ -526,16 +526,16 @@ class ExecutionMetrics:
             "Number of currently held locks",
         )
 
-    def record_submission(self, pipeline: str) -> None:
+    def record_submission(self, operation: str) -> None:
         """Record an execution submission."""
-        self.submitted.labels(pipeline=pipeline).inc()
-        self.active_executions.labels(pipeline=pipeline).inc()
+        self.submitted.labels(operation=operation).inc()
+        self.active_executions.labels(operation=operation).inc()
 
-    def record_completion(self, pipeline: str, status: str, duration: float) -> None:
+    def record_completion(self, operation: str, status: str, duration: float) -> None:
         """Record an execution completion."""
-        self.completed.labels(pipeline=pipeline, status=status).inc()
-        self.duration.labels(pipeline=pipeline).observe(duration)
-        self.active_executions.labels(pipeline=pipeline).dec()
+        self.completed.labels(operation=operation, status=status).inc()
+        self.duration.labels(operation=operation).observe(duration)
+        self.active_executions.labels(operation=operation).dec()
 
 
 # Global execution metrics instance

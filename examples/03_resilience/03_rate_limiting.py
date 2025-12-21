@@ -6,7 +6,7 @@ WHY RATE LIMITING MATTERS
 External APIs (SEC EDGAR, FINRA, market data vendors) enforce strict
 request quotas.  Exceeding them results in 429 errors, temporary bans,
 or silent data corruption.  Client-side rate limiting ensures your
-pipeline stays within published limits and plays nicely with shared
+operation stays within published limits and plays nicely with shared
 API keys across teams.
 
 ALGORITHM COMPARISON

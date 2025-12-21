@@ -1,7 +1,6 @@
 """Handler Registry — injectable name → handler lookup.
 
-WHY
-───
+Manifesto:
 The EventDispatcher needs to resolve ``"task:send_email"`` to a
 callable handler.  The registry decouples registration (at import
 time or startup) from resolution (at dispatch time), and supports
@@ -19,7 +18,7 @@ ARCHITECTURE
 
     Convenience decorators (use global registry):
       register_task(name)        → registers as "task:{name}"
-      register_pipeline(name)    → registers as "pipeline:{name}"
+      register_operation(name)    → registers as "operation:{name}"
       register_workflow(name)    → registers as "workflow:{name}"
       register_step(name)        → registers as "step:{name}"
 
@@ -28,7 +27,7 @@ ARCHITECTURE
 
 BEST PRACTICES
 ──────────────
-- Use ``register_task`` / ``register_pipeline`` decorators for
+- Use ``register_task`` / ``register_operation`` decorators for
   production code; pass explicit ``HandlerRegistry`` in tests.
 - Call ``reset_default_registry()`` in test fixtures.
 
@@ -36,6 +35,12 @@ Related modules:
     dispatcher.py — EventDispatcher uses the registry
     handlers.py   — built-in example handlers
     spec.py       — WorkSpec references handler by name
+
+Tags:
+    spine-core, execution, registry, handler-registry, lookup
+
+Doc-Types:
+    api-reference
 """
 
 from collections.abc import Callable
@@ -76,7 +81,7 @@ class HandlerRegistry:
         """Register a handler.
 
         Args:
-            kind: Work kind (task, pipeline, workflow, step)
+            kind: Work kind (task, operation, workflow, step)
             name: Handler name
             handler: Callable to execute
             description: Optional description for documentation
@@ -213,7 +218,7 @@ def register_handler(
     """Decorator to register a handler.
 
     Args:
-        kind: Work kind (task, pipeline, workflow, step)
+        kind: Work kind (task, operation, workflow, step)
         name: Handler name
         registry: Optional registry (uses global if None)
         description: Optional description
@@ -259,20 +264,20 @@ def register_task(
     return register_handler("task", name, registry, description, tags)
 
 
-def register_pipeline(
+def register_operation(
     name: str,
     registry: HandlerRegistry | None = None,
     description: str | None = None,
     tags: dict[str, str] | None = None,
 ):
-    """Convenience: register a pipeline handler.
+    """Convenience: register a operation handler.
 
     Example:
-        >>> @register_pipeline("ingest_otc")
+        >>> @register_operation("ingest_otc")
         >>> async def ingest_otc(params):
         ...     return {"rows": 1000}
     """
-    return register_handler("pipeline", name, registry, description, tags)
+    return register_handler("operation", name, registry, description, tags)
 
 
 def register_workflow(

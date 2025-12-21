@@ -1,8 +1,7 @@
 """Dead Letter Queue (DLQ) — capture, inspect, and retry failed work.
 
-WHY
-───
-Pipeline failures should not disappear silently.  The DLQ captures
+Manifesto:
+Operation failures should not disappear silently.  The DLQ captures
 every failed execution with its full context (params, error, stack
 trace) so operators can inspect, retry, or resolve failures without
 re-running entire batches.
@@ -12,12 +11,12 @@ ARCHITECTURE
 ::
 
     DLQManager(conn)
-      ├── .add_to_dlq(execution_id, pipeline, params, error)
+      ├── .add_to_dlq(execution_id, operation, params, error)
       ├── .retry(dlq_id)           ─ re-queue for execution
       ├── .resolve(dlq_id, by)     ─ mark as handled
       ├── .list_pending()          ─ unresolved entries
       ├── .purge_old(days)         ─ cleanup resolved entries
-      └── .stats()                 ─ counts by status/pipeline
+      └── .stats()                 ─ counts by status/operation
 
     DeadLetter (models.py)     ─ row-level data model
 
@@ -37,11 +36,17 @@ Example::
     dlq = DLQManager(conn, max_retries=3)
     entry = dlq.add_to_dlq(
         execution_id="exec-123",
-        pipeline="finra.otc.ingest",
+        operation="finra.otc.ingest",
         params={"week_ending": "2025-01-09"},
         error="Connection timeout",
     )
     dlq.retry(entry.id)  # re-queue
+
+Tags:
+    spine-core, execution, dead-letter-queue, retry, failure-handling
+
+Doc-Types:
+    api-reference
 """
 
 import json

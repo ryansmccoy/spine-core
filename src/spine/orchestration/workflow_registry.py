@@ -1,7 +1,6 @@
 """Workflow Registry — global registration and discovery of workflows.
 
-WHY
-───
+Manifesto:
 Large applications define workflows in many modules.  The registry
 provides a single lookup table so that runners, CLIs, and APIs can
 find workflows by name without knowing which module defined them.
@@ -37,6 +36,12 @@ Example::
     register_workflow(my_workflow)
     workflow = get_workflow("ingest.daily")
     names = list_workflows(domain="ingest")
+
+Tags:
+    spine-core, orchestration, registry, discovery, lookup
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -44,7 +49,6 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from spine.core.logging import get_logger
-
 from spine.orchestration.exceptions import GroupError
 from spine.orchestration.workflow import Workflow
 

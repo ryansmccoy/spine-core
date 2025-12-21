@@ -36,9 +36,9 @@ Example::
         return StepResult.ok(output={"valid": True})
 
     workflow = Workflow(
-        name="test.pipeline",
+        name="test.operation",
         steps=[
-            Step.pipeline("fetch", "data.fetch"),
+            Step.operation("fetch", "data.fetch"),
             Step.lambda_("validate", validate),
         ],
     )
@@ -59,6 +59,17 @@ Example::
 See Also:
     spine.orchestration.playground — interactive step-by-step execution
     spine.orchestration.linter — static workflow analysis
+
+Manifesto:
+    Reproducing workflow failures requires the exact inputs and outputs
+    of every step.  The Recorder captures this as a replayable trace
+    for debugging and regression testing.
+
+Tags:
+    spine-core, orchestration, recorder, replay, debugging, trace
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -66,16 +77,12 @@ from __future__ import annotations
 import copy
 import json
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from spine.execution.runnable import Runnable, PipelineRunResult
-from spine.orchestration.step_result import StepResult
-from spine.orchestration.step_types import Step, StepType
+from spine.execution.runnable import Runnable
 from spine.orchestration.workflow import Workflow
-from spine.orchestration.workflow_context import WorkflowContext
 from spine.orchestration.workflow_runner import (
     WorkflowResult,
     WorkflowRunner,
@@ -95,7 +102,7 @@ class StepRecording:
 
     Attributes:
         step_name: Name of the step that was executed.
-        step_type: Type of the step (LAMBDA, PIPELINE, etc.).
+        step_type: Type of the step (LAMBDA, operation, etc.).
         params_snapshot: Copy of workflow params *before* this step ran.
         outputs_snapshot: Copy of context outputs *after* this step ran.
         result_status: Status string from the StepResult.
@@ -304,11 +311,11 @@ class RecordingRunner:
 
     Example::
 
-        from spine.execution.runnable import PipelineRunResult
+        from spine.execution.runnable import OperationRunResult
 
         class StubRunnable:
-            def submit_pipeline_sync(self, pipeline_name, params=None, **kw):
-                return PipelineRunResult(status="completed")
+            def submit_operation_sync(self, operation_name, params=None, **kw):
+                return OperationRunResult(status="completed")
 
         recorder = RecordingRunner(runnable=StubRunnable())
         result = recorder.execute(workflow, params={"key": "val"})

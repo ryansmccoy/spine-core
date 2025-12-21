@@ -1,7 +1,6 @@
 """LLM Router — route requests to the right provider by model name.
 
-WHY
-───
+Manifesto:
 Workflows may use different models for different steps (e.g. a cheap
 model for classification, an expensive one for generation).  The router
 selects the appropriate ``LLMProvider`` based on the model name.
@@ -28,6 +27,12 @@ Example::
 
     # Routes to bedrock_provider:
     router.complete([Message.user("hi")], model="claude-v2")
+
+Tags:
+    spine-core, orchestration, llm, router, model-selection, fallback
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

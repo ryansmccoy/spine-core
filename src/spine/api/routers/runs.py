@@ -2,7 +2,7 @@
 Runs router — list, inspect, cancel, and retry execution runs.
 
 Provides CRUD and control operations for execution runs across all work types
-(tasks, pipelines, workflows). This is the primary endpoint set for the
+(tasks, operations, workflows). This is the primary endpoint set for the
 orchestration console's Runs view.
 
 Endpoints:
@@ -12,6 +12,13 @@ Endpoints:
     POST   /runs/{run_id}/cancel   Cancel a running execution
     POST   /runs/{run_id}/retry    Retry a failed execution
     GET    /runs/{run_id}/events   Get event history for a run
+
+Manifesto:
+    Submitting and tracking runs via REST enables both UI
+    dashboards and CI/CD pipelines to interact with execution.
+
+Tags:
+    spine-core, api, runs, submission, status, lifecycle
 
 Doc-Types: API_REFERENCE
 """
@@ -30,6 +37,7 @@ from spine.api.schemas.domains import (
     RunAcceptedSchema,
     RunDetailSchema,
     RunEventSchema,
+    RunLogEntrySchema,
     RunStepSchema,
     RunSummarySchema,
 )
@@ -56,7 +64,7 @@ class SubmitRunBody(BaseModel):
     """Request body for submitting a new run.
 
     Attributes:
-        kind: Work type — ``"task"``, ``"pipeline"``, or ``"workflow"``.
+        kind: Work type — ``"task"``, ``"operation"``, or ``"workflow"``.
         name: Handler or workflow name to execute.
         params: Arbitrary runtime parameters passed to the execution.
         idempotency_key: Optional key for at-most-once execution semantics.
@@ -76,7 +84,7 @@ class SubmitRunBody(BaseModel):
 
     kind: str = Field(
         default="task",
-        description="Work type: 'task' | 'pipeline' | 'workflow'",
+        description="Work type: 'task' | 'operation' | 'workflow'",
     )
     name: str = Field(description="Handler or workflow name to execute")
     params: dict[str, Any] = Field(
@@ -99,7 +107,7 @@ class SubmitRunBody(BaseModel):
 
 @router.post("", response_model=SuccessResponse[RunAcceptedSchema], status_code=202)
 def submit_run(ctx: OpContext, body: SubmitRunBody):
-    """Submit a new execution run (task, pipeline, or workflow).
+    """Submit a new execution run (task, operation, or workflow).
 
     Queues work for execution and returns immediately with a run_id.
     The actual execution happens asynchronously via workers.
@@ -147,7 +155,7 @@ def submit_run(ctx: OpContext, body: SubmitRunBody):
 @router.get("", response_model=PagedResponse[RunSummarySchema])
 def list_runs(
     ctx: OpContext,
-    kind: str | None = Query(None, description="Filter by work type: 'task' | 'pipeline' | 'workflow'"),
+    kind: str | None = Query(None, description="Filter by work type: 'task' | 'operation' | 'workflow'"),
     status: str | None = Query(None, description="Filter by status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'dead_lettered'"),
     workflow: str | None = Query(None, description="Filter by workflow name"),
     since: datetime | None = Query(None, description="Only runs started after this datetime (inclusive, ISO 8601)"),
@@ -422,7 +430,7 @@ def get_run_steps(
                 {
                     "step_id": "s1",
                     "step_name": "fetch_data",
-                    "step_type": "pipeline",
+                    "step_type": "operation",
                     "status": "COMPLETED",
                     "duration_ms": 1250,
                     "row_count": 10000
@@ -445,6 +453,79 @@ def get_run_steps(
     if not result.success:
         return _handle_error(result)
     items = [RunStepSchema(**_dc(s)) for s in (result.data or [])]
+    return PagedResponse(
+        data=items,
+        page=PageMeta(
+            total=result.total or 0,
+            limit=result.limit or limit,
+            offset=result.offset or offset,
+            has_more=result.has_more or False,
+        ),
+        elapsed_ms=result.elapsed_ms,
+        warnings=result.warnings,
+    )
+
+
+@router.get("/{run_id}/logs", response_model=PagedResponse[RunLogEntrySchema])
+def get_run_logs(
+    ctx: OpContext,
+    run_id: str = Path(..., description="Run UUID"),
+    step: str | None = Query(None, description="Filter to specific step name"),
+    level: str | None = Query(None, description="Minimum log level: DEBUG|INFO|WARN|ERROR"),
+    limit: int = Query(1000, ge=1, le=10000, description="Maximum lines to return (1-10000)"),
+    offset: int = Query(0, ge=0, description="Line offset for pagination"),
+):
+    """Get log entries for a run execution.
+
+    Returns structured log lines emitted during run execution.
+    Supports filtering by step name and minimum log level.
+    Ordered chronologically (oldest first).
+
+    Args:
+        ctx: Operation context with database connection.
+        run_id: The unique run identifier.
+        step: Optional filter to logs from a specific step.
+        level: Optional minimum log level filter (DEBUG shows all, ERROR shows only errors).
+        limit: Maximum lines per page (default 1000, max 10000).
+        offset: Pagination offset (default 0).
+
+    Returns:
+        PagedResponse containing list of RunLogEntrySchema items.
+
+    Raises:
+        404 NOT_FOUND: Run with specified ID does not exist.
+
+    Example:
+        GET /api/v1/runs/abc-123/logs?step=extract&level=ERROR&limit=500
+
+        Response:
+        {
+            "data": [
+                {
+                    "timestamp": "2026-02-13T10:15:23.456Z",
+                    "level": "ERROR",
+                    "message": "Connection timeout after 30s",
+                    "step_name": "extract",
+                    "logger": "spine.operations.etl",
+                    "line_number": 42
+                }
+            ],
+            "page": {"total": 1, "limit": 500, "offset": 0, "has_more": false}
+        }
+    """
+    from spine.ops.requests import GetRunLogsRequest
+    from spine.ops.runs import get_run_logs as _logs
+
+    result = _logs(ctx, GetRunLogsRequest(
+        run_id=run_id,
+        step=step,
+        level=level,
+        limit=limit,
+        offset=offset,
+    ))
+    if not result.success:
+        return _handle_error(result)
+    items = [RunLogEntrySchema(**_dc(e)) for e in (result.data or [])]
     return PagedResponse(
         data=items,
         page=PageMeta(

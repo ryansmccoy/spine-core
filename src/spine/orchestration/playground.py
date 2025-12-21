@@ -26,9 +26,9 @@ Example::
     workflow = Workflow(
         name="debug.workflow",
         steps=[
-            Step.pipeline("fetch", "my.fetcher"),
+            Step.operation("fetch", "my.fetcher"),
             Step.lambda_("validate", validate_fn),
-            Step.pipeline("store", "my.store"),
+            Step.operation("store", "my.store"),
         ],
     )
 
@@ -47,14 +47,24 @@ Example::
     snap = pg.step()          # re-execute "validate"
 
     pg.run_all()              # run remaining steps
+
+Manifesto:
+    Debugging workflows requires stepping through execution interactively.
+    The Playground lets developers execute one step at a time, inspect
+    intermediate state, and re-execute steps without restarting.
+
+Tags:
+    spine-core, orchestration, playground, interactive, debugging, step-through
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
-import copy
 import logging
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -63,10 +73,7 @@ from spine.orchestration.step_types import Step, StepType
 from spine.orchestration.workflow import Workflow
 from spine.orchestration.workflow_context import WorkflowContext
 from spine.orchestration.workflow_runner import (
-    StepExecution,
-    WorkflowResult,
     WorkflowRunner,
-    WorkflowStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -84,7 +91,7 @@ class StepSnapshot:
 
     Attributes:
         step_name: Name of the executed step.
-        step_type: Type of the step (LAMBDA, PIPELINE, etc.).
+        step_type: Type of the step (LAMBDA, operation, etc.).
         status: ``'completed'``, ``'failed'``, or ``'skipped'``.
         result: The ``StepResult`` (if step returned one).
         context_before: Context snapshot *before* the step ran.
@@ -118,8 +125,8 @@ class WorkflowPlayground:
     Parameters
     ----------
     runnable
-        Optional ``Runnable`` for pipeline step execution.  If ``None``,
-        pipeline steps return a stub result (useful for dry-run/design).
+        Optional ``Runnable`` for operation step execution.  If ``None``,
+        operation steps return a stub result (useful for dry-run/design).
     """
 
     def __init__(self, runnable: Any = None) -> None:
@@ -420,23 +427,22 @@ class WorkflowPlayground:
             raw = step.handler(self._context, step.config)
             return StepResult.from_value(raw)
 
-        elif step.step_type == StepType.PIPELINE:
+        elif step.step_type == StepType.OPERATION:
             if self._runnable is None:
                 # Dry-run mode: return stub result
                 return StepResult.ok(
-                    output={"_dry_run": True, "pipeline": step.pipeline_name},
+                    output={"_dry_run": True, "operation": step.operation_name},
                 )
             # Execute via runnable
-            from spine.execution.runnable import PipelineRunResult
 
-            pipeline_result = self._runnable.submit_pipeline_sync(
-                step.pipeline_name or "",
+            operation_result = self._runnable.submit_operation_sync(
+                step.operation_name or "",
                 params=step.config,
                 parent_run_id=self._context.run_id if self._context else None,
             )
-            if pipeline_result.succeeded:
-                return StepResult.ok(output=pipeline_result.metrics)
-            return StepResult.fail(pipeline_result.error or "Pipeline failed")
+            if operation_result.succeeded:
+                return StepResult.ok(output=operation_result.metrics)
+            return StepResult.fail(operation_result.error or "Operation failed")
 
         elif step.step_type == StepType.WAIT:
             # In playground mode, waits are instant

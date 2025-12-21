@@ -1,7 +1,6 @@
 """Token Budget — enforce token spending limits across workflows.
 
-WHY
-───
+Manifesto:
 LLM calls cost money.  A runaway workflow could burn through an
 entire budget in minutes.  ``TokenBudget`` tracks cumulative token
 usage and raises ``BudgetExhaustedError`` before the limit is
@@ -25,6 +24,12 @@ Example::
     budget = TokenBudget(max_tokens=10_000)
     budget.record(response.usage)
     budget.check(estimated_tokens=500)   # raises if over
+
+Tags:
+    spine-core, orchestration, llm, budget, token-accounting, cost-control
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

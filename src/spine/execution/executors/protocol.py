@@ -1,7 +1,6 @@
 """Executor Protocol — the single backend interface.
 
-WHY
-───
+Manifesto:
 Regardless of how work is actually executed (threads, processes,
 Celery, Kubernetes), the ``EventDispatcher`` needs a uniform
 interface.  ``Executor`` is a ``typing.Protocol`` — any object with
@@ -26,7 +25,13 @@ ARCHITECTURE
 
 Related modules:
     dispatcher.py — EventDispatcher delegates to Executor
-    runnable.py   — Runnable protocol (blocking pipeline interface)
+    runnable.py   — Runnable protocol (blocking operation interface)
+
+Tags:
+    spine-core, execution, executor, protocol, interface, abc
+
+Doc-Types:
+    api-reference
 """
 
 from typing import Protocol, runtime_checkable

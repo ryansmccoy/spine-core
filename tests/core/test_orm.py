@@ -642,7 +642,7 @@ class TestRelationships:
         session.add(wr)
         ws = WorkflowStepTable(
             step_id="ws1", run_id="wr1", step_name="s1",
-            step_type="pipeline", step_order=1,
+            step_type="operation", step_order=1,
         )
         session.add(ws)
         we = WorkflowEventTable(run_id="wr1", event_type="started")

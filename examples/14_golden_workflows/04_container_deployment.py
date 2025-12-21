@@ -199,9 +199,13 @@ def deploy_generate_compose(**kwargs: Any) -> dict[str, Any]:
 
 def deploy_validate_schema(**kwargs: Any) -> dict[str, Any]:
     """Step 3: Validate database schema (pre-deploy check)."""
-    from spine.core.connection import create_connection
-
-    conn, info = create_connection(init_schema=True)
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from _db import get_demo_connection, load_env
+    
+    load_env()
+    conn, info = get_demo_connection()
 
     # Verify core tables exist
     cursor = conn.execute(

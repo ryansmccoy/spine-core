@@ -28,5 +28,5 @@ INTEGRATION — workflow and CI
 ──────────────────────────────
     10 — Workflow integration (deploy as a spine-core workflow)
     11 — CLI programmatic (invoke deploy commands from Python)
-    12 — CI artifacts (structured output for CI pipelines)
+    12 — CI artifacts (structured output for CI operations)
 """

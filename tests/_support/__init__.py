@@ -115,7 +115,7 @@ def assert_dict_subset(actual: dict, expected: dict, path: str = "") -> None:
 
 class StepOrderValidator:
     """
-    Validates topological ordering of pipeline steps.
+    Validates topological ordering of operation steps.
     
     Usage:
         validator = StepOrderValidator(plan.steps)

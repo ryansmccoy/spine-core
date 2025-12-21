@@ -30,8 +30,8 @@ def simple_workflow():
     return Workflow(
         name="test.workflow",
         steps=[
-            Step.pipeline(name="step1", pipeline_name="pipe_a"),
-            Step.pipeline(name="step2", pipeline_name="pipe_b"),
+            Step.operation(name="step1", operation_name="pipe_a"),
+            Step.operation(name="step2", operation_name="pipe_b"),
         ],
     )
 
@@ -79,13 +79,13 @@ class TestExecuteWorkflow:
         assert result.status == WorkflowStatus.COMPLETED
 
     def test_execute_dry_run_no_side_effects(self, simple_workflow):
-        """Dry run should complete without actually running pipelines."""
+        """Dry run should complete without actually running operations."""
         result = execute_workflow(simple_workflow, dry_run=True)
         assert len(result.completed_steps) == 2
         assert len(result.failed_steps) == 0
 
     def test_execute_with_runnable(self, simple_workflow):
-        """When a Runnable is passed, WorkflowRunner uses it for pipeline steps."""
+        """When a Runnable is passed, WorkflowRunner uses it for operation steps."""
         mock_runnable = MagicMock()
         # In dry_run mode the runnable is not actually used, but it should be accepted
         result = execute_workflow(

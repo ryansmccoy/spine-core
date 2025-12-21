@@ -48,7 +48,7 @@ def _seed_runs(tmp_path, statuses: list[str]) -> None:
     now = datetime.now(UTC).isoformat()
     for status in statuses:
         conn.execute(
-            "INSERT INTO core_executions (id, pipeline, status, created_at, lane) "
+            "INSERT INTO core_executions (id, operation, status, created_at, lane) "
             "VALUES (?, 'task:test', ?, ?, 'default')",
             (str(uuid.uuid4()), status, now),
         )

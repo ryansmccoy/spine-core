@@ -8,6 +8,13 @@ Provides helper functions used across multiple router modules:
 These were previously duplicated in 9 router files. Centralised here
 as part of SMELL-LAYER-0002 remediation.
 
+Manifesto:
+    Utility functions shared across routers should live in one place
+    so bug-fixes propagate everywhere and routers stay thin.
+
+Tags:
+    spine-core, api, utils, shared, dataclass-conversion
+
 Doc-Types: API_INFRASTRUCTURE
 """
 

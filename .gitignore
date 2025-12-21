@@ -53,8 +53,8 @@ execution_demo.db
 site/
 archive/
 
-# Audit & architecture analysis briefs (internal only, not for public repo)
-**/audit_brief/
+# Audit & architecture analysis briefs
+# **/audit_brief/  # Removed — audit_brief should be committed
 **/architecture_analysis/
 _architecture_analysis_input.md
 _architecture_analysis_output.md
@@ -75,11 +75,18 @@ project_meta.yaml
 # Test/build output files
 test_output.txt
 test_result.txt
+test_results.txt
+test_results_summary.txt
+test_out.txt
+test_run*.txt
 pytest_out.txt
 audit_test_results.txt
 examples_output.txt
 test_conn.db
 *.json.bak
+baseline.txt
+cov*.txt
+coverage*.txt
 
 # Temporary analysis
 COMPREHENSIVE_ANALYSIS.md

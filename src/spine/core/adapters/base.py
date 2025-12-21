@@ -1,4 +1,23 @@
-"""Database adapter base class."""
+"""Database adapter base class.
+
+Manifesto:
+    All database adapters share common lifecycle (connect/disconnect),
+    query execution, and dialect management.  The abstract base class
+    defines the interface contract so consumers never depend on a
+    specific database vendor.
+
+Features:
+    - Abstract ``connect()``, ``disconnect()``, ``execute()``, ``query()``
+    - Property-based dialect and connection-state introspection
+    - Context-manager protocol for connection lifecycle
+    - Config-driven construction from ``DatabaseConfig``
+
+Tags:
+    spine-core, database, abstract-base, adapter-pattern
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

@@ -28,7 +28,7 @@ from spine.orchestration.workflow_context import WorkflowContext
 class TestStepType:
     def test_values(self):
         assert StepType.LAMBDA.value == "lambda"
-        assert StepType.PIPELINE.value == "pipeline"
+        assert StepType.OPERATION.value == "operation"
         assert StepType.CHOICE.value == "choice"
         assert StepType.WAIT.value == "wait"
         assert StepType.MAP.value == "map"
@@ -108,22 +108,22 @@ class TestStepLambda:
 
 
 # ---------------------------------------------------------------------------
-# Step factory: pipeline
+# Step factory: operation
 # ---------------------------------------------------------------------------
 
 
-class TestStepPipeline:
+class TestStepOperation:
     def test_basic(self):
-        s = Step.pipeline("ingest", "my.pipeline")
-        assert s.step_type == StepType.PIPELINE
-        assert s.pipeline_name == "my.pipeline"
+        s = Step.operation("ingest", "my.operation")
+        assert s.step_type == StepType.OPERATION
+        assert s.operation_name == "my.operation"
 
     def test_with_params(self):
-        s = Step.pipeline("ingest", "p", params={"batch": 100})
+        s = Step.operation("ingest", "p", params={"batch": 100})
         assert s.config["batch"] == 100
 
     def test_with_depends_on(self):
-        s = Step.pipeline("load", "p", depends_on=["extract"])
+        s = Step.operation("load", "p", depends_on=["extract"])
         assert "extract" in s.depends_on
 
 
@@ -220,8 +220,8 @@ class TestTierHelpers:
         assert s.is_intermediate_tier() is False
         assert s.is_advanced_tier() is False
 
-    def test_pipeline_is_basic(self):
-        s = Step.pipeline("s", "p")
+    def test_operation_is_basic(self):
+        s = Step.operation("s", "p")
         assert s.is_basic_tier() is True
 
     def test_choice_is_intermediate(self):
@@ -251,9 +251,9 @@ class TestStepSerialization:
         assert d["type"] == "lambda"
         assert "handler_ref" in d  # _dummy_handler is a named function
 
-    def test_pipeline_to_dict(self):
-        d = Step.pipeline("p", "my.pipeline").to_dict()
-        assert d["pipeline"] == "my.pipeline"
+    def test_operation_to_dict(self):
+        d = Step.operation("p", "my.operation").to_dict()
+        assert d["operation"] == "my.operation"
 
     def test_choice_to_dict(self):
         d = Step.choice("c", lambda ctx: True, then_step="a", else_step="b").to_dict()
@@ -331,9 +331,9 @@ class TestStepRepr:
         assert "lambda_" in repr(s)
         assert "'s'" in repr(s)
 
-    def test_pipeline_repr(self):
-        s = Step.pipeline("s", "my.pipe")
-        assert "pipeline" in repr(s)
+    def test_operation_repr(self):
+        s = Step.operation("s", "my.pipe")
+        assert "operation" in repr(s)
         assert "my.pipe" in repr(s)
 
     def test_choice_repr(self):

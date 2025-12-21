@@ -82,15 +82,15 @@ def retry(
 
 @app.command()
 def submit(
-    name: str = typer.Argument(..., help="Name of task, pipeline, or workflow"),
-    kind: str = typer.Option("pipeline", "--kind", "-k", help="Run kind: task, pipeline, or workflow"),
+    name: str = typer.Argument(..., help="Name of task, operation, or workflow"),
+    kind: str = typer.Option("operation", "--kind", "-k", help="Run kind: task, operation, or workflow"),
     params: str | None = typer.Option(None, "--params", "-p", help="JSON params string"),
     priority: str = typer.Option("default", "--priority", help="Execution priority lane"),
     database: str | None = typer.Option(None, "--database", "-d"),
     json_out: bool = typer.Option(False, "--json"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Validate without executing"),
 ) -> None:
-    """Submit a new execution run (task, pipeline, or workflow)."""
+    """Submit a new execution run (task, operation, or workflow)."""
     import json as _json
 
     from spine.ops.requests import SubmitRunRequest
@@ -106,7 +106,7 @@ def submit(
             parsed_params = _json.loads(params)
         except _json.JSONDecodeError as e:
             console.print(f"[red]Error: Invalid JSON params: {e}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     request = SubmitRunRequest(name=name, kind=kind, params=parsed_params, priority=priority)
     result = _submit(ctx, request)

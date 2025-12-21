@@ -117,7 +117,7 @@ class StepTiming:
     step_id: str = ""
     run_id: str = ""
     step_name: str = ""
-    step_type: str = ""  # pipeline, task, condition, parallel
+    step_type: str = ""  # operation, task, condition, parallel
     step_order: int = 0
     status: str = ""  # PENDING, RUNNING, COMPLETED, FAILED, SKIPPED
     started_at: datetime | None = None
@@ -129,6 +129,21 @@ class StepTiming:
     error: str | None = None
     error_category: str | None = None
     metrics: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class RunLogEntry:
+    """A single log line from a run execution.
+
+    Used by the Log Viewer panel to display structured logs from runs.
+    """
+
+    timestamp: str = ""
+    level: str = "INFO"
+    message: str = ""
+    step_name: str | None = None
+    logger: str = ""
+    line_number: int = 0
 
 
 # ------------------------------------------------------------------ #
@@ -166,7 +181,7 @@ class ScheduleSummary:
 
     schedule_id: str = ""
     name: str = ""
-    target_type: str = "pipeline"
+    target_type: str = "operation"
     target_name: str = ""
     cron_expression: str | None = None
     interval_seconds: int | None = None
@@ -180,7 +195,7 @@ class ScheduleDetail:
 
     schedule_id: str = ""
     name: str = ""
-    target_type: str = "pipeline"
+    target_type: str = "operation"
     target_name: str = ""
     cron_expression: str | None = None
     interval_seconds: int | None = None
@@ -457,7 +472,7 @@ class CalcDependencySummary:
 
     id: int = 0
     calc_domain: str = ""
-    calc_pipeline: str = ""
+    calc_operation: str = ""
     calc_table: str | None = None
     depends_on_domain: str = ""
     depends_on_table: str = ""

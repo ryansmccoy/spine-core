@@ -1,8 +1,7 @@
-"""Batch Executor — coordinated multi-pipeline execution.
+"""Batch Executor — coordinated multi-operation execution.
 
-WHY
-───
-Production workloads often need to run many pipelines in a single
+Manifesto:
+Production workloads often need to run many operations in a single
 batch (e.g. ingest all NMS tiers, refresh all SEC filings for a week).
 BatchExecutor wraps a ThreadPoolExecutor with progress tracking,
 aggregate results, and integration with the ExecutionLedger,
@@ -13,7 +12,7 @@ ARCHITECTURE
 ::
 
     BatchExecutor
-      ├── .add(pipeline, params)   ─ enqueue a BatchItem
+      ├── .add(operation, params)   ─ enqueue a BatchItem
       ├── .run_all()               ─ ThreadPool fan-out
       └── BatchResult              ─ successful / failed / items
 
@@ -38,6 +37,12 @@ Example::
     batch.add("market.prices", {"symbol": "AAPL"})
     results = batch.run_all()
     print(f"Completed: {results.successful}/{results.total}")
+
+Tags:
+    spine-core, execution, batch, bulk-processing, parallel
+
+Doc-Types:
+    api-reference
 """
 
 import concurrent.futures
@@ -169,7 +174,7 @@ class BatchExecutor:
             guard: Concurrency guard for locking
             dlq: Dead letter queue for failures
             max_parallel: Maximum parallel executions
-            default_handler: Default function to execute pipelines
+            default_handler: Default function to execute operations
         """
         self._ledger = ledger
         self._guard = guard
@@ -350,9 +355,9 @@ class BatchBuilder:
     Example:
         >>> result = (
         ...     BatchBuilder(ledger, guard, dlq)
-        ...     .add("pipeline.a", {"x": 1})
-        ...     .add("pipeline.a", {"x": 2})
-        ...     .add("pipeline.b", {"y": 3})
+        ...     .add("operation.a", {"x": 1})
+        ...     .add("operation.a", {"x": 2})
+        ...     .add("operation.b", {"y": 3})
         ...     .parallel(max_workers=4)
         ...     .run()
         ... )

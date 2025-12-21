@@ -1,20 +1,19 @@
 """Centralized configuration, DI container, and profile management.
 
-Why This Package Exists
------------------------
-spine-core supports 3 deployment tiers (minimal/standard/full) with
-pluggable backends for database, cache, scheduler, metrics, and workers.
-Without centralized config, each module creates its own settings class
-and the same environment variable gets parsed 5 different ways.
+Manifesto:
+    spine-core supports 3 deployment tiers (minimal/standard/full) with
+    pluggable backends for database, cache, scheduler, metrics, and workers.
+    Without centralized config, each module creates its own settings class
+    and the same environment variable gets parsed 5 different ways.
 
-This package provides a **single validated source of truth** with:
+    This package provides a **single validated source of truth** with:
 
-* **Component enums** -- ``DatabaseBackend``, ``SchedulerBackend``, etc.
-* **Environment-file loader** -- cascading ``.env`` discovery & parsing
-* **TOML profiles** -- inheritable configuration profiles
-* **Settings** -- validated ``SpineCoreSettings`` (Pydantic, cached)
-* **Factory functions** -- create engines, schedulers, cache clients
-* **DI container** -- :class:`SpineContainer` with lazy component init
+    * **Component enums** -- ``DatabaseBackend``, ``SchedulerBackend``, etc.
+    * **Environment-file loader** -- cascading ``.env`` discovery & parsing
+    * **TOML profiles** -- inheritable configuration profiles
+    * **Settings** -- validated ``SpineCoreSettings`` (Pydantic, cached)
+    * **Factory functions** -- create engines, schedulers, cache clients
+    * **DI container** -- :class:`SpineContainer` with lazy component init
 
 Quick start::
 
@@ -35,6 +34,21 @@ Architecture::
     factory.py        create_database_engine / scheduler / cache / worker
     loader.py         .env file discovery + cascading load
     profiles.py       TOML profile inheritance (~/.spine/profiles/)
+
+Guardrails:
+    ❌ Parsing env vars ad-hoc in each module
+    ✅ ``get_settings().database_url`` from the cached singleton
+    ❌ Constructing engines/schedulers with raw ``create_engine()``
+    ✅ ``create_database_engine(settings)`` via the factory layer
+    ❌ Hard-coding backend choices in application code
+    ✅ ``settings.infer_tier()`` with automatic backend selection
+
+Tags:
+    spine-core, configuration, dependency-injection, settings, profiles,
+    factory-pattern, pydantic, env-files, TOML, deployment-tiers
+
+Doc-Types:
+    package-overview, architecture-map, module-index
 """
 
 from .components import (

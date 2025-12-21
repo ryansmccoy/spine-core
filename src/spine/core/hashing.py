@@ -6,7 +6,7 @@ and content-based change detection. Hash values are used throughout spine-core
 for L2 idempotency (same input → same output) and record tracking.
 
 Manifesto:
-    Data pipelines need stable identifiers that survive re-processing:
+    Data operations need stable identifiers that survive re-processing:
     - **Natural key hash:** Identify records by business key
     - **Content hash:** Detect when record data has changed
     - **Deterministic:** Same inputs always produce same hash
@@ -60,12 +60,36 @@ Examples:
     >>> h1 == h3
     False
 
+Performance:
+    - compute_hash(): O(n) on input size, SHA-256 is ~500MB/s on modern CPUs
+    - 32-char output: 128-bit collision space, sufficient for all spine use cases
+    - Deterministic: same inputs always produce same hash (no salt, no random)
+
+Guardrails:
+    ❌ DON'T: Use for security-sensitive hashing (passwords, tokens)
+    ✅ DO: Use for deduplication and content change detection only
+
+    ❌ DON'T: Include mutable fields (timestamps, random IDs) in hash inputs
+    ✅ DO: Hash only stable business keys and content fields
+
+    ❌ DON'T: Change the delimiter or algorithm without a migration plan
+    ✅ DO: Treat the '|' delimiter and SHA-256 as part of the contract
+
+Context:
+    Problem: Data operations need stable identifiers that survive re-processing
+        for L2 idempotency (same input → same output) and change detection.
+    Solution: SHA-256 based deterministic hashing with configurable length and
+        '|' delimited value concatenation for reproducible results.
+    Alternatives Considered: MD5 (weaker collision resistance), UUID5 (namespace
+        complexity), CRC32 (too short for dedup), xxhash (non-stdlib dependency).
+
 Tags:
     hashing, deduplication, idempotency, lineage, spine-core
 
 Doc-Types:
     - API Reference
     - Idempotency Patterns Guide
+    - Data Engineering Best Practices
 """
 
 import hashlib

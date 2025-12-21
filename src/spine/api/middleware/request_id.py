@@ -1,5 +1,14 @@
-"""
-Request-ID middleware — injects ``X-Request-ID`` on every request.
+"""Request-ID middleware — injects ``X-Request-ID`` on every request.
+
+Manifesto:
+    Every request gets a unique ID so logs, traces, and error
+    reports can be correlated across services.
+
+Tags:
+    spine-core, api, middleware, request-id, tracing, correlation
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

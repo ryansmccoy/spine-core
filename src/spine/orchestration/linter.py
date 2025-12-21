@@ -13,7 +13,7 @@ Architecture::
     ├── _check_choice_completeness
     ├── _check_unreachable_steps
     ├── _check_deep_chains
-    ├── _check_pipeline_naming
+    ├── _check_operation_naming
     ├── _check_similar_names
     └── (custom rules via register_lint_rule)
     │
@@ -30,9 +30,9 @@ Example::
     from spine.orchestration import Workflow, Step
 
     workflow = Workflow(
-        name="my.pipeline",
+        name="my.operation",
         steps=[
-            Step.pipeline("ingest", "my.ingest"),
+            Step.operation("ingest", "my.ingest"),
             Step.lambda_("validate", None),  # missing handler!
         ],
     )
@@ -45,6 +45,16 @@ Example::
 See Also:
     spine.orchestration.playground — interactive step-by-step execution
     spine.orchestration.templates — pre-built workflow patterns
+
+Manifesto:
+    Run-time failures are expensive.  The linter catches structural issues,
+    naming violations, and dependency graph problems *before* execution.
+
+Tags:
+    spine-core, orchestration, linter, static-analysis, validation
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -54,9 +64,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from enum import Enum
-from typing import Any
 
-from spine.orchestration.step_types import Step, StepType
+from spine.orchestration.step_types import StepType
 from spine.orchestration.workflow import Workflow
 
 logger = logging.getLogger(__name__)
@@ -265,7 +274,7 @@ def _check_unreachable_steps(workflow: Workflow) -> list[LintDiagnostic]:
         return []
 
     diagnostics: list[LintDiagnostic] = []
-    step_names = {s.name for s in workflow.steps}
+    {s.name for s in workflow.steps}
 
     # Build the set of steps reachable from the dependency graph
     # Steps with no depends_on are roots (always reachable)
@@ -327,17 +336,17 @@ def _check_deep_chains(workflow: Workflow, max_depth: int = 20) -> list[LintDiag
     return []
 
 
-def _check_pipeline_naming(workflow: Workflow) -> list[LintDiagnostic]:
-    """I001: Pipeline name doesn't follow domain.action convention."""
+def _check_operation_naming(workflow: Workflow) -> list[LintDiagnostic]:
+    """I001: Operation name doesn't follow domain.action convention."""
     diagnostics: list[LintDiagnostic] = []
     for step in workflow.steps:
-        if step.step_type == StepType.PIPELINE and step.pipeline_name:
-            if "." not in step.pipeline_name:
+        if step.step_type == StepType.OPERATION and step.operation_name:
+            if "." not in step.operation_name:
                 diagnostics.append(
                     LintDiagnostic(
                         code="I001",
                         severity=Severity.INFO,
-                        message=f"Pipeline name '{step.pipeline_name}' does not use dotted convention.",
+                        message=f"Operation name '{step.operation_name}' does not use dotted convention.",
                         step_name=step.name,
                         suggestion="Use 'domain.action' format (e.g. 'finra.ingest_daily').",
                     )
@@ -373,18 +382,18 @@ def _check_similar_names(workflow: Workflow, threshold: float = 0.85) -> list[Li
     return diagnostics
 
 
-def _check_missing_pipeline_name(workflow: Workflow) -> list[LintDiagnostic]:
-    """E004: Pipeline step has no pipeline_name."""
+def _check_missing_operation_name(workflow: Workflow) -> list[LintDiagnostic]:
+    """E004: Operation step has no operation_name."""
     diagnostics: list[LintDiagnostic] = []
     for step in workflow.steps:
-        if step.step_type == StepType.PIPELINE and not step.pipeline_name:
+        if step.step_type == StepType.OPERATION and not step.operation_name:
             diagnostics.append(
                 LintDiagnostic(
                     code="E004",
                     severity=Severity.ERROR,
-                    message="Pipeline step has no pipeline_name.",
+                    message="Operation step has no operation_name.",
                     step_name=step.name,
-                    suggestion="Provide a pipeline name via Step.pipeline(name, pipeline_name).",
+                    suggestion="Provide a operation name via Step.operation(name, operation_name).",
                 )
             )
     return diagnostics
@@ -398,7 +407,7 @@ def _check_single_step_workflow(workflow: Workflow) -> list[LintDiagnostic]:
                 code="I002",
                 severity=Severity.INFO,
                 message="Workflow has only one step.",
-                suggestion="Consider running the pipeline directly if orchestration isn't needed.",
+                suggestion="Consider running the operation directly if orchestration isn't needed.",
             )
         ]
     return []
@@ -411,9 +420,9 @@ _BUILT_IN_RULES: list[tuple[str, LintRule]] = [
     ("check_choice_completeness", _check_choice_completeness),
     ("check_unreachable_steps", _check_unreachable_steps),
     ("check_deep_chains", _check_deep_chains),
-    ("check_pipeline_naming", _check_pipeline_naming),
+    ("check_operation_naming", _check_operation_naming),
     ("check_similar_names", _check_similar_names),
-    ("check_missing_pipeline_name", _check_missing_pipeline_name),
+    ("check_missing_operation_name", _check_missing_operation_name),
     ("check_single_step_workflow", _check_single_step_workflow),
 ]
 

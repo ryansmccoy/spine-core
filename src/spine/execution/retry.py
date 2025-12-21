@@ -1,7 +1,6 @@
 """Retry Strategies — exponential / linear / constant backoff with jitter.
 
-WHY
-───
+Manifesto:
 Transient failures (network blips, 429 rate-limits, brief outages)
 often resolve if you wait and try again.  Retry strategies calculate
 the delay between attempts, with jitter to avoid thundering-herd.
@@ -39,6 +38,12 @@ Example::
 
     strategy = ExponentialBackoff(max_retries=5, base_delay=1.0)
     result = with_retry(call_api, strategy=strategy)
+
+Tags:
+    spine-core, execution, retry, exponential-backoff, resilience
+
+Doc-Types:
+    api-reference
 """
 
 import random

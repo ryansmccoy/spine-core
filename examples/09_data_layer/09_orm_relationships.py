@@ -202,7 +202,7 @@ def main() -> None:
 
         alert = AlertTable(
             id="alert-001", severity="ERROR",
-            title="Pipeline failed", message="sec-filings timed out",
+            title="Operation failed", message="sec-filings timed out",
             source="scheduler", execution_id="exec-001",
         )
         session.add(alert)
@@ -223,7 +223,7 @@ def main() -> None:
         print("\n--- 6. WorkflowRun → Steps + Events ---")
 
         wf_run = WorkflowRunTable(
-            run_id="wf-001", workflow_name="daily-pipeline",
+            run_id="wf-001", workflow_name="daily-operation",
             domain="sec", status="COMPLETED", triggered_by="scheduler",
         )
         session.add(wf_run)
@@ -231,7 +231,7 @@ def main() -> None:
         for k, step_name in enumerate(["fetch", "validate", "load"], 1):
             session.add(WorkflowStepTable(
                 step_id=f"ws-{k:03d}", run_id="wf-001",
-                step_name=step_name, step_type="pipeline",
+                step_name=step_name, step_type="operation",
                 step_order=k, status="COMPLETED",
             ))
 

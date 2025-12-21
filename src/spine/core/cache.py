@@ -2,38 +2,67 @@
 Caching abstraction with multiple backend implementations.
 
 Provides a unified ``CacheBackend`` protocol with in-memory and Redis
-implementations. Used across the ecosystem for:
+implementations. Used across the ecosystem for feed deduplication,
+query result caching, LLM response caching, and embedding caching.
 
-- feedspine: Feed content deduplication
-- search-spine: Query result caching
-- genai-spine: LLM response caching
-- document-spine: Document embedding caching
+Manifesto:
+    Caching is a cross-cutting concern that every spine needs. Without
+    a shared abstraction, each project implements its own cache with
+    inconsistent APIs, no TTL support, and no backend portability.
 
-Tier recommendations:
-- Tier 1 (minimal): ``InMemoryCache`` — fast, single-process only
-- Tier 2/3 (standard/full): ``RedisCache`` — distributed, persistent
+    - **Protocol-based:** CacheBackend defines the contract
+    - **Tier-aware:** InMemoryCache for dev, RedisCache for production
+    - **TTL support:** Time-based expiration for all backends
+    - **Zero config:** InMemoryCache works out of the box
 
-Example:
-    from spine.core.cache import InMemoryCache
+Architecture:
+    ::
 
-    cache = InMemoryCache(max_size=1000, default_ttl_seconds=3600)
-    cache.set("user:123", {"name": "Alice"})
-    user = cache.get("user:123")  # → {"name": "Alice"}
-    cache.delete("user:123")
+        CacheBackend (Protocol)
+        ├── InMemoryCache  — Tier 1 (single-process, bounded LRU)
+        └── RedisCache     — Tier 2/3 (distributed, persistent)
 
-    # TTL support
-    cache.set("temp", "value", ttl_seconds=60)
-    cache.exists("temp")  # → True
-    # After 60s: cache.exists("temp") → False
+        API: get(key) → value | None
+             set(key, value, ttl_seconds=None)
+             delete(key)
+             exists(key) → bool
+             clear()
 
-Redis Example:
-    from spine.core.cache import RedisCache
+Features:
+    - **CacheBackend protocol:** get/set/delete/exists/clear with TTL
+    - **InMemoryCache:** Bounded LRU cache with TTL expiration
+    - **RedisCache:** Redis-backed distributed cache
+    - **JSON values:** Keys are strings, values are JSON-serializable
 
-    cache = RedisCache("redis://localhost:6379/0")
-    cache.set("api:result", {"data": [1, 2, 3]}, ttl_seconds=300)
-    result = cache.get("api:result")
+Examples:
+    >>> from spine.core.cache import InMemoryCache
+    >>> cache = InMemoryCache(max_size=1000, default_ttl_seconds=3600)
+    >>> cache.set("user:123", {"name": "Alice"})
+    >>> cache.get("user:123")
+    {'name': 'Alice'}
+    >>> cache.exists("user:123")
+    True
 
-Doc-Types: TECHNICAL_DESIGN, API_REFERENCE
+Performance:
+    - InMemoryCache: O(1) get/set, bounded by max_size
+    - RedisCache: ~0.5ms per operation (network round-trip)
+    - TTL cleanup: Lazy (checked on get) for InMemoryCache
+
+Guardrails:
+    ❌ DON'T: Use InMemoryCache in multi-process deployments (no sharing)
+    ✅ DO: Use RedisCache for distributed caching in Tier 2+
+
+    ❌ DON'T: Cache without TTL (unbounded growth)
+    ✅ DO: Always set default_ttl_seconds or per-key ttl_seconds
+
+Tags:
+    cache, caching, redis, in-memory, ttl, spine-core,
+    protocol, tier-aware
+
+Doc-Types:
+    - API Reference
+    - Infrastructure Guide
+    - Technical Design
 """
 
 from __future__ import annotations

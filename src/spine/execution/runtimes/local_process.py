@@ -42,7 +42,7 @@ Architecture:
             PROC --> ART[artifacts_dir → artifacts]
 
 Use cases:
-    - **Development**: Run pipelines locally without Docker installed
+    - **Development**: Run operations locally without Docker installed
     - **CI without Docker**: GitHub Actions runners or restricted CI
     - **Quick testing**: Faster feedback loop (no image pull)
     - **Fallback**: Auto-fallback when Docker daemon is unavailable
@@ -61,6 +61,17 @@ Example:
     >>> ref = await adapter.submit(spec)
     >>> status = await adapter.status(ref)
     >>> assert status.state == "succeeded"
+
+Manifesto:
+    The local-process adapter runs operations as subprocesses
+    on the same machine.  It is the default for development
+    and CI, giving full isolation without container overhead.
+
+Tags:
+    spine-core, execution, runtimes, local-process, subprocess, development
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -74,7 +85,6 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from spine.execution.runtimes._base import BaseRuntimeAdapter
 from spine.execution.runtimes._types import (
@@ -314,7 +324,7 @@ class LocalProcessAdapter(BaseRuntimeAdapter):
                 await asyncio.wait_for(
                     job.process.wait(), timeout=self._kill_timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 job.process.kill()
                 await job.process.wait()
         except ProcessLookupError:
@@ -445,7 +455,7 @@ class LocalProcessAdapter(BaseRuntimeAdapter):
             )
             await self._collect_output(job)
             await self._finalize_job(job)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Timeout — kill the process
             logger.warning(
                 "Local job %s timed out after %ds, killing",
@@ -480,7 +490,7 @@ class LocalProcessAdapter(BaseRuntimeAdapter):
                 if data:
                     lines = data.decode(errors="replace").splitlines()
                     job.stdout_lines.extend(lines)
-            except (asyncio.TimeoutError, Exception):
+            except (TimeoutError, Exception):
                 pass
 
         if job.process.stderr:
@@ -491,7 +501,7 @@ class LocalProcessAdapter(BaseRuntimeAdapter):
                 if data:
                     lines = data.decode(errors="replace").splitlines()
                     job.stderr_lines.extend(lines)
-            except (asyncio.TimeoutError, Exception):
+            except (TimeoutError, Exception):
                 pass
 
     async def _finalize_job(self, job: _LocalJob) -> None:

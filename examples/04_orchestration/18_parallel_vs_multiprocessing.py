@@ -12,7 +12,7 @@ for CPU-bound and I/O-bound workloads under both approaches.
 - **I/O-bound** (network, disk, DB): Workflow DAG parallelism is
   ideal — threads release the GIL during I/O, and you get tracking,
   context passing, and error handling for free.
-- **Orchestrated pipelines**: Use workflows when you need audit
+- **Orchestrated operations**: Use workflows when you need audit
   trails, quality gates, context passing, and retry semantics.
 
 Demonstrates:
@@ -38,7 +38,7 @@ Key Concepts:
       ``ThreadPoolExecutor`` for DAG parallelism.  This is excellent
       for I/O (sleep/network releases GIL) but limited for CPU.
     - **Orchestration overhead**: Workflows add context management,
-      logging, and step tracking — worth it for pipelines, not for
+      logging, and step tracking — worth it for operations, not for
       tight numerical loops.
 
 See Also:
@@ -81,10 +81,10 @@ from spine.orchestration import (
 # ---------------------------------------------------------------------------
 
 class _StubRunnable:
-    def submit_pipeline_sync(self, pipeline_name, params=None, *,
+    def submit_operation_sync(self, operation_name, params=None, *,
                              parent_run_id=None, correlation_id=None):
-        from spine.execution.runnable import PipelineRunResult
-        return PipelineRunResult(status="failed", error="Not configured")
+        from spine.execution.runnable import OperationRunResult
+        return OperationRunResult(status="failed", error="Not configured")
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +316,7 @@ def main() -> None:
   • Workflow DAG adds orchestration overhead (~ms) but provides:
     context passing, step tracking, error handling, quality gates,
     serialisable audit trails, and retry semantics — worth it for
-    data pipelines, not for tight numerical loops.
+    data operations, not for tight numerical loops.
 """)
 
     # ===== Assertions =====

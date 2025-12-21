@@ -285,7 +285,7 @@ def demo_tracing():
     spec = ContainerJobSpec(
         name="traceable-job", image="python:3.12",
         command=["python", "step2.py"],
-        idempotency_key="pipeline-run-2026-02-16-step2",
+        idempotency_key="operation-run-2026-02-16-step2",
         correlation_id="trace-abc-123",
         parent_execution_id="exec-parent-456",
         trigger_source="schedule",
@@ -400,7 +400,7 @@ def demo_full_spec():
         # Metadata
         labels={"team": "data", "cost-center": "engineering"},
         annotations={"owner": "data-eng@company.com"},
-        metadata={"pipeline_version": "3.2.1"},
+        metadata={"operation_version": "3.2.1"},
         # Lifecycle
         timeout_seconds=1800,
         max_retries=3,

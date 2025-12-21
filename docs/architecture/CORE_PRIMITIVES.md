@@ -10,7 +10,7 @@ tags:
   - temporal
   - idempotency
   - retry
-  - pipeline
+  - operation
 created: 2026-02-08
 updated: 2026-02-15
 authors: [spine-team]
@@ -59,7 +59,7 @@ graph TB
     end
 
     subgraph Domain["Domain Code (e.g. OTC)"]
-        P["Pipeline"]
+        P["Operation"]
     end
 
     P --> T & E & M & I & R & Q & RO
@@ -116,7 +116,7 @@ window = week.window(6)  # [week-5, week-4, ..., week]
 
 ### 2. Execution Context (`execution.py`)
 
-**ExecutionContext** - Lineage tracking through pipeline execution.
+**ExecutionContext** - Lineage tracking through operation execution.
 
 ```python
 from spine.core import ExecutionContext, new_context, new_batch_id
@@ -128,7 +128,7 @@ ctx = new_context(batch_id=new_batch_id("backfill"))
 conn.execute("INSERT INTO ... (execution_id, batch_id) VALUES (?, ?)",
              (ctx.execution_id, ctx.batch_id))
 
-# Sub-pipeline gets child context
+# Sub-operation gets child context
 child_ctx = ctx.child()
 # child_ctx.parent_execution_id == ctx.execution_id
 # child_ctx.batch_id == ctx.batch_id (inherited)
@@ -395,7 +395,7 @@ Domains use core primitives through composition, not inheritance:
 
 ```mermaid
 flowchart TB
-    subgraph Pipeline["AggregateWeekPipeline.run()"]
+    subgraph Operation["AggregateWeekOperation.run()"]
         direction TB
         A["create_core_tables(conn)"] --> B{"manifest.is_at_least(key, 'AGGREGATED')?"}
         B -->|yes| C["return (skip)"]
@@ -415,12 +415,12 @@ flowchart TB
     B -.-> WM
     E -.-> QR
 
-    style Pipeline fill:#e8f5e9,stroke:#2e7d32
+    style Operation fill:#e8f5e9,stroke:#2e7d32
     style Primitives fill:#e3f2fd,stroke:#1565c0
 ```
 
 ```python
-# domains/otc/pipelines.py
+# domains/otc/operations.py
 
 from spine.core import (
     WorkManifest, RejectSink, QualityRunner, 
@@ -429,7 +429,7 @@ from spine.core import (
 from spine.domains.otc.schema import DOMAIN, STAGES
 from spine.domains.otc.calculations import compute_venue_shares
 
-class AggregateWeekPipeline(Pipeline):
+class AggregateWeekOperation(Operation):
     def run(self):
         # Ensure core tables exist
         create_core_tables(conn)
@@ -464,7 +464,7 @@ class AggregateWeekPipeline(Pipeline):
 1. **Simplicity**: Domain code has no async/await noise
 2. **Portability**: Same code runs on all tiers unchanged
 3. **Testability**: Easy to test with in-memory SQLite
-4. **Pragmatism**: Most pipeline work is I/O-bound at DB level, not CPU-bound
+4. **Pragmatism**: Most operation work is I/O-bound at DB level, not CPU-bound
 
 ### How Tiers Handle Async
 
@@ -517,11 +517,11 @@ manifest = WorkManifest(conn, ...)  # Identical domain code
 
 Async execution happens at the **tier infrastructure level**, not in domain code:
 
-- **Pipeline orchestration**: Tier may run multiple pipelines concurrently
+- **Operation orchestration**: Tier may run multiple operations concurrently
 - **HTTP handlers**: Tier's web framework handles async requests
 - **Message consumers**: Tier's Celery/event handlers are async
 
-But inside each pipeline run, the domain code and `spine.core` primitives are sync.
+But inside each operation run, the domain code and `spine.core` primitives are sync.
 
 ---
 

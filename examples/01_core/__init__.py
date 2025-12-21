@@ -25,14 +25,14 @@ TEMPORAL & WINDOWS — time-aware data primitives
 DATA QUALITY — validation and correctness
 ──────────────────────────────────────────
     09 — Quality checks (automated data validation)
-    10 — Idempotency (safe, re-runnable pipelines)
+    10 — Idempotency (safe, re-runnable operations)
     11 — Anomaly recording (structured anomaly tracking)
     12 — Content hashing (deduplication via deterministic hashing)
 
 LIFECYCLE & TRACKING — execution context and state
 ───────────────────────────────────────────────────
     13 — Execution context (lineage, correlation IDs)
-    14 — Work manifest (stage tracking for pipelines)
+    14 — Work manifest (stage tracking for operations)
     15 — Backfill planning (checkpoint-based backfill)
     16 — Cache backends (tiered caching with swappable protocols)
 

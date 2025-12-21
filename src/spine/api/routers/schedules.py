@@ -6,6 +6,16 @@ GET    /schedules/{schedule_id}
 POST   /schedules
 PUT    /schedules/{schedule_id}
 DELETE /schedules/{schedule_id}
+
+Manifesto:
+    Schedules drive recurring execution.  CRUD endpoints let
+    operators manage cron-like triggers without SSH access.
+
+Tags:
+    spine-core, api, schedules, CRUD, cron, recurring
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -25,7 +35,7 @@ router = APIRouter(prefix="/schedules")
 
 class CreateScheduleBody(BaseModel):
     name: str = ""
-    target_type: str = "pipeline"
+    target_type: str = "operation"
     target_name: str = ""
     cron_expression: str = ""
     interval_seconds: int | None = None

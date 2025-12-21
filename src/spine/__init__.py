@@ -1,5 +1,5 @@
 """
-Spine - Data pipeline platform primitives.
+Spine - Data operation platform primitives.
 
 This is a namespace package that can be extended by:
 - spine.core: Core primitives (from spine-core)

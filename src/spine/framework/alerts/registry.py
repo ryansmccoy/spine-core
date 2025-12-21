@@ -1,4 +1,17 @@
-"""Alert registry for managing and routing alerts to channels."""
+"""Alert registry for managing and routing alerts to channels.
+
+Manifesto:
+    Routing alerts to the right channel (Slack, email, console)
+    should be configured once and honoured everywhere.  The
+    registry stores channel bindings so alert producers don't
+    pick delivery targets.
+
+Tags:
+    spine-core, framework, alerts, registry, routing, channels
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 
@@ -104,7 +117,7 @@ def send_alert(
     Usage:
         send_alert(
             AlertSeverity.ERROR,
-            "Pipeline failed",
+            "Operation failed",
             "FINRA ingestion timed out",
             source="finra_ingest",
             domain="finra",

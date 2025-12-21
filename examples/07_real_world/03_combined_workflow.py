@@ -295,15 +295,15 @@ async def main():
         else:
             print(f"  {result['ticker']}: {result['name']} ({result['industry']}) - {result['recent_10ks']} 10-Ks")
     
-    # === 5. Complete data pipeline ===
-    print("\n[5] Complete Data Pipeline")
+    # === 5. Complete data operation ===
+    print("\n[5] Complete Data Operation")
     
     # Reset for clean run
     feed_spine._collected_ids.clear()
     
-    async def run_data_pipeline(tickers: list) -> dict:
+    async def run_data_operation(tickers: list) -> dict:
         """
-        Complete pipeline:
+        Complete operation:
         1. Resolve all entities
         2. Collect feed data
         3. Enrich with entity data
@@ -343,14 +343,14 @@ async def main():
             "entities": list(entities.keys()),
         }
     
-    pipeline_result = await run_data_pipeline(
+    operation_result = await run_data_operation(
         tickers=["AAPL", "MSFT", "GOOG", "AMZN", "NVDA"],
     )
     
-    print(f"  Entities resolved: {pipeline_result['entities_resolved']}")
-    print(f"  Total records: {pipeline_result['total_records']}")
-    print(f"  Enriched: {pipeline_result['enriched_records']}")
-    print(f"  Covered tickers: {pipeline_result['entities']}")
+    print(f"  Entities resolved: {operation_result['entities_resolved']}")
+    print(f"  Total records: {operation_result['total_records']}")
+    print(f"  Enriched: {operation_result['enriched_records']}")
+    print(f"  Covered tickers: {operation_result['entities']}")
     
     # === 6. API statistics ===
     print("\n[6] Combined API Statistics")

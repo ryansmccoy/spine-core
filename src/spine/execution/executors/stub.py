@@ -1,7 +1,6 @@
 """Stub Executor — no-op executor for testing and dry-run.
 
-WHY
-───
+Manifesto:
 Sometimes you want to test dispatcher logic, validate WorkSpec
 routing, or run in dry-run mode without actually executing any
 work.  ``StubExecutor`` always succeeds immediately — the simplest
@@ -19,6 +18,12 @@ ARCHITECTURE
 Related modules:
     protocol.py  — Executor protocol
     memory.py    — actually runs handlers (richer testing)
+
+Tags:
+    spine-core, execution, executor, stub, no-op, testing
+
+Doc-Types:
+    api-reference
 """
 
 import uuid

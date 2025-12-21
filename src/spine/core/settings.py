@@ -4,15 +4,35 @@ Every spine service shares common configuration needs (host, port, log level,
 debug mode, data directory).  ``SpineBaseSettings`` provides these as a base
 class so each spine only declares its domain-specific fields.
 
-Usage::
+Manifesto:
+    Configuration should be explicit, validated, and environment-driven.
+    Without a shared base, each spine reinvents settings with inconsistent
+    field names, missing validation, and no .env support.
 
-    from spine.core.settings import SpineBaseSettings
+    - **Pydantic validation:** Type-checked at startup, not runtime
+    - **Environment-driven:** Reads from env vars and .env files
+    - **Hierarchical:** Each spine adds its own prefix (GENAI_, SEARCH_, etc.)
+    - **Sensible defaults:** Works out of the box for development
 
-    class KnowledgeSettings(SpineBaseSettings):
-        model_config = {"env_prefix": "KNOWLEDGE_"}
+Features:
+    - **SpineBaseSettings:** Base class with host, port, debug, log_level, data_dir
+    - **env_prefix:** Per-spine environment variable namespacing
+    - **.env file support:** Automatic loading via pydantic-settings
+    - **Extra ignore:** Unknown env vars don't cause startup failures
 
-        graph_backend: str = "memory"
-        neo4j_uri: str = "bolt://localhost:7687"
+Examples:
+    >>> from spine.core.settings import SpineBaseSettings
+    >>> class KnowledgeSettings(SpineBaseSettings):
+    ...     model_config = {"env_prefix": "KNOWLEDGE_"}
+    ...     graph_backend: str = "memory"
+
+Tags:
+    settings, configuration, pydantic, environment, spine-core,
+    base-class, env-prefix
+
+Doc-Types:
+    - API Reference
+    - Configuration Guide
 
 Requires the ``pydantic-settings`` optional extra::
 

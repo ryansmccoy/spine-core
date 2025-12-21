@@ -1,29 +1,24 @@
 """SQLAlchemy engine factory, scoped session, and Connection bridge.
 
+Manifesto:
+    ORM and raw-SQL code must share a single abstraction so ops modules
+    work identically whether the caller uses a raw ``sqlite3.Connection``
+    or a ``Session``.  ``SAConnectionBridge`` wraps a SA Session to
+    satisfy the ``spine.core.protocols.Connection`` protocol.
+
 This module provides:
 
-* ``create_spine_engine``  – Create a SA engine from a URL or config dict.
-* ``SpineSession``         – A pre-configured ``sessionmaker`` subclass.
-* ``SAConnectionBridge``   – Wraps a SA ``Session`` to satisfy the
+* ``create_spine_engine``  -- Create a SA engine from a URL or config dict.
+* ``SpineSession``         -- A pre-configured ``sessionmaker`` subclass.
+* ``SAConnectionBridge``   -- Wraps a SA ``Session`` to satisfy the
   ``spine.core.protocols.Connection`` protocol, enabling ORM and raw-SQL
   code to share a single abstraction.
 
-Usage::
+Tags:
+    spine-core, orm, sqlalchemy, session, engine, bridge, connection
 
-    from spine.core.orm.session import create_spine_engine, SpineSession
-
-    engine = create_spine_engine("sqlite:///spine.db")
-    with SpineSession(engine) as session:
-        session.add(row)
-        session.commit()
-
-Bridge usage::
-
-    from spine.core.orm.session import SAConnectionBridge
-
-    bridge = SAConnectionBridge(session)
-    # Use bridge with BaseRepository or raw dialect helpers
-    bridge.execute("SELECT 1")
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -59,7 +54,6 @@ def create_spine_engine(
     **kwargs:
         Extra arguments forwarded to ``sqlalchemy.create_engine``.
     """
-    connect_args: dict[str, Any] = {}
 
     # SQLite-specific tweaks
     if url.startswith("sqlite"):

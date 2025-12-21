@@ -18,8 +18,8 @@ Architecture::
 
 Key design constraints:
 
-- **Pipeline steps** are stored by name (string).  The target
-  environment must have the referenced pipelines installed.
+- **Operation steps** are stored by name (string).  The target
+  environment must have the referenced operations installed.
 - **Lambda steps** with *named* functions can be packaged by
   extracting their source via ``inspect.getsource()``.  Inline
   lambdas and closures are **not** portable — the packager
@@ -33,16 +33,28 @@ Usage::
     from spine.execution.packaging import WorkflowPackager
 
     wf = Workflow(
-        name="my.pipeline",
+        name="my.operation",
         steps=[
-            Step.pipeline("ingest", "my.ingest"),
-            Step.pipeline("transform", "my.transform"),
+            Step.operation("ingest", "my.ingest"),
+            Step.operation("transform", "my.transform"),
         ],
     )
 
     packager = WorkflowPackager()
-    path = packager.package(wf, "my_pipeline.pyz")
+    path = packager.package(wf, "my_operation.pyz")
     print(f"Created {path}  ({path.stat().st_size} bytes)")
+
+Manifesto:
+    Workflows should be deployable as single-file artifacts.
+    The packager serialises a workflow definition and its steps
+    into a self-contained .pyz archive for air-gapped or
+    edge deployments.
+
+Tags:
+    spine-core, execution, packaging, pyz, archive, deployment
+
+Doc-Types:
+    api-reference
 """
 
 from spine.execution.packaging.packager import (

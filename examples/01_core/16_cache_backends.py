@@ -2,10 +2,10 @@
 """Cache Backends — Tiered Caching with Protocol-Based Swappability.
 
 ================================================================================
-WHY CACHING IN DATA PIPELINES?
+WHY CACHING IN DATA operations?
 ================================================================================
 
-Data pipelines repeatedly fetch the same data:
+Data operations repeatedly fetch the same data:
 
     - SEC EDGAR index pages (same index, many filings to parse)
     - Ticker-to-CIK mappings (changes rarely, queried thousands of times)
@@ -40,7 +40,7 @@ ARCHITECTURE: TIERED CACHE STRATEGY
     │  - TTL-based expiry per key                                           │
     │  - Zero external dependencies                                         │
     │  - ~1μs read latency                                                   │
-    │  - Use for: hot lookups, single-worker pipelines, development         │
+    │  - Use for: hot lookups, single-worker operations, development         │
     └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼ cache miss
@@ -74,7 +74,7 @@ All cache implementations share the same interface::
         def exists(self, key: str) -> bool: ...
         def delete(self, key: str) -> None: ...
 
-This means your pipeline code is cache-backend agnostic::
+This means your operation code is cache-backend agnostic::
 
     def ingest_filings(cache: CacheBackend):  # Works with any backend
         cik = cache.get("cik:AAPL") or fetch_cik("AAPL")
@@ -105,7 +105,7 @@ BEST PRACTICES
 
 4. **Use protocol type hints** for swappability::
 
-       def my_pipeline(cache: CacheBackend):  # Not InMemoryCache!
+       def my_operation(cache: CacheBackend):  # Not InMemoryCache!
            ...
 
 

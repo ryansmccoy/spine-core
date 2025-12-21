@@ -9,6 +9,10 @@ import Schedules from './pages/Schedules';
 import DLQ from './pages/DLQ';
 import Quality from './pages/Quality';
 import Stats from './pages/Stats';
+import DatabasePage from './pages/Database';
+import Functions from './pages/Functions';
+import Examples from './pages/Examples';
+import Playground from './pages/Playground';
 
 export default function App() {
   return (
@@ -25,6 +29,10 @@ export default function App() {
           <Route path="/dlq" element={<DLQ />} />
           <Route path="/quality" element={<Quality />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/database" element={<DatabasePage />} />
+          <Route path="/functions" element={<Functions />} />
+          <Route path="/examples" element={<Examples />} />
+          <Route path="/playground" element={<Playground />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -34,7 +34,7 @@ def _insert_schedule(
     ctx,
     schedule_id="sched_001",
     name="daily-ingest",
-    target_type="pipeline",
+    target_type="operation",
     target_name="finance-ingest",
     cron_expression="0 8 * * *",
     interval_seconds=None,
@@ -57,7 +57,7 @@ def _insert_calc_dependency(
     ctx,
     dep_id=1,
     calc_domain="finance",
-    calc_pipeline="ratios",
+    calc_operation="ratios",
     calc_table="silver_ratios",
     depends_on_domain="finance",
     depends_on_table="silver_balances",
@@ -67,11 +67,11 @@ def _insert_calc_dependency(
     ctx.conn.execute(
         """
         INSERT INTO core_calc_dependencies (
-            id, calc_domain, calc_pipeline, calc_table,
+            id, calc_domain, calc_operation, calc_table,
             depends_on_domain, depends_on_table, dependency_type, description
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (dep_id, calc_domain, calc_pipeline, calc_table,
+        (dep_id, calc_domain, calc_operation, calc_table,
          depends_on_domain, depends_on_table, dependency_type, "Test dependency"),
     )
     ctx.conn.commit()
@@ -81,7 +81,7 @@ def _insert_expected_schedule(
     ctx,
     sched_id=1,
     domain="finance",
-    pipeline="ingest",
+    workflow="ingest",
     schedule_type="DAILY",
     cron_expression="0 8 * * *",
     expected_delay_hours=2,
@@ -92,11 +92,11 @@ def _insert_expected_schedule(
     ctx.conn.execute(
         """
         INSERT INTO core_expected_schedules (
-            id, domain, pipeline, schedule_type, cron_expression,
+            id, domain, workflow, schedule_type, cron_expression,
             partition_template, expected_delay_hours, preliminary_hours, is_active
         ) VALUES (?, ?, ?, ?, ?, '{}', ?, ?, ?)
         """,
-        (sched_id, domain, pipeline, schedule_type, cron_expression,
+        (sched_id, domain, workflow, schedule_type, cron_expression,
          expected_delay_hours, preliminary_hours, is_active),
     )
     ctx.conn.commit()
@@ -206,7 +206,7 @@ class TestCreateSchedule:
 
     def test_validation_missing_schedule_expression(self, ctx):
         initialize_database(ctx)
-        result = create_schedule(ctx, CreateScheduleRequest(target_name="my-pipeline"))
+        result = create_schedule(ctx, CreateScheduleRequest(target_name="my-operation"))
         assert result.success is False
         assert result.error.code == "VALIDATION_FAILED"
 
@@ -214,8 +214,8 @@ class TestCreateSchedule:
         initialize_database(ctx)
         result = create_schedule(ctx, CreateScheduleRequest(
             name="test-schedule",
-            target_type="pipeline",
-            target_name="my-pipeline",
+            target_type="operation",
+            target_name="my-operation",
             cron_expression="0 9 * * *",
         ))
         assert result.success is True
@@ -237,7 +237,7 @@ class TestCreateSchedule:
         initialize_database(dry_ctx)
         result = create_schedule(dry_ctx, CreateScheduleRequest(
             name="dry-run-schedule",
-            target_name="my-pipeline",
+            target_name="my-operation",
             cron_expression="0 8 * * *",
         ))
         assert result.success is True
@@ -342,7 +342,7 @@ class TestListCalcDependencies:
         assert result.success is True
         assert result.total == 1
         assert result.data[0].calc_domain == "finance"
-        assert result.data[0].calc_pipeline == "ratios"
+        assert result.data[0].calc_operation == "ratios"
 
     def test_filter_by_calc_domain(self, ctx):
         initialize_database(ctx)
@@ -354,20 +354,20 @@ class TestListCalcDependencies:
         assert result.total == 1
         assert result.data[0].calc_domain == "ops"
 
-    def test_filter_by_pipeline(self, ctx):
+    def test_filter_by_operation(self, ctx):
         initialize_database(ctx)
-        _insert_calc_dependency(ctx, dep_id=1, calc_pipeline="ratios")
-        _insert_calc_dependency(ctx, dep_id=2, calc_pipeline="aggregates")
+        _insert_calc_dependency(ctx, dep_id=1, calc_operation="ratios")
+        _insert_calc_dependency(ctx, dep_id=2, calc_operation="aggregates")
 
-        result = list_calc_dependencies(ctx, ListCalcDependenciesRequest(calc_pipeline="aggregates"))
+        result = list_calc_dependencies(ctx, ListCalcDependenciesRequest(calc_operation="aggregates"))
         assert result.success is True
         assert result.total == 1
-        assert result.data[0].calc_pipeline == "aggregates"
+        assert result.data[0].calc_operation == "aggregates"
 
     def test_pagination(self, ctx):
         initialize_database(ctx)
         for i in range(5):
-            _insert_calc_dependency(ctx, dep_id=i + 1, calc_pipeline=f"pipeline-{i}")
+            _insert_calc_dependency(ctx, dep_id=i + 1, calc_operation=f"operation-{i}")
 
         result = list_calc_dependencies(ctx, ListCalcDependenciesRequest(limit=2, offset=0))
         assert result.success is True
@@ -431,7 +431,7 @@ class TestListExpectedSchedules:
     def test_pagination(self, ctx):
         initialize_database(ctx)
         for i in range(5):
-            _insert_expected_schedule(ctx, sched_id=i + 1, pipeline=f"pipeline-{i}")
+            _insert_expected_schedule(ctx, sched_id=i + 1, workflow=f"workflow-{i}")
 
         result = list_expected_schedules(ctx, ListExpectedSchedulesRequest(limit=2, offset=0))
         assert result.success is True

@@ -9,7 +9,7 @@ Manual execution tracking is error-prone::
 
     execution = ledger.create(Execution(name="daily_ingest", ...))
     try:
-        result = run_pipeline()
+        result = run_operation()
         ledger.complete(execution.id, "COMPLETED", result)  # Easy to forget
     except Exception as e:
         ledger.complete(execution.id, "FAILED", error=str(e))  # Easy to forget
@@ -19,7 +19,7 @@ Manual execution tracking is error-prone::
 TrackedExecution wraps this in a context manager::
 
     with TrackedExecution(ledger, "daily_ingest", guard=guard) as ctx:
-        result = run_pipeline()
+        result = run_operation()
         ctx.set_result(result)
     # Automatically: creates execution, acquires lock, records result/failure,
     # releases lock, computes duration — even if an exception occurs

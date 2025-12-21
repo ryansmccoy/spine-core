@@ -1,11 +1,11 @@
-"""Runnable Protocol — Unified pipeline execution interface.
+"""Runnable Protocol — Unified operation execution interface.
 
 WHY STRUCTURAL TYPING (PROTOCOLS)
 ─────────────────────────────────
-WorkflowRunner needs to submit pipeline work, but it shouldn’t know
+WorkflowRunner needs to submit operation work, but it shouldn’t know
 whether the backend is EventDispatcher, a Celery queue, or a mock.
 The Runnable *protocol* (PEP 544) defines the contract via structural
-typing — any class with `submit_pipeline_sync()` satisfies it
+typing — any class with `submit_operation_sync()` satisfies it
 automatically, with no inheritance required.
 
 ARCHITECTURE
@@ -14,13 +14,13 @@ ARCHITECTURE
     │ WorkflowRunner  │
     │  (consumer)     │
     └────────┬────────┘
-             │ runnable.submit_pipeline_sync()
+             │ runnable.submit_operation_sync()
              ▼
     ┌─────────────────────────────────────┐
     │  Runnable  (Protocol)                  │
-    │  submit_pipeline_sync(name, params,    │
+    │  submit_operation_sync(name, params,    │
     │      parent_run_id, correlation_id)     │
-    │  → PipelineRunResult                   │
+    │  → OperationRunResult                   │
     └────────────┬───────┬───────┬───────────┘
                  │       │       │
          ┌───────┴┐  ┌───┴───┐  ┌─┴───────┐
@@ -31,7 +31,7 @@ ARCHITECTURE
     isinstance(my_obj, Runnable) returns True if my_obj has
     the right method signature — no base class needed.
 
-PipelineRunResult FIELDS
+OperationRunResult FIELDS
 ────────────────────────
     Field       Type          Purpose
     ─────────── ───────────── ──────────────────────
@@ -55,7 +55,7 @@ See Also:
     03_workflow_context — context threading through runnables
 """
 
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 from spine.orchestration import (
     Workflow,
     Step,
@@ -70,10 +70,10 @@ def main():
     print("Runnable Protocol — Unified Execution Interface")
     print("=" * 60)
 
-    # === 1. PipelineRunResult ===
-    print("\n[1] PipelineRunResult Basics")
+    # === 1. OperationRunResult ===
+    print("\n[1] OperationRunResult Basics")
 
-    success = PipelineRunResult(
+    success = OperationRunResult(
         status="completed",
         run_id="run-abc123",
         metrics={"rows_processed": 1000, "duration_ms": 450},
@@ -83,7 +83,7 @@ def main():
     print(f"  Metrics: {success.metrics}")
     print(f"  Run ID: {success.run_id}")
 
-    failure = PipelineRunResult(
+    failure = OperationRunResult(
         status="failed",
         error="Connection refused: FINRA API unreachable",
     )
@@ -96,22 +96,22 @@ def main():
     class MockRunnable:
         """A minimal class that satisfies the Runnable protocol.
 
-        No inheritance needed — just implement ``submit_pipeline_sync``.
+        No inheritance needed — just implement ``submit_operation_sync``.
         """
 
         def __init__(self):
             self.calls: list[tuple[str, dict]] = []
 
-        def submit_pipeline_sync(
+        def submit_operation_sync(
             self,
-            pipeline_name: str,
+            operation_name: str,
             params: dict | None = None,
             *,
             parent_run_id: str | None = None,
             correlation_id: str | None = None,
-        ) -> PipelineRunResult:
-            self.calls.append((pipeline_name, params or {}))
-            return PipelineRunResult(
+        ) -> OperationRunResult:
+            self.calls.append((operation_name, params or {}))
+            return OperationRunResult(
                 status="completed",
                 run_id=f"mock-{len(self.calls):03d}",
                 metrics={"rows": 100},
@@ -123,7 +123,7 @@ def main():
     is_runnable = isinstance(mock, Runnable)
     print(f"  MockRunnable satisfies Runnable protocol: {is_runnable}")
 
-    result = mock.submit_pipeline_sync("test.pipeline", {"key": "value"})
+    result = mock.submit_operation_sync("test.operation", {"key": "value"})
     print(f"  Result: {result.status}, run_id={result.run_id}")
     print(f"  Calls recorded: {mock.calls}")
 
@@ -131,7 +131,7 @@ def main():
     print("\n[3] WorkflowRunner Accepts Any Runnable")
 
     def ingest_step(ctx: WorkflowContext, config: dict) -> StepResult:
-        """Ingest step — calls a pipeline via the Runnable."""
+        """Ingest step — calls a operation via the Runnable."""
         print(f"      [ingest] Running for tier={ctx.params.get('tier')}")
         return StepResult.ok(output={"records": 500})
 
@@ -183,7 +183,7 @@ def main():
     print()
     print("  Custom Runnable (for external orchestrators):")
     print("    ✓ Bridge to Windmill, Kestra, Airflow, etc.")
-    print("    ✓ Just implement submit_pipeline_sync()")
+    print("    ✓ Just implement submit_operation_sync()")
     print("    ✓ WorkflowRunner doesn't care about the backend")
 
     print("\n" + "=" * 60)

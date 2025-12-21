@@ -371,19 +371,19 @@ class TestAssetRegistry:
         assert len(registry.by_namespace("sec")) == 2
         assert len(registry.by_namespace("portfolio")) == 1
 
-    def test_by_pipeline(self):
+    def test_by_operation(self):
         registry = AssetRegistry()
         registry.register(AssetDefinition(
-            key=AssetKey("a"), producing_pipeline="ingest_filings",
+            key=AssetKey("a"), producing_operation="ingest_filings",
         ))
         registry.register(AssetDefinition(
-            key=AssetKey("b"), producing_pipeline="ingest_filings",
+            key=AssetKey("b"), producing_operation="ingest_filings",
         ))
         registry.register(AssetDefinition(
-            key=AssetKey("c"), producing_pipeline="compute_metrics",
+            key=AssetKey("c"), producing_operation="compute_metrics",
         ))
-        assert len(registry.by_pipeline("ingest_filings")) == 2
-        assert len(registry.by_pipeline("compute_metrics")) == 1
+        assert len(registry.by_operation("ingest_filings")) == 2
+        assert len(registry.by_operation("compute_metrics")) == 1
 
     def test_dependents_of(self):
         registry = AssetRegistry()
@@ -460,13 +460,13 @@ class TestRegisterAsset:
         defn = register_asset(
             "sec", "filings", "10-K",
             description="Annual filings",
-            producing_pipeline="ingest_filings",
+            producing_operation="ingest_filings",
             freshness_policy=FreshnessPolicy(max_lag_seconds=86400),
             group="sec_data",
             tags={"env": "prod"},
             dependencies=(AssetKey("sec", "index"),),
         )
-        assert defn.producing_pipeline == "ingest_filings"
+        assert defn.producing_operation == "ingest_filings"
         assert defn.freshness_policy is not None
         assert defn.freshness_policy.max_lag_seconds == 86400
         assert defn.group == "sec_data"
@@ -544,7 +544,7 @@ class TestAssetIntegration:
         defn = register_asset(
             "sec", "filings", "10-K",
             description="Annual filings",
-            producing_pipeline="ingest_filings",
+            producing_operation="ingest_filings",
             freshness_policy=FreshnessPolicy(max_lag_seconds=86400),
             group="sec_data",
         )

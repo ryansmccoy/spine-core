@@ -1,36 +1,36 @@
 """
-Spine Framework - Application infrastructure for data pipelines.
+Spine Framework - Application infrastructure for data operations.
 
 This module provides:
-- Pipeline base classes and registration
+- Operation base classes and registration
 - Structured logging with context
 - Execution dispatching
-- Pipeline runner
+- Operation runner
 - Source protocol and adapters (NEW)
 - Alerting framework (NEW)
 
 All components are tier-agnostic and work with any backend.
 """
 
-from spine.framework.pipelines import Pipeline, PipelineResult, PipelineStatus
-from spine.framework.registry import clear_registry, get_pipeline, list_pipelines, register_pipeline
-from spine.framework.runner import PipelineRunner, get_runner
+from spine.framework.operations import Operation, OperationResult, OperationStatus
+from spine.framework.registry import clear_registry, get_operation, list_operations, register_operation
+from spine.framework.runner import OperationRunner, get_runner
 
 # New modules - imported lazily to avoid circular imports
 # Use: from spine.framework.sources import FileSource, source_registry
 # Use: from spine.framework.alerts import SlackChannel, alert_registry
 
 __all__ = [
-    # Pipelines
-    "Pipeline",
-    "PipelineResult",
-    "PipelineStatus",
+    # Operations
+    "Operation",
+    "OperationResult",
+    "OperationStatus",
     # Registry
-    "register_pipeline",
-    "get_pipeline",
-    "list_pipelines",
+    "register_operation",
+    "get_operation",
+    "list_operations",
     "clear_registry",
     # Runner
-    "PipelineRunner",
+    "OperationRunner",
     "get_runner",
 ]

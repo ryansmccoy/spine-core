@@ -15,7 +15,6 @@ from __future__ import annotations
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.core.repositories import QualityRepository
 from spine.ops.context import OperationContext
 from spine.ops.requests import ListQualityResultsRequest

@@ -5,13 +5,13 @@ into a structured output directory with JSON summaries and
 HTML reports. Every testbed run produces a self-contained
 ``{run_id}/`` directory that can be archived as a CI artifact.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     When nightly testbed runs fail on MySQL but pass on PostgreSQL,
     the team needs to compare container logs, schema diffs, and test
     failures side-by-side. The LogCollector structures all output into
     per-backend directories with standardised file names.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Structured output enables CI artifact upload, Elasticsearch ingestion,
     and historical trend analysis. The HTML report provides an at-a-glance
     dashboard for non-technical stakeholders.

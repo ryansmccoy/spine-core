@@ -4,14 +4,14 @@ Generates ``docker-compose.yml`` files on-the-fly for testbed runs
 and service deployments. Eliminates hand-maintained compose files —
 the backend registry is the single source of truth.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     Running the test suite against PostgreSQL + MySQL + TimescaleDB
     requires a compose file with 3 backend services, a runner service
     with ``depends_on: service_healthy``, correct environment variables,
     and resource limits. Generating this from ``BackendSpec`` objects
     prevents copy-paste drift across compose files.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Any project with multiple deployment topologies (dev, CI, staging)
     benefits from generated compose files. The same ``ServiceSpec``
     registry drives ``docker compose up --profile apps`` in dev and

@@ -62,7 +62,7 @@ def ledger(conn):
 
 def _make_execution(**kwargs) -> Execution:
     defaults = {
-        "workflow": "test.pipeline",
+        "workflow": "test.operation",
         "params": {},
         "lane": "default",
         "trigger_source": TriggerSource.API,
@@ -81,7 +81,7 @@ class TestCreateGet:
         found = ledger.get_execution(ex.id)
         assert found is not None
         assert found.id == ex.id
-        assert found.workflow == "test.pipeline"
+        assert found.workflow == "test.operation"
         assert found.status == ExecutionStatus.PENDING
 
     def test_get_nonexistent(self, ledger):

@@ -29,7 +29,7 @@ Architecture:
         WorkflowSpec   ← root (apiVersion, kind, metadata, spec)
         ├── WorkflowMetadataSpec  (name, domain, version, description, tags)
         └── WorkflowSpecSection   (steps, defaults, policy)
-            ├── WorkflowStepSpec[]  (name, pipeline, depends_on, params)
+            ├── WorkflowStepSpec[]  (name, operation, depends_on, params)
             └── WorkflowPolicySpec  (execution, max_concurrency, failure)
 
 Key Concepts:
@@ -37,7 +37,7 @@ Key Concepts:
       resets it for test isolation.
     - **Decorator pattern**: ``@register_workflow`` on a factory function
       that returns a ``Workflow``.
-    - **YAML specs**: Only ``pipeline`` steps are supported in YAML (lambda
+    - **YAML specs**: Only ``operation`` steps are supported in YAML (lambda
       handlers cannot be serialized).
     - **Domain filtering**: Each workflow can declare a domain for
       team-based or subsystem partitioning.
@@ -91,18 +91,18 @@ def _noop_handler(ctx: WorkflowContext, config: dict[str, Any]) -> StepResult:
     return StepResult.ok(output={"handler": "noop"})
 
 
-def _build_pipeline_workflow(
+def _build_operation_workflow(
     name: str,
     *,
     domain: str | None = None,
     n_steps: int = 3,
     description: str | None = None,
 ) -> Workflow:
-    """Build a simple pipeline-step workflow for registration tests."""
+    """Build a simple operation-step workflow for registration tests."""
     steps = [
-        Step.pipeline(
+        Step.operation(
             name=f"step_{i}",
-            pipeline_name=f"{name}.pipeline_{i}",
+            operation_name=f"{name}.operation_{i}",
         )
         for i in range(n_steps)
     ]
@@ -139,13 +139,13 @@ def demo_direct_registration() -> None:
     clear_workflow_registry()
 
     # Register three workflows in two domains
-    wf_ingest = _build_pipeline_workflow(
+    wf_ingest = _build_operation_workflow(
         "ingest.daily", domain="ingest",
-        description="Daily data ingest pipeline",
+        description="Daily data ingest operation",
     )
-    wf_enrich = _build_pipeline_workflow(
+    wf_enrich = _build_operation_workflow(
         "ingest.enrich", domain="ingest",
-        description="Entity enrichment pipeline",
+        description="Entity enrichment operation",
     )
     wf_sec = _build_lambda_workflow(
         "sec.fetch_index", domain="sec",
@@ -197,13 +197,13 @@ def demo_decorator_registration() -> None:
     @register_workflow
     def build_sec_etl():
         return Workflow(
-            name="sec.etl_pipeline",
+            name="sec.etl_operation",
             domain="sec",
             description="SEC filing ETL workflow",
             steps=[
-                Step.pipeline("fetch", "sec.fetch_filing"),
-                Step.pipeline("parse", "sec.parse_xbrl", depends_on=("fetch",)),
-                Step.pipeline("store", "sec.store_results", depends_on=("parse",)),
+                Step.operation("fetch", "sec.fetch_filing"),
+                Step.operation("parse", "sec.parse_xbrl", depends_on=("fetch",)),
+                Step.operation("store", "sec.store_results", depends_on=("parse",)),
             ],
             execution_policy=WorkflowExecutionPolicy(
                 mode=ExecutionMode.SEQUENTIAL,
@@ -213,7 +213,7 @@ def demo_decorator_registration() -> None:
 
     # The decorator should have returned the Workflow and registered it
     assert isinstance(build_sec_etl, Workflow), "Decorator should return Workflow"
-    assert workflow_exists("sec.etl_pipeline"), "Should be registered"
+    assert workflow_exists("sec.etl_operation"), "Should be registered"
     print(f"  [OK] @register_workflow → {build_sec_etl.name}")
 
     # Register another via decorator
@@ -253,7 +253,7 @@ def demo_domain_filtering() -> None:
 
     for domain, names in domains_map.items():
         for name in names:
-            register_workflow(_build_pipeline_workflow(
+            register_workflow(_build_operation_workflow(
                 name, domain=domain, n_steps=2,
             ))
 
@@ -307,24 +307,24 @@ spec:
     retries: 2
   steps:
     - name: fetch_index
-      pipeline: sec.fetch_recent_filings
+      operation: sec.fetch_recent_filings
       params:
         form_type: "10-K"
         limit: 50
     - name: download
-      pipeline: sec.download_filing
+      operation: sec.download_filing
       depends_on: [fetch_index]
     - name: extract_text
-      pipeline: sec.extract_text
+      operation: sec.extract_text
       depends_on: [download]
     - name: extract_xbrl
-      pipeline: sec.extract_xbrl_facts
+      operation: sec.extract_xbrl_facts
       depends_on: [download]
     - name: enrich
-      pipeline: sec.entity_enrichment
+      operation: sec.entity_enrichment
       depends_on: [extract_text, extract_xbrl]
     - name: store
-      pipeline: sec.store_results
+      operation: sec.store_results
       depends_on: [enrich]
   policy:
     execution: parallel
@@ -336,11 +336,11 @@ MINIMAL_YAML = """\
 apiVersion: spine.io/v1
 kind: Workflow
 metadata:
-  name: minimal.pipeline
+  name: minimal.operation
 spec:
   steps:
     - name: only_step
-      pipeline: do.something
+      operation: do.something
 """
 
 
@@ -399,7 +399,7 @@ def demo_yaml_specs() -> None:
     assert "enrich" in dep_graph.get("extract_xbrl", [])
     print(f"  [OK] Dependency graph verified: {dep_graph}")
 
-    # Verify step config from YAML (pipeline params stored in step.config)
+    # Verify step config from YAML (operation params stored in step.config)
     fetch_step = workflow.steps[0]
     assert fetch_step.name == "fetch_index"
     assert fetch_step.config == {"form_type": "10-K", "limit": 50}
@@ -413,7 +413,7 @@ def demo_yaml_specs() -> None:
     # --- Minimal YAML ---
     minimal = WorkflowSpec.from_yaml(MINIMAL_YAML)
     min_wf = minimal.to_workflow()
-    assert min_wf.name == "minimal.pipeline"
+    assert min_wf.name == "minimal.operation"
     assert len(min_wf.steps) == 1
     assert min_wf.domain == ""  # defaults to empty string when omitted
     print(f"  [OK] Minimal YAML → {min_wf.name} ({len(min_wf.steps)} step)")
@@ -438,11 +438,11 @@ def demo_error_handling() -> None:
     clear_workflow_registry()
 
     # --- Duplicate registration ---
-    wf = _build_pipeline_workflow("dup.test", domain="test")
+    wf = _build_operation_workflow("dup.test", domain="test")
     register_workflow(wf)
 
     try:
-        register_workflow(_build_pipeline_workflow("dup.test", domain="test"))
+        register_workflow(_build_operation_workflow("dup.test", domain="test"))
         assert False, "Should have raised ValueError"
     except ValueError as e:
         print(f"  [OK] Duplicate registration: {e}")
@@ -469,7 +469,7 @@ metadata:
 spec:
   steps:
     - name: s1
-      pipeline: p1
+      operation: p1
 """)
             assert False, "Should have failed validation"
         except Exception as e:
@@ -485,9 +485,9 @@ metadata:
 spec:
   steps:
     - name: s1
-      pipeline: p1
+      operation: p1
     - name: s1
-      pipeline: p2
+      operation: p2
 """)
             assert False, "Should have caught duplicate names"
         except Exception as e:
@@ -503,10 +503,10 @@ metadata:
 spec:
   steps:
     - name: s1
-      pipeline: p1
+      operation: p1
       depends_on: [s2]
     - name: s2
-      pipeline: p2
+      operation: p2
       depends_on: [s1]
 """)
             # Circular deps are valid at the spec level (validated at runtime)
@@ -537,7 +537,7 @@ def demo_cleanup() -> None:
 
     # Register some workflows
     for i in range(5):
-        register_workflow(_build_pipeline_workflow(f"cleanup.test_{i}"))
+        register_workflow(_build_operation_workflow(f"cleanup.test_{i}"))
 
     assert len(list_workflows()) == 5
     print(f"  [OK] Registered 5 workflows")

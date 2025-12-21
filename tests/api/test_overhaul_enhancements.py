@@ -5,7 +5,7 @@ Tests:
   - WorkflowDetailSchema extended fields (domain, version, policy, tags, defaults)
   - ExecutionPolicySchema serialization
   - core_schedules table creation via database/init (now in CORE_DDL)
-  - WorkflowStepSchema extended fields (pipeline, depends_on, params)
+  - WorkflowStepSchema extended fields (operation, depends_on, params)
 """
 
 from __future__ import annotations
@@ -101,14 +101,14 @@ class TestWorkflowDetailSchema:
         assert "defaults" in data
         assert isinstance(data["defaults"], dict)
 
-    def test_workflow_steps_have_pipeline(self, client):
+    def test_workflow_steps_have_operation(self, client):
         resp = client.get("/api/v1/workflows/etl.daily_ingest")
         data = resp.json()["data"]
         steps = data["steps"]
         assert len(steps) > 0
         for step in steps:
-            assert "pipeline" in step
-            assert isinstance(step["pipeline"], str)
+            assert "operation" in step
+            assert isinstance(step["operation"], str)
 
     def test_workflow_steps_have_depends_on(self, client):
         resp = client.get("/api/v1/workflows/etl.daily_ingest")

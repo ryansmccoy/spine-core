@@ -1,5 +1,11 @@
 """Shared MCP server scaffold for any Spine service.
 
+Manifesto:
+    Each spine only needs three things: a lifespan, some tools, and a
+    ``run()`` call.  This module eliminates the repeated boilerplate
+    across genai-spine, search-spine, and knowledge-spine MCP servers
+    by providing ``create_spine_mcp()`` and ``run_spine_mcp()``.
+
 Eliminates the repeated boilerplate across genai-spine, search-spine,
 and knowledge-spine MCP servers.  Each spine only needs to:
 
@@ -7,27 +13,15 @@ and knowledge-spine MCP servers.  Each spine only needs to:
 2. Register tools/resources/prompts on the returned ``FastMCP`` instance
 3. Call ``run()`` from its console script entry point
 
-Usage::
-
-    from spine.core.transports.mcp import create_spine_mcp, run_spine_mcp
-
-    mcp = create_spine_mcp(
-        name="knowledge-spine",
-        instructions="Auto-evolving knowledge graph ...",
-        lifespan=app_lifespan,
-    )
-
-    # register tools
-    @mcp.tool(title="Find Nodes")
-    async def find_nodes(...): ...
-
-    # entry point for console script
-    def run():
-        run_spine_mcp(mcp, default_port=8106)
-
 Requires the ``mcp`` optional extra::
 
     pip install spine-core[mcp]
+
+Tags:
+    spine-core, mcp, server, factory, ai-callable, import-guarded
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

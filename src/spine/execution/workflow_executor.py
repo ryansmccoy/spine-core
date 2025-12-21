@@ -1,12 +1,11 @@
 """Workflow Executor — bridges dispatcher to orchestration runner.
 
-WHY
-───
+Manifesto:
 When a ``WorkSpec(kind="workflow")`` is submitted, the execution
 layer needs to hand off to the orchestration layer.  This module
 registers a handler that looks up the workflow, creates a
 ``WorkflowRunner`` **with the dispatcher as its Runnable**, so
-pipeline steps inside the workflow also get full ``RunRecord``
+operation steps inside the workflow also get full ``RunRecord``
 tracking.
 
 ARCHITECTURE
@@ -22,7 +21,7 @@ ARCHITECTURE
       ├── WorkflowRunner(runnable=dispatcher)
       └── runner.execute(workflow, params)
             │
-            └── pipeline steps → dispatcher.submit_pipeline_sync()
+            └── operation steps → dispatcher.submit_operation_sync()
                  (full RunRecord tracking preserved)
 
     register_workflow_executor(registry) ─ wire into HandlerRegistry
@@ -36,6 +35,12 @@ Registration::
 
     from spine.execution.workflow_executor import register_workflow_executor
     register_workflow_executor(registry)
+
+Tags:
+    spine-core, execution, workflow-executor, bridge, orchestration-link
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -43,7 +48,6 @@ from __future__ import annotations
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.execution.registry import HandlerRegistry
 from spine.execution.runnable import Runnable
 from spine.orchestration.workflow import Workflow
@@ -59,7 +63,7 @@ def _make_workflow_handler(
     """Create a workflow handler closed over the given ``Runnable``.
 
     When the returned coroutine is invoked by the executor it creates a
-    :class:`WorkflowRunner` that uses *runnable* for pipeline steps,
+    :class:`WorkflowRunner` that uses *runnable* for operation steps,
     ensuring those steps get full ``RunRecord`` tracking.
     """
 
@@ -125,9 +129,9 @@ def execute_workflow(
     Args:
         workflow: The workflow to execute.
         params: Input parameters.
-        dry_run: If ``True``, pipeline steps return mock success.
+        dry_run: If ``True``, operation steps return mock success.
         runnable: ``EventDispatcher`` (or any ``Runnable``) for
-            pipeline step tracking.
+            operation step tracking.
     """
     runner = WorkflowRunner(runnable=runnable, dry_run=dry_run)
     return runner.execute(workflow, params=params)
@@ -148,9 +152,9 @@ def register_workflow_executor(
         registry: ``HandlerRegistry`` to register with (uses default
             if ``None``).
         runnable: An ``EventDispatcher`` (or any ``Runnable``) that
-            the ``WorkflowRunner`` will use for pipeline steps.
+            the ``WorkflowRunner`` will use for operation steps.
             Pass the **same** ``EventDispatcher`` that owns the
-            executor so pipeline sub-steps get proper ``RunRecord``
+            executor so operation sub-steps get proper ``RunRecord``
             tracking.
 
     Example::

@@ -2,7 +2,7 @@
 Run operations.
 
 Read and control operations for execution runs across all work types
-(tasks, pipelines, workflows, steps).  These wrap the internal
+(tasks, operations, workflows, steps).  These wrap the internal
 :class:`~spine.execution.dispatcher.EventDispatcher` with typed
 request/response contracts.
 
@@ -20,19 +20,19 @@ from datetime import UTC
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.core.repositories import ExecutionRepository, WorkflowRunRepository
 from spine.ops.context import OperationContext
 from spine.ops.requests import (
     CancelRunRequest,
     GetRunEventsRequest,
+    GetRunLogsRequest,
     GetRunRequest,
     GetRunStepsRequest,
     ListRunsRequest,
     RetryRunRequest,
     SubmitRunRequest,
 )
-from spine.ops.responses import RunAccepted, RunDetail, RunEvent, RunSummary, StepTiming
+from spine.ops.responses import RunAccepted, RunDetail, RunEvent, RunLogEntry, RunSummary, StepTiming
 from spine.ops.result import OperationResult, PagedResult, start_timer
 
 logger = get_logger(__name__)
@@ -233,7 +233,7 @@ def submit_run(
     ctx: OperationContext,
     request: SubmitRunRequest,
 ) -> OperationResult[RunAccepted]:
-    """Submit a new execution run (task, pipeline, or workflow).
+    """Submit a new execution run (task, operation, or workflow).
 
     Inserts a row into ``core_executions`` with *pending* status and returns
     the allocated ``run_id``.  When ``ctx.dry_run`` is set, validates the
@@ -250,10 +250,10 @@ def submit_run(
             "name is required",
             elapsed_ms=timer.elapsed_ms,
         )
-    if request.kind not in ("task", "pipeline", "workflow"):
+    if request.kind not in ("task", "operation", "workflow"):
         return OperationResult.fail(
             "VALIDATION_FAILED",
-            f"Invalid kind '{request.kind}'; must be task, pipeline, or workflow",
+            f"Invalid kind '{request.kind}'; must be task, operation, or workflow",
             elapsed_ms=timer.elapsed_ms,
         )
 
@@ -498,3 +498,146 @@ def _err(code: str, message: str):
     """Shorthand to create an OperationError."""
     from spine.ops.result import OperationError
     return OperationError(code=code, message=message)
+
+
+# ------------------------------------------------------------------ #
+# Run log operations
+# ------------------------------------------------------------------ #
+
+
+# Log level hierarchy for filtering
+_LOG_LEVELS = {"DEBUG": 0, "INFO": 1, "WARN": 2, "WARNING": 2, "ERROR": 3}
+
+
+def get_run_logs(
+    ctx: OperationContext,
+    request: GetRunLogsRequest,
+) -> PagedResult[RunLogEntry]:
+    """Get log entries for a run execution.
+
+    Returns structured log lines from the execution, supporting
+    filtering by step name and minimum log level.
+
+    Args:
+        ctx: Operation context with database connection.
+        request: Log query parameters (run_id, step, level, limit, offset).
+
+    Returns:
+        Paged list of :class:`RunLogEntry` items.
+
+    Raises:
+        VALIDATION_FAILED: Missing run_id.
+        NOT_FOUND: Run does not exist.
+    """
+    timer = start_timer()
+
+    if not request.run_id:
+        return PagedResult(
+            success=False,
+            error=_err("VALIDATION_FAILED", "run_id is required"),
+            elapsed_ms=timer.elapsed_ms,
+        )
+
+    try:
+        # Verify run exists
+        row = _fetch_run_row(ctx, request.run_id)
+        if row is None:
+            return PagedResult(
+                success=False,
+                error=_err("NOT_FOUND", f"Run '{request.run_id}' not found"),
+                elapsed_ms=timer.elapsed_ms,
+            )
+
+        logs, total = _query_run_logs(ctx, request)
+        entries = [_row_to_log_entry(r) for r in logs]
+        return PagedResult.from_items(
+            entries,
+            total=total,
+            limit=request.limit,
+            offset=request.offset,
+            elapsed_ms=timer.elapsed_ms,
+        )
+    except Exception as exc:
+        logger.exception("op_failed", error=str(exc))
+        return PagedResult(
+            success=False,
+            error=_err("INTERNAL", f"Failed to get run logs: {exc}"),
+            elapsed_ms=timer.elapsed_ms,
+        )
+
+
+def _query_run_logs(
+    ctx: OperationContext,
+    request: GetRunLogsRequest,
+) -> tuple[list[dict], int]:
+    """Query log entries from the database."""
+    conn = ctx.conn
+
+    # Build WHERE clauses
+    wheres = ["run_id = ?"]
+    params: list = [request.run_id]
+
+    if request.step:
+        wheres.append("step_name = ?")
+        params.append(request.step)
+
+    if request.level:
+        # Filter to this level and above
+        level_num = _LOG_LEVELS.get(request.level.upper(), 1)
+        level_names = [k for k, v in _LOG_LEVELS.items() if v >= level_num]
+        if level_names:
+            placeholders = ",".join("?" * len(level_names))
+            wheres.append(f"UPPER(level) IN ({placeholders})")
+            params.extend(level_names)
+
+    where_clause = " AND ".join(wheres)
+
+    # Get total count
+    count_sql = f"SELECT COUNT(*) FROM core_execution_logs WHERE {where_clause}"
+    conn.execute(count_sql, tuple(params))
+    count_row = conn.fetchone()
+    total = count_row[0] if count_row else 0
+
+    # Get paginated results
+    sql = f"""
+        SELECT id, run_id, step_name, level, message, logger, timestamp, line_number
+        FROM core_execution_logs
+        WHERE {where_clause}
+        ORDER BY line_number ASC, timestamp ASC
+        LIMIT ? OFFSET ?
+    """
+    conn.execute(sql, tuple(params + [request.limit, request.offset]))
+    rows = conn.fetchall()
+
+    # Convert rows to dicts
+    result = []
+    for row in rows:
+        if isinstance(row, dict):
+            result.append(row)
+        elif hasattr(row, "keys"):
+            result.append(dict(row))
+        else:
+            result.append({
+                "id": row[0] if len(row) > 0 else 0,
+                "run_id": row[1] if len(row) > 1 else "",
+                "step_name": row[2] if len(row) > 2 else None,
+                "level": row[3] if len(row) > 3 else "INFO",
+                "message": row[4] if len(row) > 4 else "",
+                "logger": row[5] if len(row) > 5 else "",
+                "timestamp": row[6] if len(row) > 6 else "",
+                "line_number": row[7] if len(row) > 7 else 0,
+            })
+
+    return result, total
+
+
+def _row_to_log_entry(row: dict) -> RunLogEntry:
+    """Convert a DB row dict to a :class:`RunLogEntry`."""
+    return RunLogEntry(
+        timestamp=row.get("timestamp", ""),
+        level=row.get("level", "INFO"),
+        message=row.get("message", ""),
+        step_name=row.get("step_name"),
+        logger=row.get("logger", ""),
+        line_number=row.get("line_number", 0),
+    )

@@ -41,9 +41,9 @@ def _make_clean_workflow(name="test.clean"):
     return Workflow(
         name=name,
         steps=[
-            Step.pipeline("ingest", "domain.ingest"),
+            Step.operation("ingest", "domain.ingest"),
             Step.lambda_("validate", _noop),
-            Step.pipeline("store", "domain.store"),
+            Step.operation("store", "domain.store"),
         ],
     )
 
@@ -275,13 +275,13 @@ class TestCheckDeepChains:
         assert "W003" not in codes
 
 
-class TestCheckPipelineNaming:
-    """I001: Pipeline name doesn't use dotted convention."""
+class TestCheckOperationNaming:
+    """I001: Operation name doesn't use dotted convention."""
 
     def test_undotted_name_triggers_i001(self):
         wf = Workflow(
             name="test.naming",
-            steps=[Step.pipeline("fetch", "fetch_data")],
+            steps=[Step.operation("fetch", "fetch_data")],
         )
         result = lint_workflow(wf)
         i001 = [d for d in result.diagnostics if d.code == "I001"]
@@ -291,7 +291,7 @@ class TestCheckPipelineNaming:
     def test_dotted_name_no_i001(self):
         wf = Workflow(
             name="test.naming_ok",
-            steps=[Step.pipeline("fetch", "finra.fetch_data")],
+            steps=[Step.operation("fetch", "finra.fetch_data")],
         )
         result = lint_workflow(wf)
         i001 = [d for d in result.diagnostics if d.code == "I001"]
@@ -300,7 +300,7 @@ class TestCheckPipelineNaming:
     def test_infos_suppressed(self):
         wf = Workflow(
             name="test.naming",
-            steps=[Step.pipeline("fetch", "fetch_data")],
+            steps=[Step.operation("fetch", "fetch_data")],
         )
         result = lint_workflow(wf, include_infos=False)
         assert not any(d.severity == Severity.INFO for d in result.diagnostics)
@@ -328,12 +328,12 @@ class TestCheckSimilarNames:
         assert "W004" not in codes
 
 
-class TestCheckMissingPipelineName:
-    """E004: Pipeline step has no pipeline_name."""
+class TestCheckMissingOperationName:
+    """E004: Operation step has no operation_name."""
 
-    def test_triggers_on_empty_pipeline_name(self):
-        step = Step.pipeline("fetch", "placeholder")
-        step.pipeline_name = ""  # Simulate empty pipeline name
+    def test_triggers_on_empty_operation_name(self):
+        step = Step.operation("fetch", "placeholder")
+        step.operation_name = ""  # Simulate empty operation name
         wf = Workflow(name="test.no_pipe", steps=[step])
 
         result = lint_workflow(wf)
@@ -347,7 +347,7 @@ class TestCheckSingleStepWorkflow:
     def test_single_step_triggers_i002(self):
         wf = Workflow(
             name="test.single",
-            steps=[Step.pipeline("only", "domain.action")],
+            steps=[Step.operation("only", "domain.action")],
         )
         result = lint_workflow(wf)
         i002 = [d for d in result.diagnostics if d.code == "I002"]
@@ -443,5 +443,5 @@ class TestRuleListing:
         rules = list_lint_rules()
         assert "check_empty_workflow" in rules
         assert "check_missing_handlers" in rules
-        assert "check_pipeline_naming" in rules
+        assert "check_operation_naming" in rules
         assert len(rules) >= 9  # At least the 9 built-in rules

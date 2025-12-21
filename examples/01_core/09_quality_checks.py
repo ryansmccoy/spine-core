@@ -5,7 +5,7 @@
 WHY DATA QUALITY CHECKS?
 ================================================================================
 
-Data pipelines fail silently. A pipeline can "succeed" while producing:
+Data operations fail silently. A operation can "succeed" while producing:
 - Null values where there should be prices
 - Duplicate records from overlapping runs
 - Future dates from timezone bugs
@@ -47,7 +47,7 @@ QUALITY CHECK ARCHITECTURE
                     ▼                             ▼
            ┌─────────────┐               ┌───────────────────┐
            │  Continue   │               │  Reject + Alert   │
-           │  Pipeline   │               │  (optional: halt) │
+           │  Operation   │               │  (optional: halt) │
            └─────────────┘               └───────────────────┘
 
 
@@ -67,11 +67,11 @@ QUALITY CATEGORIES AND SEVERITIES
     ACCURACY        Does computed data match expectations?
 
 
-    QualityStatus    Severity    Pipeline Action
+    QualityStatus    Severity    Operation Action
     ────────────────────────────────────────────────────────────────────
     PASS            ✓           Continue processing
     WARN            ⚠           Continue, but log warning
-    FAIL            ✗           Halt pipeline, reject batch
+    FAIL            ✗           Halt operation, reject batch
     SKIP            -           Check not applicable (e.g., empty data)
 
 
@@ -85,7 +85,7 @@ DATABASE SCHEMA: QUALITY RESULTS
     │  Table: core_quality_results                                            │
     ├─────────────────────────────────────────────────────────────────────────┤
     │  id              SERIAL        PRIMARY KEY                              │
-    │  execution_id    VARCHAR(36)   NOT NULL   -- Links to pipeline run     │
+    │  execution_id    VARCHAR(36)   NOT NULL   -- Links to operation run     │
     │  check_name      VARCHAR(100)  NOT NULL   -- "check_positive_prices"   │
     │  category        VARCHAR(20)   NOT NULL   -- "validity", "completeness"│
     │  status          VARCHAR(10)   NOT NULL   -- "pass", "warn", "fail"    │
@@ -156,7 +156,7 @@ COMMON CHECK PATTERNS
 BEST PRACTICES
 ================================================================================
 
-1. **Check early in the pipeline**::
+1. **Check early in the operation**::
 
        # Run quality checks BEFORE transformation
        raw_data = extract()
@@ -201,8 +201,14 @@ See Also:
     - :mod:`spine.core.anomaly` — AnomalyRecorder for outlier tracking
     - :mod:`spine.core.rejects` — Reject handling for failed records
 """
-import sqlite3
+import sys
 from datetime import date
+from pathlib import Path
+
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 from spine.core import (
     QualityRunner,
     QualityCheck,
@@ -308,8 +314,10 @@ def main():
     # === 5. QualityRunner (with database) ===
     print("\n[5] QualityRunner")
     
-    conn = sqlite3.connect(":memory:")
-    create_core_tables(conn)
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
     
     runner = QualityRunner(conn, domain="demo", execution_id="example-001")
     for check in checks:

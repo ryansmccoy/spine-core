@@ -315,9 +315,9 @@ class TestSummary:
 # ---------------------------------------------------------------------------
 
 class TestStepTypes:
-    def test_pipeline_dry_run(self):
+    def test_operation_dry_run(self):
         wf = Workflow(name="dry", steps=[
-            Step.pipeline("p1", "my.pipeline"),
+            Step.operation("p1", "my.operation"),
         ])
         pg = WorkflowPlayground()  # No runnable → dry run
         pg.load(wf)
@@ -325,7 +325,7 @@ class TestStepTypes:
 
         assert snap.status == "completed"
         assert snap.result.output["_dry_run"] is True
-        assert snap.result.output["pipeline"] == "my.pipeline"
+        assert snap.result.output["operation"] == "my.operation"
 
     def test_wait_step_instant(self):
         wf = Workflow(name="wait", steps=[

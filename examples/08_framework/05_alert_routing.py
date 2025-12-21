@@ -3,19 +3,19 @@
 
 WHY STRUCTURED ALERTING
 ───────────────────────
-A pipeline or workflow failure buried in a log file means nobody gets
+A operation or workflow failure buried in a log file means nobody gets
 paged until users complain.  Spine’s alerting framework routes alerts
 to multiple channels (console, Slack, email) filtered by severity,
 with fingerprint-based deduplication to prevent alert storms.
 
-Alerts work at both the Pipeline level (one step failed) and the
+Alerts work at both the Operation level (one step failed) and the
 Workflow level (an entire workflow completed with errors).  The
 Workflow engine can be configured to emit alerts automatically on
 step failure via TrackedWorkflowRunner.
 
 ARCHITECTURE
 ────────────
-    Pipeline/Workflow failure
+    Operation/Workflow failure
          │
          ▼
     Alert(severity, title, message, source, domain)
@@ -104,8 +104,8 @@ def main():
     alerts = [
         Alert(
             severity=AlertSeverity.INFO,
-            title="Pipeline started",
-            message="SEC filing ingestion pipeline began processing",
+            title="Operation started",
+            message="SEC filing ingestion operation began processing",
             source="sec_ingestion",
             domain="filings",
         ),

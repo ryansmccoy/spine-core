@@ -1,0 +1,101 @@
+[
+  {
+    "sha": "aaa0001000000000000000000000000000000001",
+    "short_sha": "aaa0001",
+    "date": "2026-02-15T08:00:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "feat(project): initialize spine-core package [FOUNDATIONAL]\n\nWhat:\n- Initialize pyproject.toml with zero dependencies\n- Add package structure with py.typed marker\n\nWhy:\n- Establish stdlib-first foundation\n\nTags: bootstrap, project\nMarkers: FOUNDATIONAL\n\nImpact: public_api\nMigration: none\nFeature-Type: infrastructure\nDomain: developer_experience",
+    "files": [
+      {"path": "pyproject.toml", "status": "A"},
+      {"path": "src/spine/__init__.py", "status": "A"},
+      {"path": "src/spine/py.typed", "status": "A"}
+    ],
+    "docstrings": {
+      "spine/__init__.py": "spine-core: Platform primitives."
+    }
+  },
+  {
+    "sha": "bbb0002000000000000000000000000000000002",
+    "short_sha": "bbb0002",
+    "date": "2026-02-15T08:12:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "feat(core/primitives): add enums, protocols, errors [FOUNDATIONAL]\n\nWhat:\n- Add shared domain enumerations\n- Add canonical protocol definitions\n- Add structured error hierarchy\n\nWhy:\n- Establish contracts before implementations\n- Single source of truth for all protocols\n\nTags: enum, protocol, errors\nMarkers: FOUNDATIONAL\n\nImpact: public_api\nMigration: none\nFeature-Type: protocol\nDomain: pipeline_state\nSurfaces: Connection, RunStatus, SpineError",
+    "files": [
+      {"path": "src/spine/core/__init__.py", "status": "A"},
+      {"path": "src/spine/core/enums.py", "status": "A"},
+      {"path": "src/spine/core/protocols.py", "status": "A"},
+      {"path": "src/spine/core/errors.py", "status": "A"}
+    ],
+    "docstrings": {
+      "spine/core/enums.py": "Shared domain enumerations.\n\nStability: stable\nTier: none\nSince: 0.1.0\nDependencies: stdlib-only\nDoc-Types: API_REFERENCE\nTags: enum, domain",
+      "spine/core/protocols.py": "Canonical protocol definitions for spine-core.\n\nStability: stable\nTier: none\nSince: 0.1.0\nDependencies: stdlib-only\nDoc-Types: API_REFERENCE, ADR\nTags: protocol, connection, database, dispatcher\n\nThis module defines the SINGLE SOURCE OF TRUTH for all structural\nprotocols used across spine-core.\n\nArchitecture::\n\n    protocols.py\n    \u251c\u2500\u2500 Connection      \u2014 sync DB protocol\n    \u251c\u2500\u2500 AsyncConnection \u2014 async DB protocol\n    \u2514\u2500\u2500 StorageBackend  \u2014 sync storage protocol",
+      "spine/core/errors.py": "Structured error types for spine-core.\n\nStability: stable\nTier: basic\nSince: 0.1.0\nDependencies: stdlib-only\nDoc-Types: API_REFERENCE\nTags: errors, exceptions"
+    }
+  },
+  {
+    "sha": "ccc0003000000000000000000000000000000003",
+    "short_sha": "ccc0003",
+    "date": "2026-02-15T09:00:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "feat(core/cache): add caching abstraction with memory backend [NEW]\n\nWhat:\n- Add CacheBackend protocol\n- Add InMemoryCache with TTL support\n\nWhy:\n- Enable cache-aside pattern across spines\n- Start with zero-dependency in-memory backend\n\nTags: cache, backend, memory\nMarkers: NEW\n\nImpact: public_api\nMigration: none\nFeature-Type: infrastructure\nArchitecture: caching\nDomain: pipeline_state\nSurfaces: CacheBackend, InMemoryCache",
+    "files": [
+      {"path": "src/spine/core/cache.py", "status": "A"}
+    ],
+    "docstrings": {
+      "spine/core/cache.py": "Caching abstraction with multiple backend implementations.\n\nStability: stable\nTier: basic\nSince: 0.2.0\nDependencies: optional: redis\nDoc-Types: TECHNICAL_DESIGN, API_REFERENCE\nTags: cache, backend, redis, memory\n\nProvides a unified CacheBackend protocol with in-memory and Redis\nimplementations."
+    }
+  },
+  {
+    "sha": "ddd0004000000000000000000000000000000004",
+    "short_sha": "ddd0004",
+    "date": "2026-02-15T09:30:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "feat(core/adapters): add database adapter framework [NEW]\n\nWhat:\n- Add DatabaseAdapter ABC with adapter registry\n- Add SQLite adapter as default backend\n\nWhy:\n- Enable multi-backend database support\n- Registry pattern for adapter discovery\n\nTags: adapter, database, registry\nMarkers: NEW\n\nImpact: public_api\nMigration: none\nFeature-Type: data_layer\nArchitecture: adapter_pattern, repository_pattern\nDomain: pipeline_state\nSurfaces: DatabaseAdapter, AdapterRegistry\nSidecar: true",
+    "files": [
+      {"path": "src/spine/core/adapters/__init__.py", "status": "A"},
+      {"path": "src/spine/core/adapters/base.py", "status": "A"},
+      {"path": "src/spine/core/adapters/registry.py", "status": "A"}
+    ],
+    "docstrings": {
+      "spine/core/adapters/base.py": "Database adapter base class.",
+      "spine/core/adapters/registry.py": "Database adapter registry and factory.\n\nStability: stable\nTier: basic\nSince: 0.2.0\nDependencies: stdlib-only\nDoc-Types: API_REFERENCE\nTags: adapter, registry, factory, database"
+    }
+  },
+  {
+    "sha": "eee0005000000000000000000000000000000005",
+    "short_sha": "eee0005",
+    "date": "2026-02-15T10:00:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "feat(core): add feature flags and secrets [NEW]\n\nWhat:\n- Add thread-safe feature flag registry\n- Add secrets resolver with pluggable backends\n\nWhy:\n- Enable runtime feature toggling\n- Secure secrets management without env var sprawl\n\nTags: feature_flags, secrets, security\nMarkers: NEW\n\nImpact: public_api\nMigration: none\nFeature-Type: infrastructure\nArchitecture: plugin_system\nDomain: feature_flags, secrets_management\nSurfaces: FeatureFlagRegistry, SecretsResolver",
+    "files": [
+      {"path": "src/spine/core/feature_flags.py", "status": "A"},
+      {"path": "src/spine/core/secrets.py", "status": "A"}
+    ],
+    "docstrings": {
+      "spine/core/feature_flags.py": "Thread-safe feature flag registry.\n\nStability: experimental\nTier: basic\nSince: 0.4.0\nDependencies: stdlib-only\nDoc-Types: API_REFERENCE, TECHNICAL_DESIGN\nTags: feature_flags, registry, thread_safe\n\nProvides a simple but thread-safe feature flag system.\n\n```mermaid\nclassDiagram\n    class FeatureFlagRegistry {\n        +register(name, default)\n        +is_enabled(name) bool\n        +set_override(name, value)\n        +clear_overrides()\n    }\n```",
+      "spine/core/secrets.py": "Secrets resolver with pluggable backends.\n\nStability: experimental\nTier: standard\nSince: 0.4.0\nDependencies: optional: redis\nDoc-Types: API_REFERENCE, GUIDE\nTags: secrets, security, pluggable\n\nProvides a Secrets resolver that supports multiple backends:\nenvironment variables, file-based, and vault-based."
+    }
+  },
+  {
+    "sha": "fff0006000000000000000000000000000000006",
+    "short_sha": "fff0006",
+    "date": "2026-02-15T10:30:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "fix(core/cache): handle TTL expiry edge case\n\nWhat:\n- Fix race condition in TTL expiry check\n\nWhy:\n- Cache.get() could return expired entries under contention\n\nTags: cache, bugfix\n\nImpact: behavior\nMigration: none",
+    "files": [
+      {"path": "src/spine/core/cache.py", "status": "M"}
+    ]
+  },
+  {
+    "sha": "ggg0007000000000000000000000000000000007",
+    "short_sha": "ggg0007",
+    "date": "2026-02-15T11:00:00-05:00",
+    "author": "Ryan McCoy",
+    "message": "test(core): add tests for cache, protocols, adapters\n\nWhat:\n- Add cache lifecycle and TTL tests\n- Add protocol conformance tests\n- Add adapter registry tests\n\nTags: pytest, testing\n\nImpact: tests\nMigration: none\nFeature-Type: testing",
+    "files": [
+      {"path": "tests/core/test_cache.py", "status": "A"},
+      {"path": "tests/core/test_protocols.py", "status": "A"},
+      {"path": "tests/core/test_adapters.py", "status": "A"}
+    ]
+  }
+]

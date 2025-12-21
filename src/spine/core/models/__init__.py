@@ -1,15 +1,14 @@
 """Dataclass models for all spine-core schema tables.
 
-Why This Package Exists
------------------------
-Every SQL table in ``spine.core.schema/`` needs a typed Python
-representation for the ops layer, API responses, and cross-project
-data contracts.  Without shared models, each consumer invents its
-own dict shapes -- leading to silent key mismatches and missing fields.
+Manifesto:
+    Every SQL table in ``spine.core.schema/`` needs a typed Python
+    representation for the ops layer, API responses, and cross-project
+    data contracts.  Without shared models, each consumer invents its
+    own dict shapes -- leading to silent key mismatches and missing fields.
 
-All models use :func:`dataclasses.dataclass` (stdlib, zero external
-dependencies).  Field names match SQL column names exactly so
-``Model(**row._asdict())`` works directly from query results.
+    All models use :func:`dataclasses.dataclass` (stdlib, zero external
+    dependencies).  Field names match SQL column names exactly so
+    ``Model(**row._asdict())`` works directly from query results.
 
 Modules
 -------
@@ -25,8 +24,13 @@ alerting
     Tables from ``04_alerting.sql`` -- alert channels, alerts, deliveries, throttle.
 sources
     Tables from ``05_sources.sql`` -- sources, fetches, cache, DB connections.
-orchestration
-    Deprecated orphan models (no backing SQL -- retained for reference).
+
+Tags:
+    spine-core, models, dataclasses, stdlib, schema-mapping,
+    zero-dependency, data-contracts
+
+Doc-Types:
+    package-overview, module-index
 """
 
 # 00_core.sql models

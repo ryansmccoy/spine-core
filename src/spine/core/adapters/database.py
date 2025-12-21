@@ -1,5 +1,5 @@
 """
-Database Adapter  backward-compatible re-export shim.
+Database Adapter -- backward-compatible re-export shim.
 
 The implementation has been split into focused modules:
 - types.py       DatabaseType, DatabaseConfig
@@ -9,6 +9,12 @@ The implementation has been split into focused modules:
 - registry.py    AdapterRegistry, adapter_registry, get_adapter
 
 All public names remain importable from this module.
+
+Tags:
+    spine-core, database, shim, backward-compatibility
+
+Doc-Types:
+    api-reference
 """
 
 from spine.core.adapters.base import DatabaseAdapter

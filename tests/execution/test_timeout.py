@@ -286,7 +286,7 @@ class TestDeadlineHelpers:
         """Test check_deadline raises when deadline expired."""
         # Create an already-expired context by manipulating the deadline
         with with_deadline(0.001, "test"):
-            time.sleep(0.01)
+            time.sleep(0.1)  # generous sleep to avoid Windows timing flakes
             with pytest.raises(TimeoutExpired):
                 check_deadline()
 

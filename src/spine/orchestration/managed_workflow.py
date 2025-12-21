@@ -15,8 +15,8 @@ Quick start
 
     from spine.orchestration.managed_workflow import ManagedWorkflow
 
-    # 1. Build a pipeline from plain functions
-    pipeline = (
+    # 1. Build a operation from plain functions
+    operation = (
         ManagedWorkflow("sec.risk_analysis")
         .step("fetch", fetch_filing_data, config={"cik": "0000320193"})
         .step("score", calculate_risk_score, config={"threshold": 50})
@@ -24,26 +24,26 @@ Quick start
     )
 
     # 2. Run it (in-memory by default, or pass db= for persistence)
-    result = pipeline.run()
+    result = operation.run()
 
     # 3. Query results
-    pipeline.show()          # pretty-print last run
-    pipeline.history()       # list all runs
-    pipeline.query_table()   # raw SQL against the backing store
+    operation.show()          # pretty-print last run
+    operation.history()       # list all runs
+    operation.query_table()   # raw SQL against the backing store
 
 Persistent mode
 ~~~~~~~~~~~~~~~
 ::
 
     # File-based SQLite — runs persist across restarts
-    pipeline = (
+    operation = (
         ManagedWorkflow("sec.risk_analysis", db="examples/spine.db")
         .step("fetch", fetch_filing_data)
         .build()
     )
 
     # PostgreSQL (requires Docker or remote)
-    pipeline = (
+    operation = (
         ManagedWorkflow("sec.risk_analysis",
                         db="postgresql://spine:spine@localhost:10432/spine")
         .step("fetch", fetch_filing_data)
@@ -52,34 +52,37 @@ Persistent mode
 
 Design
 ------
-``ManagedWorkflow`` is a builder that produces a ``ManagedPipeline``.
-The pipeline wraps ``TrackedWorkflowRunner`` (persistent) or
+``ManagedWorkflow`` is a builder that produces a ``ManagedOperation``.
+The operation wraps ``TrackedWorkflowRunner`` (persistent) or
 ``WorkflowRunner`` (in-memory) and provides query helpers.
 
 Tier: Basic (spine-core)
+
+Manifesto:
+    Existing business functions shouldn't need rewriting to get workflow
+    lifecycle management.  ``ManagedWorkflow`` wraps any callable and
+    gives it persistence, retry, and observability for free.
+
+Tags:
+    spine-core, orchestration, managed-workflow, lifecycle, persistence
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Any
 
-from spine.core.logging import get_logger
-
 from spine.core.connection import ConnectionInfo, create_connection
-from spine.orchestration.step_adapters import adapt_function, is_workflow_step
-from spine.orchestration.step_result import StepResult
+from spine.core.logging import get_logger
 from spine.orchestration.step_types import ErrorPolicy, Step
 from spine.orchestration.workflow import Workflow
-from spine.orchestration.workflow_context import WorkflowContext
 from spine.orchestration.workflow_runner import (
-    StepExecution,
     WorkflowResult,
     WorkflowRunner,
-    WorkflowStatus,
 )
 
 logger = get_logger(__name__)
@@ -91,17 +94,17 @@ logger = get_logger(__name__)
 class _StubRunnable:
     """No-op runnable for workflows that only use lambda/function steps."""
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
     ) -> Any:
-        from spine.execution.runnable import PipelineRunResult
+        from spine.execution.runnable import OperationRunResult
 
-        return PipelineRunResult(status="completed")
+        return OperationRunResult(status="completed")
 
 
 
@@ -122,11 +125,11 @@ class StepDef:
     on_error: ErrorPolicy
 
 
-# ── ManagedPipeline (the built result) ───────────────────────────────────
+# ── ManagedOperation (the built result) ───────────────────────────────────
 
 
-class ManagedPipeline:
-    """A fully-configured pipeline ready to run and query.
+class ManagedOperation:
+    """A fully-configured operation ready to run and query.
 
     Do not construct directly — use ``ManagedWorkflow.build()``.
     """
@@ -151,7 +154,7 @@ class ManagedPipeline:
         params: dict[str, Any] | None = None,
         partition: dict[str, Any] | None = None,
     ) -> WorkflowResult:
-        """Execute the pipeline.
+        """Execute the operation.
 
         Parameters
         ----------
@@ -205,7 +208,7 @@ class ManagedPipeline:
             return
 
         result = self._runs[run_index]
-        print(f"\n  Pipeline : {result.workflow_name}")
+        print(f"\n  Operation : {result.workflow_name}")
         print(f"  Run ID   : {result.run_id}")
         print(f"  Status   : {result.status.value}")
         print(f"  Duration : {result.duration_seconds:.3f}s" if result.duration_seconds else "  Duration : —")
@@ -213,7 +216,7 @@ class ManagedPipeline:
             print(f"  Error    : {result.error}")
 
         if result.step_executions:
-            print(f"  Steps    :")
+            print("  Steps    :")
             for se in result.step_executions:
                 icon = "OK" if se.status == "completed" else "FAIL" if se.status == "failed" else "SKIP"
                 out_preview = ""
@@ -224,7 +227,7 @@ class ManagedPipeline:
 
         # Show step outputs from context
         if result.context:
-            print(f"  Outputs  :")
+            print("  Outputs  :")
             for step_name in result.completed_steps:
                 out = result.context.get_output(step_name)
                 if out:
@@ -278,7 +281,7 @@ class ManagedPipeline:
             return [dict(r) for r in rows]
         # Fall back — zip with column names
         cols = [d[0] for d in cursor.description] if cursor.description else []
-        return [dict(zip(cols, r)) for r in rows]
+        return [dict(zip(cols, r, strict=False)) for r in rows]
 
     def table_counts(self) -> dict[str, int]:
         """Return row counts for all core tables.
@@ -296,7 +299,7 @@ class ManagedPipeline:
 
         counts: dict[str, int] = {}
         for row in rows:
-            name = row[0] if isinstance(row, (tuple, list)) else row["name"]
+            name = row[0] if isinstance(row, tuple | list) else row["name"]
             try:
                 count_row = self._conn.execute(f"SELECT COUNT(*) FROM [{name}]").fetchone()
                 counts[name] = count_row[0] if count_row else 0
@@ -321,7 +324,7 @@ class ManagedPipeline:
 
     @property
     def is_persistent(self) -> bool:
-        """Whether this pipeline persists data to disk/server."""
+        """Whether this operation persists data to disk/server."""
         return self._persistent
 
     @property
@@ -333,7 +336,7 @@ class ManagedPipeline:
         mode = "persistent" if self._persistent else "in-memory"
         steps = [s.name for s in self._workflow.steps]
         return (
-            f"ManagedPipeline(name={self._workflow.name!r}, "
+            f"ManagedOperation(name={self._workflow.name!r}, "
             f"steps={steps}, mode={mode!r}, runs={len(self._runs)})"
         )
 
@@ -342,38 +345,38 @@ class ManagedPipeline:
 
 
 class ManagedWorkflow:
-    """Fluent builder for managed pipelines.
+    """Fluent builder for managed operations.
 
     Import your existing functions, chain ``.step()`` calls, then
-    ``.build()`` to get a ``ManagedPipeline`` with full lifecycle
+    ``.build()`` to get a ``ManagedOperation`` with full lifecycle
     management.
 
     Examples
     --------
     Minimal (in-memory)::
 
-        pipeline = (
-            ManagedWorkflow("my.pipeline")
+        operation = (
+            ManagedWorkflow("my.operation")
             .step("fetch", fetch_data, config={"url": "..."})
             .step("transform", transform, config={"format": "json"})
             .build()
         )
-        result = pipeline.run()
+        result = operation.run()
 
     Persistent (SQLite file)::
 
-        pipeline = (
-            ManagedWorkflow("my.pipeline", db="pipeline_runs.db")
+        operation = (
+            ManagedWorkflow("my.operation", db="operation_runs.db")
             .step("fetch", fetch_data)
             .build()
         )
-        result = pipeline.run(partition={"date": "2026-02-16"})
+        result = operation.run(partition={"date": "2026-02-16"})
 
         # Query the database afterwards
-        pipeline.show()
-        runs = pipeline.query_db(
+        operation.show()
+        runs = operation.query_db(
             "SELECT * FROM core_manifest WHERE domain LIKE ?",
-            ("%my.pipeline%",)
+            ("%my.operation%",)
         )
     """
 
@@ -469,12 +472,12 @@ class ManagedWorkflow:
         self._defaults.update(kwargs)
         return self
 
-    def build(self) -> ManagedPipeline:
-        """Build the pipeline — creates DB connection and workflow.
+    def build(self) -> ManagedOperation:
+        """Build the operation — creates DB connection and workflow.
 
         Returns
         -------
-        ManagedPipeline
+        ManagedOperation
             Ready to ``.run()``, ``.show()``, ``.history()``, etc.
         """
         if not self._steps:
@@ -502,7 +505,7 @@ class ManagedWorkflow:
         )
 
         conn, info = create_connection(self._db, init_schema=True)
-        return ManagedPipeline(workflow, conn, info)
+        return ManagedOperation(workflow, conn, info)
 
 
 # ── Convenience function ─────────────────────────────────────────────────
@@ -513,8 +516,8 @@ def manage(
     name: str | None = None,
     db: str | None = None,
     configs: dict[str, dict[str, Any]] | None = None,
-) -> ManagedPipeline:
-    """One-liner: wrap plain functions into a managed pipeline.
+) -> ManagedOperation:
+    """One-liner: wrap plain functions into a managed operation.
 
     Each function becomes a step named after the function.  Steps run
     sequentially in the order provided.
@@ -532,15 +535,15 @@ def manage(
 
     Returns
     -------
-    ManagedPipeline
+    ManagedOperation
 
     Example::
 
         from spine.orchestration.managed_workflow import manage
 
-        pipeline = manage(fetch_data, validate, transform, db="runs.db")
-        pipeline.run(partition={"date": "2026-02-16"})
-        pipeline.show()
+        operation = manage(fetch_data, validate, transform, db="runs.db")
+        operation.run(partition={"date": "2026-02-16"})
+        operation.show()
     """
     if not functions:
         raise ValueError("At least one function is required")

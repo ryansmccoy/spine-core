@@ -5,7 +5,7 @@ Tests cover all /runs endpoints using httpx TestClient:
 - GET /runs/{run_id}
 - POST /runs (canonical submit)
 - POST /runs/task (convenience)
-- POST /runs/pipeline (convenience)
+- POST /runs/operation (convenience)
 - POST /runs/{run_id}/cancel
 - POST /runs/{run_id}/retry
 - GET /runs/{run_id}/events
@@ -96,7 +96,7 @@ def mock_dispatcher():
     d = AsyncMock()
     d.submit = AsyncMock(return_value="run-001")
     d.submit_task = AsyncMock(return_value="run-001")
-    d.submit_pipeline = AsyncMock(return_value="run-001")
+    d.submit_operation = AsyncMock(return_value="run-001")
     d.get_run = AsyncMock(return_value=_make_run())
     d.list_runs = AsyncMock(return_value=[_make_summary()])
     d.cancel = AsyncMock(return_value=True)
@@ -156,11 +156,11 @@ class TestListRuns:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as ac:
-                resp = await ac.get("/api/v1/runs?kind=pipeline")
+                resp = await ac.get("/api/v1/runs?kind=operation")
             assert resp.status_code == 200
             dispatcher.list_runs.assert_called_once()
             call_kw = dispatcher.list_runs.call_args[1]
-            assert call_kw["kind"] == "pipeline"
+            assert call_kw["kind"] == "operation"
 
         _run_async(_test())
 
@@ -270,7 +270,7 @@ class TestSubmitRun:
 
         _run_async(_test())
 
-    def test_submit_pipeline_convenience(self, client):
+    def test_submit_operation_convenience(self, client):
         app, dispatcher = client
 
         async def _test():
@@ -278,11 +278,11 @@ class TestSubmitRun:
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as ac:
                 resp = await ac.post(
-                    "/api/v1/runs/pipeline",
+                    "/api/v1/runs/operation",
                     json={"name": "ingest_otc", "params": {"date": "2026-01-15"}},
                 )
             assert resp.status_code == 200
-            dispatcher.submit_pipeline.assert_called_once()
+            dispatcher.submit_operation.assert_called_once()
 
         _run_async(_test())
 

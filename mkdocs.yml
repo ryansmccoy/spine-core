@@ -72,7 +72,7 @@ nav:
       - Core Primitives: architecture/CORE_PRIMITIVES.md
       - Database Architecture: architecture/DATABASE_ARCHITECTURE.md
   - Guides:
-      - Pipeline vs Workflow: guides/pipeline_vs_workflow.md
+      - Operation vs Workflow: guides/operation_vs_workflow.md
   - API Reference:
       - Core: api/core.md
       - Execution: api/execution.md

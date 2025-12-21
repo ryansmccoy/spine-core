@@ -1,4 +1,17 @@
-"""Generic webhook alert channel."""
+"""Generic webhook alert channel.
+
+Manifesto:
+    Any HTTP endpoint should be a valid alert target.  The
+    generic webhook channel POSTs JSON to a user-defined URL
+    so custom integrations (PagerDuty, Teams, etc.) work
+    without dedicated channel code.
+
+Tags:
+    spine-core, framework, alerts, webhook, generic, HTTP-POST
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

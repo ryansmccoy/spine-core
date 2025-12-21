@@ -42,7 +42,7 @@ class SubmitRunRequest:
     """Request for :func:`spine.ops.runs.submit_run`.
 
     Attributes:
-        kind: Work type — ``"task"``, ``"pipeline"``, ``"workflow"``.
+        kind: Work type — ``"task"``, ``"operation"``, ``"workflow"``.
         name: Handler or workflow name.
         params: Arbitrary runtime parameters.
         idempotency_key: Optional deduplication key.
@@ -84,7 +84,7 @@ class ListRunsRequest:
     """Request for :func:`spine.ops.runs.list_runs`.
 
     Attributes:
-        kind: Filter by run kind (``"pipeline"``, ``"workflow"``).
+        kind: Filter by run kind (``"operation"``, ``"workflow"``).
         status: Filter by status name.
         workflow: Filter by workflow name.
         since: Only runs started after this datetime (inclusive).
@@ -124,6 +124,25 @@ class RetryRunRequest:
     run_id: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class GetRunLogsRequest:
+    """Request for :func:`spine.ops.runs.get_run_logs`.
+
+    Attributes:
+        run_id: Run identifier.
+        step: Optional step name filter.
+        level: Optional minimum log level (DEBUG, INFO, WARN, ERROR).
+        limit: Maximum log lines to return.
+        offset: Pagination offset.
+    """
+
+    run_id: str = ""
+    step: str | None = None
+    level: str | None = None
+    limit: int = 1000
+    offset: int = 0
+
+
 # ------------------------------------------------------------------ #
 # Workflow operations
 # ------------------------------------------------------------------ #
@@ -161,7 +180,7 @@ class CreateScheduleRequest:
     """Request for :func:`spine.ops.schedules.create_schedule`."""
 
     name: str = ""
-    target_type: str = "pipeline"
+    target_type: str = "operation"
     target_name: str = ""
     cron_expression: str | None = None
     interval_seconds: int | None = None
@@ -418,7 +437,7 @@ class ListCalcDependenciesRequest:
     """Request for :func:`spine.ops.schedules.list_calc_dependencies`."""
 
     calc_domain: str | None = None
-    calc_pipeline: str | None = None
+    calc_operation: str | None = None
     depends_on_domain: str | None = None
     limit: int = 100
     offset: int = 0

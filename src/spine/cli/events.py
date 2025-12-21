@@ -55,7 +55,7 @@ def publish(
         payload_dict = json.loads(payload)
     except json.JSONDecodeError as e:
         err_console.print(f"[bold red]Invalid JSON payload:[/bold red] {e}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
     event = Event(
         event_type=event_type,

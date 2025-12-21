@@ -88,7 +88,7 @@ class TestWorkflowDebugFilter:
 
     def test_workflow_debug_explicit(self):
         """workflow_debug kwarg is respected."""
-        configure_logging(level="INFO", workflow_debug=["my_pipeline"])
+        configure_logging(level="INFO", workflow_debug=["my_operation"])
         assert is_configured() is True
 
 

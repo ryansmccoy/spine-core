@@ -40,7 +40,7 @@ REGISTRATION METHODS
     │  @register_task("fetch_filing", registry=registry)                     │
     │  async def fetch_filing(params: dict) -> dict: ...                     │
     │                                                                         │
-    │  @register_pipeline("daily_ingest", registry=registry)                 │
+    │  @register_operation("daily_ingest", registry=registry)                 │
     │  async def daily_ingest(params: dict) -> dict: ...                     │
     ├─────────────────────────────────────────────────────────────────────────┤
     │  Method 2: Explicit registration                                        │
@@ -63,11 +63,11 @@ Run this example:
     python examples/02_execution/02_handler_registration.py
 
 See Also:
-    - :mod:`spine.execution` — HandlerRegistry, register_task, register_pipeline
+    - :mod:`spine.execution` — HandlerRegistry, register_task, register_operation
     - ``examples/02_execution/01_workspec_basics.py`` — WorkSpec creation
     - ``examples/02_execution/03_dispatcher_basics.py`` — Dispatching work
 """
-from spine.execution import HandlerRegistry, register_task, register_pipeline
+from spine.execution import HandlerRegistry, register_task, register_operation
 
 
 # Create a registry instance
@@ -91,11 +91,11 @@ async def add_numbers(params: dict) -> dict:
     return {"result": a + b, "operation": f"{a} + {b}"}
 
 
-@register_pipeline("data_pipeline", registry=registry)
-async def data_pipeline(params: dict) -> dict:
-    """A simple data processing pipeline."""
+@register_operation("data_operation", registry=registry)
+async def data_operation(params: dict) -> dict:
+    """A simple data processing operation."""
     steps = params.get("steps", [])
-    return {"pipeline": "data_pipeline", "steps_count": len(steps)}
+    return {"operation": "data_operation", "steps_count": len(steps)}
 
 
 # === Method 2: Manual registration ===

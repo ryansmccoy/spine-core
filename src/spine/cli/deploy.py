@@ -254,9 +254,9 @@ def deploy_logs(
 
     try:
         subprocess.run(cmd, check=False)  # noqa: S603
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         err_console.print("[red]Docker is not available.[/]")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 # ── Info commands ────────────────────────────────────────────────────────

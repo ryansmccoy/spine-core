@@ -101,6 +101,9 @@ Performance:
 
 Tags:
     timeout, deadline, resilience, execution, spine-core
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -458,7 +461,7 @@ def timeout(seconds: float, operation: str | None = None) -> Callable[[Callable[
     return decorator
 
 
-def run_with_timeout(
+def run_with_timeout[T](
     func: Callable[..., T],
     timeout_seconds: float,
     operation: str | None = None,

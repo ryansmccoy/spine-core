@@ -3,7 +3,7 @@
 
 WHY OPERATIONS-LAYER RUN MANAGEMENT
 ────────────────────────────────────
-The core_executions table tracks every pipeline and workflow run.
+The core_executions table tracks every operation and workflow run.
 The ops layer provides typed CRUD operations over those records —
 the same operations that the API endpoints and CLI commands call.
 This means you can build custom dashboards, retry UIs, or ChatOps
@@ -14,7 +14,7 @@ ARCHITECTURE
     API / CLI / Notebook
          │
          ▼
-    ops.runs.list_runs(ctx, filters)      → [{id, status, pipeline, ...}]
+    ops.runs.list_runs(ctx, filters)      → [{id, status, operation, ...}]
     ops.runs.get_run(ctx, run_id)         → {full run detail}
     ops.runs.cancel_run(ctx, run_id)      → OperationResult
     ops.runs.retry_run(ctx, run_id)       → OperationResult (new run)
@@ -41,12 +41,16 @@ See Also:
     03_workflow_ops — workflow-level run management
 """
 
-import sqlite3
+import sys
+from pathlib import Path
 from datetime import datetime, timezone
 
-from spine.core.schema import create_core_tables
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.runs import cancel_run, get_run, list_runs, retry_run
 from spine.ops.requests import (
     CancelRunRequest,
@@ -72,9 +76,12 @@ def main():
     print("=" * 60)
     print("Operations Layer — Run Management")
     print("=" * 60)
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
-    create_core_tables(conn)
     ctx = OperationContext(conn=conn, caller="example")
 
     # --- 1. Empty list ----------------------------------------------------
@@ -117,8 +124,8 @@ def main():
     for r in result.data:
         print(f"  {r.run_id}  {r.status}")
 
-    # --- 5. Filter by pipeline --------------------------------------------
-    print("\n[5] Filter by Pipeline = 'finra.otc.ingest'")
+    # --- 5. Filter by operation --------------------------------------------
+    print("\n[5] Filter by Operation = 'finra.otc.ingest'")
 
     result = list_runs(ctx, ListRunsRequest(workflow="finra.otc.ingest"))
     assert result.success

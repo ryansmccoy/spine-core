@@ -3,7 +3,7 @@
 
 WHY WORKFLOW ERROR HANDLING DIFFERS
 ──────────────────────────────────
-A pipeline has one path; a workflow has many.  When step 3 of 5
+A operation has one path; a workflow has many.  When step 3 of 5
 fails, you need to decide: retry? skip? fallback? abort the
 whole workflow?  Spine’s error handling patterns let you express
 these decisions explicitly rather than burying them in try/except

@@ -159,7 +159,7 @@ class TestStepExecution:
         result = StepResult.ok(output={"k": "v"})
         se = StepExecution(
             step_name="s",
-            step_type="pipeline",
+            step_type="operation",
             status="completed",
             started_at=start,
             completed_at=start,
@@ -196,7 +196,7 @@ class TestWorkflowResult:
             completed_at=now,
             step_executions=[
                 StepExecution(step_name="s1", step_type="lambda", status="completed"),
-                StepExecution(step_name="s2", step_type="pipeline", status="failed"),
+                StepExecution(step_name="s2", step_type="operation", status="failed"),
                 StepExecution(step_name="s3", step_type="lambda", status="completed"),
             ],
         )
@@ -362,21 +362,21 @@ class TestWorkflowRunnerLambda:
         assert result.context.get_param("existing") == "value"
 
 
-class TestWorkflowRunnerPipeline:
-    """Test pipeline step execution."""
+class TestWorkflowRunnerOperation:
+    """Test operation step execution."""
 
-    def test_dry_run_pipeline(self, noop_runnable):
+    def test_dry_run_operation(self, noop_runnable):
         wf = Workflow(
             name="test",
-            steps=[Step.pipeline("s1", "my.pipeline")],
+            steps=[Step.operation("s1", "my.operation")],
         )
         runner = WorkflowRunner(noop_runnable, dry_run=True)
         result = runner.execute(wf)
         assert result.status == WorkflowStatus.COMPLETED
         assert result.context.get_output("s1", "dry_run") is True
 
-    def test_pipeline_no_name(self, noop_runnable):
-        step = Step(name="bad", step_type=StepType.PIPELINE)
+    def test_operation_no_name(self, noop_runnable):
+        step = Step(name="bad", step_type=StepType.OPERATION)
         wf = Workflow.__new__(Workflow)
         wf.name = "test"
         wf.steps = [step]
@@ -402,8 +402,8 @@ class TestWorkflowRunnerChoice:
             name="test",
             steps=[
                 Step.lambda_("setup", handler=lambda ctx, cfg: StepResult.ok()),
-                Step.pipeline("target_a", "p.a"),
-                Step.pipeline("target_b", "p.b"),
+                Step.operation("target_a", "p.a"),
+                Step.operation("target_b", "p.b"),
                 Step.choice(
                     "pick",
                     condition=lambda ctx: True,

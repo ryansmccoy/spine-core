@@ -76,6 +76,23 @@ Guardrails:
     - ALWAYS use context manager (async with pool.acquire())
     - NEVER hold connections longer than necessary
     - MONITOR pool metrics (size, free_size)
+
+Context:
+    Problem: Each spine package was creating ad-hoc database connections with
+        inconsistent URL handling, no pooling, and no lifecycle management.
+    Solution: Centralized pool factory with URL normalization, SSL support,
+        and clean shutdown — usable by any spine that needs PostgreSQL.
+    Alternatives Considered: SQLAlchemy async engine (heavier), manual
+        psycopg2 pools (no async), per-request connections (too expensive).
+
+Tags:
+    database, connection-pool, asyncpg, postgresql, spine-core,
+    infrastructure, lifecycle
+
+Doc-Types:
+    - API Reference
+    - Infrastructure Guide
+    - Deployment Documentation
 """
 
 from __future__ import annotations

@@ -18,7 +18,7 @@ Architecture::
     visualize_summary(workflow) → dict (metadata)
 
     Mermaid step shapes:
-    - PIPELINE  → [pipeline_name]  (rectangle)
+    - operation  → [operation_name]  (rectangle)
     - LAMBDA    → (handler_name)   (rounded)
     - CHOICE    → {condition}      (diamond)
     - WAIT      → [[wait]]         (subroutine)
@@ -30,11 +30,11 @@ Example::
     from spine.orchestration import Workflow, Step
 
     workflow = Workflow(
-        name="etl.pipeline",
+        name="etl.operation",
         steps=[
-            Step.pipeline("extract", "data.extract"),
+            Step.operation("extract", "data.extract"),
             Step.lambda_("transform", transform_fn),
-            Step.pipeline("load", "data.load"),
+            Step.operation("load", "data.load"),
         ],
     )
 
@@ -54,6 +54,18 @@ Example::
 See Also:
     spine.orchestration.linter — static workflow analysis
     spine.orchestration.playground — interactive execution
+
+Manifesto:
+    Complex DAG workflows become unmanageable without a visual
+    representation.  The visualiser renders workflow topology as
+    Mermaid, DOT, or ASCII art so teams can review structure
+    before execution.
+
+Tags:
+    spine-core, orchestration, visualizer, mermaid, DOT, ASCII, DAG
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -76,8 +88,8 @@ def _mermaid_node(step: Step) -> str:
     name = step.name
     label = name
 
-    if step.step_type == StepType.PIPELINE and step.pipeline_name:
-        label = f"{name}<br/>{step.pipeline_name}"
+    if step.step_type == StepType.OPERATION and step.operation_name:
+        label = f"{name}<br/>{step.operation_name}"
         return f'    {name}["{label}"]'
 
     elif step.step_type == StepType.LAMBDA:
@@ -99,7 +111,7 @@ def _mermaid_node(step: Step) -> str:
 def _mermaid_style(step: Step) -> str | None:
     """Return optional Mermaid style for a step type."""
     styles = {
-        StepType.PIPELINE: "fill:#e3f2fd,stroke:#1565c0",
+        StepType.OPERATION: "fill:#e3f2fd,stroke:#1565c0",
         StepType.LAMBDA: "fill:#f3e5f5,stroke:#7b1fa2",
         StepType.CHOICE: "fill:#fff3e0,stroke:#e65100",
         StepType.WAIT: "fill:#e8f5e9,stroke:#2e7d32",
@@ -135,9 +147,9 @@ def visualize_mermaid(workflow: Workflow, *, direction: str = "TD",
     lines: list[str] = []
 
     if title:
-        lines.append(f"---")
+        lines.append("---")
         lines.append(f"title: {title}")
-        lines.append(f"---")
+        lines.append("---")
 
     lines.append(f"graph {direction}")
 
@@ -215,7 +227,7 @@ def visualize_ascii(workflow: Workflow) -> str:
 
     # Type indicators
     type_indicators = {
-        StepType.PIPELINE: "P",
+        StepType.OPERATION: "P",
         StepType.LAMBDA: "λ",
         StepType.CHOICE: "?",
         StepType.WAIT: "⏳",
@@ -283,8 +295,8 @@ def _ascii_dag(workflow: Workflow, indicators: dict[StepType, str]) -> str:
         ind = indicators.get(step.step_type, "·")
         deps = ", ".join(step.depends_on) if step.depends_on else "(root)"
         detail = ""
-        if step.step_type == StepType.PIPELINE and step.pipeline_name:
-            detail = f" → {step.pipeline_name}"
+        if step.step_type == StepType.OPERATION and step.operation_name:
+            detail = f" → {step.operation_name}"
         elif step.step_type == StepType.CHOICE:
             parts = []
             if step.then_step:
@@ -318,7 +330,7 @@ def visualize_summary(workflow: Workflow) -> dict[str, Any]:
         has_branches, max_depth, tier, and critical_path.
     """
     step_count = len(workflow.steps)
-    step_names = {s.name for s in workflow.steps}
+    {s.name for s in workflow.steps}
 
     # Count edges
     edge_count = sum(len(s.depends_on) for s in workflow.steps)
@@ -351,7 +363,7 @@ def visualize_summary(workflow: Workflow) -> dict[str, Any]:
         "max_depth": max_depth,
         "critical_path": critical_path,
         "tier": workflow.required_tier(),
-        "pipeline_names": workflow.pipeline_names(),
+        "operation_names": workflow.operation_names(),
     }
 
 
@@ -365,7 +377,7 @@ def _compute_max_depth(workflow: Workflow) -> int:
     # Build adjacency and compute depth with dynamic programming
     depths: dict[str, int] = {}
     step_map = {s.name: s for s in workflow.steps}
-    adjacency = workflow.dependency_graph()
+    workflow.dependency_graph()
 
     def depth(name: str) -> int:
         if name in depths:

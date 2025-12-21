@@ -1,7 +1,6 @@
 """Tracked Workflow Runner — database-backed workflow execution.
 
-WHY
-───
+Manifesto:
 The basic ``WorkflowRunner`` is ephemeral — results vanish when the
 process exits.  ``TrackedWorkflowRunner`` adds persistence so that
 every step’s outcome is recorded in the database, enabling:
@@ -41,6 +40,12 @@ Example::
         params={"tier": "NMS_TIER_1"},
         partition={"week_ending": "2026-01-10"},
     )
+
+Tags:
+    spine-core, orchestration, tracked-runner, persistence, run-history
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -48,9 +53,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from spine.core.logging import get_logger
-
 from spine.core.anomalies import AnomalyCategory, AnomalyRecorder, Severity
+from spine.core.logging import get_logger
 from spine.core.manifest import WorkManifest
 from spine.core.protocols import Connection
 from spine.execution.runnable import Runnable
@@ -101,9 +105,9 @@ class TrackedWorkflowRunner(WorkflowRunner):
 
         Args:
             conn: Database connection (sync protocol).
-            runnable: ``EventDispatcher`` or any ``Runnable`` for pipeline
+            runnable: ``EventDispatcher`` or any ``Runnable`` for operation
                 step tracking.
-            dry_run: If ``True``, pipeline steps return mock success.
+            dry_run: If ``True``, operation steps return mock success.
             skip_if_completed: If ``True``, skip workflow if already completed.
         """
         super().__init__(runnable=runnable, dry_run=dry_run)

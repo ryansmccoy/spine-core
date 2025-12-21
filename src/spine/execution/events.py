@@ -1,7 +1,6 @@
 """Run Events — immutable event-sourced execution history.
 
-WHY
-───
+Manifesto:
 Mutable status fields only show *current* state.  Events capture the
 complete lifecycle (“who changed what, when, why”) enabling
 debugging, observability dashboards, and deterministic replay.
@@ -21,6 +20,12 @@ ARCHITECTURE
 Related modules:
     runs.py       — RunRecord (mutable current state)
     dispatcher.py — emits events on submission/completion
+
+Tags:
+    spine-core, execution, events, lifecycle, state-machine
+
+Doc-Types:
+    api-reference
 """
 
 from dataclasses import dataclass, field

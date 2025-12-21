@@ -1,4 +1,22 @@
-"""SQLite database adapter."""
+"""SQLite database adapter.
+
+Manifesto:
+    SQLite is the zero-dependency default for development, testing, and
+    basic-tier production.  The adapter wraps stdlib ``sqlite3`` with the
+    same ``DatabaseAdapter`` interface as PostgreSQL or DB2.
+
+Features:
+    - In-memory and file-based databases
+    - Read-only mode for safe query workloads
+    - WAL mode enabled by default for concurrent reads
+    - Context-manager connection lifecycle
+
+Tags:
+    spine-core, database, sqlite, stdlib, default-backend
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

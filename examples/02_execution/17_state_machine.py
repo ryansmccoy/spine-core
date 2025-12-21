@@ -9,7 +9,7 @@ A **state machine** (or finite-state machine, FSM) is a computational model
 where a system can be in exactly ONE state at any time, and transitions
 between states follow explicit, predefined rules.
 
-In spine-core, every job execution (pipeline, task, workflow) has a lifecycle
+In spine-core, every job execution (operation, task, workflow) has a lifecycle
 governed by state machines.  This prevents impossible states like:
 - A job being "completed" before it ever started
 - A successful job being retried
@@ -32,9 +32,9 @@ ARCHITECTURE: TWO-LEVEL STATE MACHINES
 spine-core uses TWO distinct but related state machines::
 
     ┌─────────────────────────────────────────────────────────────────────────┐
-    │  LEVEL 1: ExecutionStatus (Pipeline/Workflow Level)                    │
+    │  LEVEL 1: ExecutionStatus (Operation/Workflow Level)                    │
     │  ═══════════════════════════════════════════════════                   │
-    │  Tracks the overall execution of a pipeline or workflow.               │
+    │  Tracks the overall execution of a operation or workflow.               │
     │  A workflow may contain many steps, but it has ONE ExecutionStatus.    │
     └─────────────────────────────────────────────────────────────────────────┘
 
@@ -102,7 +102,7 @@ The execution state is persisted to enable crash recovery and auditing::
     ├─────────────────────────────────────────────────────────────────────────┤
     │  run_id          VARCHAR(36)  PRIMARY KEY  -- ULID/UUID                │
     │  status          VARCHAR(20)  NOT NULL     -- RunStatus enum value     │
-    │  spec_kind       VARCHAR(20)  NOT NULL     -- 'task'|'pipeline'|...    │
+    │  spec_kind       VARCHAR(20)  NOT NULL     -- 'task'|'operation'|...    │
     │  spec_name       VARCHAR(255) NOT NULL     -- Handler name             │
     │  spec_params     JSON                      -- Execution parameters     │
     │  created_at      TIMESTAMP    NOT NULL     -- When submitted           │

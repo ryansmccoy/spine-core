@@ -1,14 +1,14 @@
 """
-Idempotency helpers for pipeline execution.
+Idempotency helpers for operation execution.
 
-Provides patterns for ensuring pipelines produce consistent results on re-run:
+Provides patterns for ensuring operations produce consistent results on re-run:
 - Level 1 (Append): Always inserts, external deduplication
 - Level 2 (Input-Idempotent): Hash-based deduplication
 - Level 3 (State-Idempotent): Delete + insert patterns
 
 Manifesto:
-    Financial data pipelines must be re-runnable without creating duplicates.
-    When a pipeline fails halfway through a 6-week backfill, operators need to
+    Financial data operations must be re-runnable without creating duplicates.
+    When a operation fails halfway through a 6-week backfill, operators need to
     re-run it safely. Without idempotency, re-runs create:
     - Duplicate records (inflate volumes)
     - Conflicting versions (which is correct?)
@@ -50,13 +50,22 @@ Architecture:
         │ COMMIT                                                   │
         └─────────────────────────────────────────────────────────┘
 
+Context:
+    Problem: Re-running financial data operations creates duplicates, conflicting
+        versions, or constraint violations without systematic idempotency.
+    Solution: Three-level idempotency framework (L1 Append, L2 Input Hash,
+        L3 State Delete+Insert) with clear guidance on when to use each.
+    Alternatives Considered: Database UPSERT only (doesn't handle all cases),
+        event sourcing (too complex for batch), external dedup service
+        (unnecessary dependency).
+
 Tags:
-    idempotency, pipeline, deduplication, delete-insert, spine-core,
+    idempotency, operation, deduplication, delete-insert, spine-core,
     data-engineering, batch-processing
 
 Doc-Types:
     - API Reference
-    - Pipeline Patterns Guide
+    - Operation Patterns Guide
     - Data Engineering Best Practices
 """
 
@@ -68,20 +77,20 @@ from .protocols import Connection
 
 class IdempotencyLevel(IntEnum):
     """
-    Pipeline idempotency classification for re-run safety.
+    Operation idempotency classification for re-run safety.
 
-    IdempotencyLevel defines the contract a pipeline provides for re-execution.
+    IdempotencyLevel defines the contract a operation provides for re-execution.
     Higher levels provide stronger guarantees but require more infrastructure.
 
     Manifesto:
-        Not all pipelines need the same idempotency guarantees. Raw capture
-        pipelines (L1) can append freely because downstream layers handle dedup.
+        Not all operations need the same idempotency guarantees. Raw capture
+        operations (L1) can append freely because downstream layers handle dedup.
         Bronze layers (L2) use hash-based dedup to avoid re-processing identical
         source data. Silver/Gold layers (L3) use delete+insert to ensure re-runs
         produce exactly the same final state.
 
         Explicitly declaring idempotency level:
-        - Documents pipeline behavior for operators
+        - Documents operation behavior for operators
         - Enables framework-level safety checks
         - Guides monitoring and alerting (L1 re-run: normal, L3 re-run: investigate)
 
@@ -111,9 +120,9 @@ class IdempotencyLevel(IntEnum):
         - IntEnum for ordering and comparison
 
     Examples:
-        Declaring pipeline idempotency:
+        Declaring operation idempotency:
 
-        >>> class MyPipeline:
+        >>> class MyOperation:
         ...     idempotency_level = IdempotencyLevel.L3_STATE
 
         Checking level:
@@ -131,12 +140,12 @@ class IdempotencyLevel(IntEnum):
         ✅ DO: Use cryptographic hashes (SHA-256) for L2
 
     Tags:
-        idempotency, pipeline-level, batch-processing, data-engineering,
+        idempotency, operation-level, batch-processing, data-engineering,
         spine-core
 
     Doc-Types:
         - API Reference
-        - Pipeline Patterns Guide
+        - Operation Patterns Guide
     """
 
     L1_APPEND = 1  # Always inserts, external dedup (audit logs)
@@ -146,7 +155,7 @@ class IdempotencyLevel(IntEnum):
 
 class IdempotencyHelper:
     """
-    Database operations for idempotent pipeline patterns.
+    Database operations for idempotent operation patterns.
 
     IdempotencyHelper provides the low-level operations needed to implement
     L2 (hash-based dedup) and L3 (delete+insert) idempotency patterns.
@@ -231,7 +240,7 @@ class IdempotencyHelper:
 
     Doc-Types:
         - API Reference
-        - Pipeline Patterns Guide
+        - Operation Patterns Guide
     """
 
     def __init__(self, conn: Connection):

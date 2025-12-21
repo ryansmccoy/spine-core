@@ -1,8 +1,7 @@
 """Step Result — universal envelope for step execution outcomes.
 
-WHY
-───
-Every step (lambda, pipeline, choice) must return a uniform result so
+Manifesto:
+    Every step (lambda, operation, choice) must return a uniform result so
 that the WorkflowRunner can: decide success/failure, pass outputs to
 the next step, evaluate quality gates, and categorise errors for retry
 decisions.  ``StepResult`` is that envelope.
@@ -45,6 +44,12 @@ Example::
         if quality.valid_rate < 0.95:
             return StepResult.fail("Too few valid", category="DATA_QUALITY", quality=quality)
         return StepResult.ok(output={"valid_count": len(valid)}, quality=quality)
+
+Tags:
+    spine-core, orchestration, step-result, envelope, success-failure
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -129,7 +134,7 @@ class StepResult:
 
     This is the universal envelope returned by all steps:
     - Lambda steps return directly
-    - Pipeline steps are wrapped by the runner
+    - Operation steps are wrapped by the runner
 
     Attributes:
         success: Whether the step completed successfully
@@ -273,7 +278,7 @@ class StepResult:
             return cls.ok() if value else cls.fail("Step returned False")
         if isinstance(value, str):
             return cls.ok(output={"message": value})
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             return cls.ok(output={"value": value})
         return cls.ok(output={"result": value})
 

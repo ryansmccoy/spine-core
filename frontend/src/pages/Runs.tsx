@@ -1,13 +1,16 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { type ColumnDef } from '@tanstack/react-table';
+import { Plus, Filter, XCircle, RotateCw, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
+import StatusTabs from '../components/StatusTabs';
 import Pagination from '../components/Pagination';
 import DataTable from '../components/DataTable';
 import { Button, Spinner, ErrorBox, EmptyState, Modal } from '../components/UI';
-import { useRuns, useSubmitRun, useCancelRun, useWorkflows } from '../api/hooks';
+import { useRuns, useSubmitRun, useCancelRun, useRetryRun, useWorkflows, useRunStats } from '../api/hooks';
 import { useToast } from '../components/Toast';
+import { formatDuration, formatTimestamp, formatRelativeTime } from '../lib/formatters';
 import type { RunSummary, SubmitRunRequest } from '../types/api';
 
 function SubmitDialog({
@@ -121,26 +124,93 @@ export default function Runs() {
   const [statusFilter, setStatusFilter] = useState('');
   const [workflowFilter, setWorkflowFilter] = useState('');
   const [offset, setOffset] = useState(0);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const limit = 25;
   const runs = useRuns({ status: statusFilter || undefined, pipeline: workflowFilter || undefined, limit, offset });
   const submit = useSubmitRun();
   const cancel = useCancelRun();
+  const retry = useRetryRun();
   const workflows = useWorkflows();
+  const stats = useRunStats();
   const toast = useToast();
   const workflowNames = workflows.data?.data?.map((w) => w.name) ?? [];
 
-  const formatTs = (ts: string | null | undefined) => {
-    if (!ts) return '—';
-    try {
-      const d = new Date(ts);
-      if (isNaN(d.getTime())) return ts;
-      return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-    } catch { return ts; }
-  };
-
   const pageInfo = runs.data?.page;
 
+  const toggleRow = (runId: string) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(runId)) next.delete(runId);
+      else next.add(runId);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!runs.data?.data) return;
+    if (selectedRows.size === runs.data.data.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(runs.data.data.map((r) => r.run_id)));
+    }
+  };
+
+  const handleBulkCancel = () => {
+    const cancellable = runs.data?.data?.filter(
+      (r) => selectedRows.has(r.run_id) && ['pending', 'running'].includes(r.status)
+    ) ?? [];
+    if (cancellable.length === 0) {
+      toast.error('No cancellable runs selected');
+      return;
+    }
+    cancellable.forEach((r) => {
+      cancel.mutate(r.run_id, {
+        onSuccess: () => toast.success(`Run ${r.run_id.slice(0, 8)} cancelled`),
+        onError: () => toast.error(`Failed to cancel ${r.run_id.slice(0, 8)}`),
+      });
+    });
+    setSelectedRows(new Set());
+  };
+
+  const handleBulkRetry = () => {
+    const retryable = runs.data?.data?.filter(
+      (r) => selectedRows.has(r.run_id) && ['failed', 'dead_lettered'].includes(r.status)
+    ) ?? [];
+    if (retryable.length === 0) {
+      toast.error('No retryable runs selected');
+      return;
+    }
+    retryable.forEach((r) => {
+      retry.mutate(r.run_id, {
+        onSuccess: () => toast.success(`Run ${r.run_id.slice(0, 8)} retried`),
+        onError: () => toast.error(`Failed to retry ${r.run_id.slice(0, 8)}`),
+      });
+    });
+    setSelectedRows(new Set());
+  };
+
   const columns = useMemo<ColumnDef<RunSummary, unknown>[]>(() => [
+    {
+      id: 'select',
+      header: () => (
+        <input
+          type="checkbox"
+          className="rounded border-gray-300"
+          checked={runs.data?.data ? selectedRows.size === runs.data.data.length && runs.data.data.length > 0 : false}
+          onChange={toggleAll}
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          className="rounded border-gray-300"
+          checked={selectedRows.has(row.original.run_id)}
+          onChange={() => toggleRow(row.original.run_id)}
+        />
+      ),
+      enableSorting: false,
+      size: 40,
+    },
     {
       accessorKey: 'run_id',
       header: 'Run ID',
@@ -174,92 +244,123 @@ export default function Runs() {
     {
       accessorKey: 'started_at',
       header: 'Started',
-      cell: ({ getValue }) => (
-        <span className="text-gray-500 text-xs">{formatTs(getValue() as string | null)}</span>
-      ),
-    },
-    {
-      accessorKey: 'finished_at',
-      header: 'Finished',
-      cell: ({ getValue }) => (
-        <span className="text-gray-500 text-xs">{formatTs(getValue() as string | null)}</span>
-      ),
-    },
-    {
-      accessorKey: 'duration_ms',
-      header: 'Duration',
       cell: ({ getValue }) => {
-        const v = getValue() as number | null;
+        const ts = getValue() as string | null;
         return (
-          <span className="text-gray-500 text-xs font-mono">
-            {v != null ? (v < 1000 ? `${v.toFixed(0)}ms` : `${(v / 1000).toFixed(1)}s`) : '—'}
+          <span className="text-gray-500 text-xs" title={formatTimestamp(ts)}>
+            {formatRelativeTime(ts)}
           </span>
         );
       },
     },
     {
-      id: 'actions',
-      header: 'Actions',
-      enableSorting: false,
-      cell: ({ row }) =>
-        ['pending', 'running'].includes(row.original.status) ? (
-          <Button
-            variant="danger"
-            size="xs"
-            onClick={() =>
-              cancel.mutate(row.original.run_id, {
-                onSuccess: () => toast.success(`Run ${row.original.run_id.slice(0, 8)} cancelled`),
-                onError: () => toast.error('Failed to cancel run'),
-              })
-            }
-          >
-            Cancel
-          </Button>
-        ) : null,
+      accessorKey: 'duration_ms',
+      header: 'Duration',
+      cell: ({ getValue }) => (
+        <span className="text-gray-500 text-xs font-mono">
+          {formatDuration(getValue() as number | null)}
+        </span>
+      ),
     },
-  ], [cancel, toast, formatTs]);
+    {
+      id: 'actions',
+      header: '',
+      enableSorting: false,
+      cell: ({ row }) => {
+        const s = row.original.status;
+        return (
+          <div className="flex gap-1 justify-end">
+            {['pending', 'running'].includes(s) && (
+              <button
+                onClick={() =>
+                  cancel.mutate(row.original.run_id, {
+                    onSuccess: () => toast.success(`Run ${row.original.run_id.slice(0, 8)} cancelled`),
+                    onError: () => toast.error('Failed to cancel run'),
+                  })
+                }
+                className="p-1 text-gray-400 hover:text-red-600 transition-colors rounded"
+                title="Cancel"
+              >
+                <XCircle size={14} />
+              </button>
+            )}
+            {['failed', 'dead_lettered'].includes(s) && (
+              <button
+                onClick={() =>
+                  retry.mutate(row.original.run_id, {
+                    onSuccess: () => toast.success(`Run ${row.original.run_id.slice(0, 8)} retried`),
+                    onError: () => toast.error('Failed to retry run'),
+                  })
+                }
+                className="p-1 text-gray-400 hover:text-spine-600 transition-colors rounded"
+                title="Retry"
+              >
+                <RotateCw size={14} />
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
+  ], [cancel, retry, toast, selectedRows, runs.data?.data]);
 
   return (
     <>
       <PageHeader
-        title="Execution Runs"
-        description="View, submit, and manage run executions"
+        title="Runs"
+        description="View, submit, and manage execution runs"
         actions={
-          <Button onClick={() => setShowDialog(true)}>+ Submit Run</Button>
+          <Button onClick={() => setShowDialog(true)}>
+            <Plus size={14} className="mr-1.5" /> New Run
+          </Button>
         }
       />
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4 items-center">
-        <div className="flex gap-1">
-          {['', 'pending', 'running', 'completed', 'failed', 'cancelled'].map(
-            (s) => (
-              <button
-                key={s}
-                onClick={() => { setStatusFilter(s); setOffset(0); }}
-                className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                  statusFilter === s
-                    ? 'bg-spine-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+      {/* Status Tabs + Filters bar */}
+      <div className="bg-white rounded-xl border border-gray-200/80 p-3 mb-4">
+        <div className="flex flex-wrap gap-3 items-center">
+          <StatusTabs
+            value={statusFilter}
+            onChange={(s) => { setStatusFilter(s); setOffset(0); setSelectedRows(new Set()); }}
+            stats={stats.data?.data}
+          />
+
+          {workflowNames.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Filter size={14} className="text-gray-400" />
+              <select
+                value={workflowFilter}
+                onChange={(e) => { setWorkflowFilter(e.target.value); setOffset(0); }}
+                className="text-xs border border-gray-200 rounded-md px-2.5 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-spine-500 focus:border-spine-500"
               >
-                {s || 'All'}
+                <option value="">All Workflows</option>
+                {workflowNames.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Bulk actions */}
+          {selectedRows.size > 0 && (
+            <div className="flex gap-1.5 ml-auto items-center bg-gray-50 rounded-lg px-3 py-1.5">
+              <span className="text-xs font-medium text-gray-600">{selectedRows.size} selected</span>
+              <Button variant="danger" size="xs" onClick={handleBulkCancel}>
+                <XCircle size={12} className="mr-1" /> Cancel
+              </Button>
+              <Button variant="secondary" size="xs" onClick={handleBulkRetry}>
+                <RotateCw size={12} className="mr-1" /> Retry
+              </Button>
+              <button
+                onClick={() => setSelectedRows(new Set())}
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Clear selection"
+              >
+                <X size={14} />
               </button>
-            ),
+            </div>
           )}
         </div>
-        {workflowNames.length > 0 && (
-          <select
-            value={workflowFilter}
-            onChange={(e) => { setWorkflowFilter(e.target.value); setOffset(0); }}
-            className="text-xs border rounded px-2 py-1.5 bg-white"
-          >
-            <option value="">All Workflows</option>
-            {workflowNames.map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        )}
       </div>
 
       {/* Table */}

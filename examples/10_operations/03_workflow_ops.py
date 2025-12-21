@@ -19,11 +19,11 @@ ARCHITECTURE
          ├─▶ Workflow Registry (spine.orchestration)
          └─▶ WorkflowRunner / TrackedWorkflowRunner
 
-    The Workflow registry and the Pipeline registry are separate:
-      register_pipeline() → spine.framework (building blocks)
+    The Workflow registry and the Operation registry are separate:
+      register_operation() → spine.framework (building blocks)
       register_workflow() → spine.orchestration (compositions)
 
-    Workflows compose pipelines into multi-step processes with
+    Workflows compose operations into multi-step processes with
     context passing, failure policies, and persistence.
 
 BEST PRACTICES
@@ -41,9 +41,14 @@ See Also:
     04_orchestration/12_managed_workflow — zero-coupling builder
 """
 
-import sqlite3
+import sys
+from pathlib import Path
 
-from spine.core.schema import create_core_tables
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
 from spine.orchestration.step_types import Step
 from spine.orchestration.workflow import Workflow
 from spine.orchestration.workflow_registry import (
@@ -51,7 +56,6 @@ from spine.orchestration.workflow_registry import (
     clear_workflow_registry,
 )
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.workflows import list_workflows, get_workflow, run_workflow
 from spine.ops.requests import GetWorkflowRequest, RunWorkflowRequest
 
@@ -65,13 +69,13 @@ def _register_sample_workflows():
             name="finra.otc.weekly",
             domain="finra",
             steps=[
-                Step.pipeline("download", "finra.otc.download"),
-                Step.pipeline(
+                Step.operation("download", "finra.otc.download"),
+                Step.operation(
                     "normalize",
                     "finra.otc.normalize",
                     depends_on=["download"],
                 ),
-                Step.pipeline(
+                Step.operation(
                     "aggregate",
                     "finra.otc.aggregate",
                     depends_on=["normalize"],
@@ -85,8 +89,8 @@ def _register_sample_workflows():
             name="sec.daily.filings",
             domain="sec",
             steps=[
-                Step.pipeline("fetch", "sec.daily.fetch"),
-                Step.pipeline(
+                Step.operation("fetch", "sec.daily.fetch"),
+                Step.operation(
                     "parse",
                     "sec.daily.parse",
                     depends_on=["fetch"],
@@ -100,9 +104,12 @@ def main():
     print("=" * 60)
     print("Operations Layer — Workflow Operations")
     print("=" * 60)
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
-    create_core_tables(conn)
     ctx = OperationContext(conn=conn, caller="example")
 
     _register_sample_workflows()
@@ -126,7 +133,7 @@ def main():
     for step in detail.data.steps:
         deps = step.get("depends_on", [])
         dep_str = f" (depends_on: {deps})" if deps else ""
-        print(f"    → {step['name']}: {step.get('pipeline', 'N/A')}{dep_str}")
+        print(f"    → {step['name']}: {step.get('operation', 'N/A')}{dep_str}")
     print(f"  metadata: {detail.data.metadata}")
 
     # --- 3. Get non-existent workflow -------------------------------------

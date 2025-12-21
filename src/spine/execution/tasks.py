@@ -16,6 +16,17 @@ Configuration::
 
     Set ``SPINE_CELERY_BROKER`` env var (default: ``redis://localhost:6379/0``).
     Set ``SPINE_CELERY_BACKEND`` env var (default: ``redis://localhost:6379/1``).
+
+Manifesto:
+    Celery tasks should be thin wrappers that delegate to handler
+    functions.  This keeps business logic testable without a broker
+    and lets the same handler run in any executor.
+
+Tags:
+    spine-core, execution, tasks, celery, broker, async-worker
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -115,10 +126,10 @@ if CELERY_AVAILABLE and app is not None:
         except Exception as exc:
             logger.error("Task %s failed: %s", name, exc)
             # Retry with exponential backoff
-            raise self.retry(exc=exc, countdown=2**self.request.retries)
+            raise self.retry(exc=exc, countdown=2**self.request.retries) from exc
 
-    @app.task(name="spine.execute.pipeline", bind=True, max_retries=3)
-    def execute_pipeline(
+    @app.task(name="spine.execute.operation", bind=True, max_retries=3)
+    def execute_operation(
         self,
         name: str,
         params: dict[str, Any],
@@ -128,15 +139,15 @@ if CELERY_AVAILABLE and app is not None:
         parent_run_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Execute a registered pipeline handler."""
-        logger.info("Celery executing pipeline:%s", name)
+        """Execute a registered operation handler."""
+        logger.info("Celery executing operation:%s", name)
         try:
-            handler = _resolve_handler("pipeline", name)
+            handler = _resolve_handler("operation", name)
             result = handler(params)
             return {"status": "completed", "result": result}
         except Exception as exc:
-            logger.error("Pipeline %s failed: %s", name, exc)
-            raise self.retry(exc=exc, countdown=2**self.request.retries)
+            logger.error("Operation %s failed: %s", name, exc)
+            raise self.retry(exc=exc, countdown=2**self.request.retries) from exc
 
     @app.task(name="spine.execute.workflow", bind=True, max_retries=3)
     def execute_workflow(
@@ -157,7 +168,7 @@ if CELERY_AVAILABLE and app is not None:
             return {"status": "completed", "result": result}
         except Exception as exc:
             logger.error("Workflow %s failed: %s", name, exc)
-            raise self.retry(exc=exc, countdown=2**self.request.retries)
+            raise self.retry(exc=exc, countdown=2**self.request.retries) from exc
 
     @app.task(name="spine.execute.step", bind=True, max_retries=3)
     def execute_step(
@@ -178,14 +189,14 @@ if CELERY_AVAILABLE and app is not None:
             return {"status": "completed", "result": result}
         except Exception as exc:
             logger.error("Step %s failed: %s", name, exc)
-            raise self.retry(exc=exc, countdown=2**self.request.retries)
+            raise self.retry(exc=exc, countdown=2**self.request.retries) from exc
 
 else:
     # Stubs when Celery is not installed
     def execute_task(*args, **kwargs):  # type: ignore[misc]
         raise RuntimeError("Celery is not installed")
 
-    def execute_pipeline(*args, **kwargs):  # type: ignore[misc]
+    def execute_operation(*args, **kwargs):  # type: ignore[misc]
         raise RuntimeError("Celery is not installed")
 
     def execute_workflow(*args, **kwargs):  # type: ignore[misc]

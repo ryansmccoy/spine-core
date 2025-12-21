@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS _migrations (
 
 CREATE TABLE IF NOT EXISTS core_executions (
     id TEXT PRIMARY KEY,
-    pipeline TEXT NOT NULL,
+    workflow TEXT NOT NULL,
     params JSONB DEFAULT '{}',
     lane TEXT NOT NULL DEFAULT 'normal',
     trigger_source TEXT NOT NULL DEFAULT 'api',
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS core_executions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_core_executions_status ON core_executions(status);
-CREATE INDEX IF NOT EXISTS idx_core_executions_pipeline ON core_executions(pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_executions_workflow ON core_executions(workflow);
 CREATE INDEX IF NOT EXISTS idx_core_executions_created_at ON core_executions(created_at);
 CREATE INDEX IF NOT EXISTS idx_core_executions_idempotency ON core_executions(idempotency_key) WHERE idempotency_key IS NOT NULL;
 
@@ -108,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_core_quality_domain_partition ON core_quality(dom
 CREATE TABLE IF NOT EXISTS core_anomalies (
     id SERIAL PRIMARY KEY,
     domain TEXT NOT NULL,
-    pipeline TEXT,
+    workflow TEXT,
     partition_key TEXT,
     stage TEXT,
     severity TEXT NOT NULL,
@@ -140,7 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_core_anomalies_unresolved ON core_anomalies(resol
 CREATE TABLE IF NOT EXISTS core_work_items (
     id SERIAL PRIMARY KEY,
     domain TEXT NOT NULL,
-    pipeline TEXT NOT NULL,
+    workflow TEXT NOT NULL,
     partition_key TEXT NOT NULL,
     params_json JSONB,
     desired_at TIMESTAMP NOT NULL,
@@ -158,20 +158,20 @@ CREATE TABLE IF NOT EXISTS core_work_items (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMP,
-    UNIQUE(domain, pipeline, partition_key)
+    UNIQUE(domain, workflow, partition_key)
 );
 
 CREATE INDEX IF NOT EXISTS idx_core_work_items_state ON core_work_items(state);
 CREATE INDEX IF NOT EXISTS idx_core_work_items_desired_at ON core_work_items(desired_at);
 CREATE INDEX IF NOT EXISTS idx_core_work_items_next_attempt ON core_work_items(state, next_attempt_at);
-CREATE INDEX IF NOT EXISTS idx_core_work_items_domain_pipeline ON core_work_items(domain, pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_work_items_domain_workflow ON core_work_items(domain, workflow);
 CREATE INDEX IF NOT EXISTS idx_core_work_items_partition ON core_work_items(domain, partition_key);
 
 
 CREATE TABLE IF NOT EXISTS core_calc_dependencies (
     id SERIAL PRIMARY KEY,
     calc_domain TEXT NOT NULL,
-    calc_pipeline TEXT NOT NULL,
+    calc_operation TEXT NOT NULL,
     calc_table TEXT,
     depends_on_domain TEXT NOT NULL,
     depends_on_table TEXT NOT NULL,
@@ -180,14 +180,14 @@ CREATE TABLE IF NOT EXISTS core_calc_dependencies (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_core_calc_dependencies_calc ON core_calc_dependencies(calc_domain, calc_pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_calc_dependencies_calc ON core_calc_dependencies(calc_domain, calc_operation);
 CREATE INDEX IF NOT EXISTS idx_core_calc_dependencies_upstream ON core_calc_dependencies(depends_on_domain, depends_on_table);
 
 
 CREATE TABLE IF NOT EXISTS core_expected_schedules (
     id SERIAL PRIMARY KEY,
     domain TEXT NOT NULL,
-    pipeline TEXT NOT NULL,
+    workflow TEXT NOT NULL,
     schedule_type TEXT NOT NULL,
     cron_expression TEXT,
     partition_template TEXT NOT NULL,
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS core_expected_schedules (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_core_expected_schedules_domain ON core_expected_schedules(domain, pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_expected_schedules_domain ON core_expected_schedules(domain, workflow);
 CREATE INDEX IF NOT EXISTS idx_core_expected_schedules_active ON core_expected_schedules(is_active);
 
 
@@ -251,7 +251,7 @@ CREATE INDEX IF NOT EXISTS idx_core_execution_events_timestamp ON core_execution
 CREATE TABLE IF NOT EXISTS core_dead_letters (
     id TEXT PRIMARY KEY,
     execution_id TEXT NOT NULL,
-    pipeline TEXT NOT NULL,
+    workflow TEXT NOT NULL,
     params JSONB DEFAULT '{}',
     error TEXT NOT NULL,
     retry_count INTEGER DEFAULT 0,
@@ -263,7 +263,7 @@ CREATE TABLE IF NOT EXISTS core_dead_letters (
 );
 
 CREATE INDEX IF NOT EXISTS idx_core_dead_letters_resolved ON core_dead_letters(resolved_at);
-CREATE INDEX IF NOT EXISTS idx_core_dead_letters_pipeline ON core_dead_letters(pipeline);
+CREATE INDEX IF NOT EXISTS idx_core_dead_letters_workflow ON core_dead_letters(workflow);
 
 
 -- =============================================================================

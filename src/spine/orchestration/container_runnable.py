@@ -1,7 +1,7 @@
 """ContainerRunnable — bridges orchestration workflows with the Job Engine.
 
 Implements the ``Runnable`` protocol so that ``WorkflowRunner`` can
-dispatch pipeline steps to container runtimes via the ``JobEngine``.
+dispatch operation steps to container runtimes via the ``JobEngine``.
 
 Architecture::
 
@@ -15,7 +15,7 @@ Architecture::
                        │
                    Adapter(s)
 
-The ``ContainerRunnable`` translates ``submit_pipeline_sync()`` calls
+The ``ContainerRunnable`` translates ``submit_operation_sync()`` calls
 into ``ContainerJobSpec`` and delegates to ``JobEngine.submit()`` +
 ``JobEngine.status()`` with polling.  This keeps the orchestration
 layer fully decoupled from container specifics.
@@ -31,6 +31,17 @@ Example::
 
     runner = WorkflowRunner(runnable=runnable)
     result = runner.execute(workflow, params={...})
+
+Manifesto:
+    The Job Engine and Workflow Engine are separate subsystems.  The
+    ContainerRunnable bridges them by implementing the ``Runnable``
+    protocol so ``WorkflowRunner`` can dispatch steps to either.
+
+Tags:
+    spine-core, orchestration, container, runnable, bridge, job-engine
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -40,14 +51,14 @@ import logging
 import time
 from typing import Any
 
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 from spine.execution.runtimes._types import ContainerJobSpec
 from spine.execution.runtimes.engine import JobEngine
 
 logger = logging.getLogger(__name__)
 
-# Default image for pipelines that don't specify one
-_DEFAULT_IMAGE = "spine-pipeline:latest"
+# Default image for operations that don't specify one
+_DEFAULT_IMAGE = "spine-operation:latest"
 
 # Polling configuration
 _DEFAULT_POLL_INTERVAL = 2.0  # seconds
@@ -57,7 +68,7 @@ _DEFAULT_TIMEOUT = 600.0  # 10 minutes
 class ContainerRunnable:
     """``Runnable`` implementation backed by the Job Engine.
 
-    Translates pipeline names into ``ContainerJobSpec`` submissions and
+    Translates operation names into ``ContainerJobSpec`` submissions and
     polls until completion (or timeout).
 
     Parameters
@@ -65,15 +76,15 @@ class ContainerRunnable:
     engine
         The ``JobEngine`` instance that manages container lifecycle.
     image_resolver
-        Optional callable ``(pipeline_name) → image_name``.  If not
-        provided, all pipelines use ``spine-pipeline:latest``.
+        Optional callable ``(operation_name) → image_name``.  If not
+        provided, all operations use ``spine-operation:latest``.
     poll_interval
         Seconds between status polls (default 2.0).
     timeout
         Max seconds to wait for a job to finish (default 600).
     command_template
-        Template for the container command.  ``{pipeline}`` is replaced
-        with the pipeline name.  Default: ``["spine-cli", "run", "{pipeline}"]``.
+        Template for the container command.  ``{operation}`` is replaced
+        with the operation name.  Default: ``["spine-cli", "run", "{operation}"]``.
     """
 
     def __init__(
@@ -90,22 +101,22 @@ class ContainerRunnable:
         self._poll_interval = poll_interval
         self._timeout = timeout
         self._command_template = command_template or [
-            "spine-cli", "run", "{pipeline}",
+            "spine-cli", "run", "{operation}",
         ]
 
     # ------------------------------------------------------------------
     # Runnable protocol
     # ------------------------------------------------------------------
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> PipelineRunResult:
-        """Submit a pipeline as a container job and wait for completion.
+    ) -> OperationRunResult:
+        """Submit a operation as a container job and wait for completion.
 
         Internally creates a ``ContainerJobSpec``, submits via the
         ``JobEngine``, then polls ``engine.status()`` until the job
@@ -113,8 +124,8 @@ class ContainerRunnable:
 
         Parameters
         ----------
-        pipeline_name
-            Registered pipeline name.
+        operation_name
+            Registered operation name.
         params
             Parameters forwarded as environment variables to the container.
         parent_run_id
@@ -124,10 +135,10 @@ class ContainerRunnable:
 
         Returns
         -------
-        PipelineRunResult
+        OperationRunResult
             Result with status, error, and metrics.
         """
-        spec = self._build_spec(pipeline_name, params, parent_run_id, correlation_id)
+        spec = self._build_spec(operation_name, params, parent_run_id, correlation_id)
 
         # Submit — engine is async, bridge here
         try:
@@ -146,8 +157,8 @@ class ContainerRunnable:
             submit_result = asyncio.run(self._engine.submit(spec))
 
         logger.info(
-            "Submitted pipeline %s as job %s (external=%s)",
-            pipeline_name,
+            "Submitted operation %s as job %s (external=%s)",
+            operation_name,
             submit_result.execution_id,
             submit_result.external_ref,
         )
@@ -155,7 +166,7 @@ class ContainerRunnable:
         # Poll for completion
         return self._poll_until_done(
             submit_result.execution_id,
-            pipeline_name,
+            operation_name,
         )
 
     # ------------------------------------------------------------------
@@ -164,20 +175,20 @@ class ContainerRunnable:
 
     def _build_spec(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None,
         parent_run_id: str | None,
         correlation_id: str | None,
     ) -> ContainerJobSpec:
-        """Build a ``ContainerJobSpec`` from pipeline parameters."""
+        """Build a ``ContainerJobSpec`` from operation parameters."""
         image = _DEFAULT_IMAGE
         if self._image_resolver:
-            resolved = self._image_resolver(pipeline_name)
+            resolved = self._image_resolver(operation_name)
             if resolved:
                 image = resolved
 
         command = [
-            part.replace("{pipeline}", pipeline_name)
+            part.replace("{operation}", operation_name)
             for part in self._command_template
         ]
 
@@ -191,13 +202,13 @@ class ContainerRunnable:
             env["SPINE_CORRELATION_ID"] = correlation_id
 
         labels: dict[str, str] = {
-            "spine.pipeline": pipeline_name,
+            "spine.operation": operation_name,
         }
         if parent_run_id:
             labels["spine.parent_run_id"] = parent_run_id
 
         return ContainerJobSpec(
-            name=f"pipeline-{pipeline_name.replace('.', '-')}",
+            name=f"operation-{operation_name.replace('.', '-')}",
             image=image,
             command=command,
             env=env,
@@ -211,10 +222,10 @@ class ContainerRunnable:
     def _poll_until_done(
         self,
         execution_id: str,
-        pipeline_name: str,
-    ) -> PipelineRunResult:
+        operation_name: str,
+    ) -> OperationRunResult:
         """Poll ``engine.status()`` until terminal state or timeout."""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         started = time.monotonic()
         started_at = datetime.now(UTC)
@@ -224,10 +235,10 @@ class ContainerRunnable:
             elapsed = time.monotonic() - started
             if elapsed > self._timeout:
                 logger.warning(
-                    "Pipeline %s timed out after %.1fs",
-                    pipeline_name, elapsed,
+                    "Operation %s timed out after %.1fs",
+                    operation_name, elapsed,
                 )
-                return PipelineRunResult(
+                return OperationRunResult(
                     status="failed",
                     error=f"Timed out after {elapsed:.0f}s",
                     metrics={"execution_id": execution_id},
@@ -256,7 +267,7 @@ class ContainerRunnable:
                 status = "completed" if job_status.state == "succeeded" else "failed"
                 error = job_status.message if job_status.state != "succeeded" else None
 
-                return PipelineRunResult(
+                return OperationRunResult(
                     status=status,
                     error=error,
                     metrics={

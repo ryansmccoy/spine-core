@@ -1,9 +1,21 @@
 """
 TOML-based configuration profiles with inheritance.
 
+Manifesto:
+    Different environments (dev, staging, prod) need different settings,
+    but copy-pasting full config files causes drift.  Profiles support
+    single-key inheritance so a ``staging`` profile only overrides the
+    fields that differ from ``production``.
+
 Profiles live in ``~/.spine/profiles/`` (user scope) or
 ``<project>/.spine/profiles/`` (project scope).  Project-scoped
 profiles take precedence over user-scoped ones.
+
+Tags:
+    spine-core, configuration, profiles, TOML, inheritance, environment
+
+Doc-Types:
+    api-reference
 
 Example profile (``dev.toml``)::
 
@@ -66,7 +78,7 @@ class Profile:
         Nested sections are joined with ``_``::
 
             [database]
-            pool_size = 10   →   SPINE_DATABASE_POOL_SIZE=10
+            pool_size = 10   ->   SPINE_DATABASE_POOL_SIZE=10
         """
         result: dict[str, str] = {}
         for key, value in self.settings.items():

@@ -5,7 +5,7 @@ import pytest
 from spine.framework.exceptions import BadParamsError
 from spine.framework.params import (
     ParamDef,
-    PipelineSpec,
+    OperationSpec,
     ValidationResult,
     date_format,
     enum_value,
@@ -155,12 +155,12 @@ class TestValidationResult:
         assert "param2" in message
 
 
-class TestPipelineSpec:
-    """Tests for PipelineSpec class."""
+class TestOperationSpec:
+    """Tests for OperationSpec class."""
 
     def test_spec_creation(self):
-        """Test creating a PipelineSpec."""
-        spec = PipelineSpec(
+        """Test creating a OperationSpec."""
+        spec = OperationSpec(
             required_params={
                 "file_path": ParamDef(
                     name="file_path",
@@ -177,16 +177,16 @@ class TestPipelineSpec:
                     default=False,
                 ),
             },
-            description="Test pipeline",
+            description="Test operation",
             examples=["spine run test -p file_path=data.csv"],
         )
         assert "file_path" in spec.required_params
         assert "force" in spec.optional_params
-        assert spec.description == "Test pipeline"
+        assert spec.description == "Test operation"
 
     def test_validate_valid_params(self):
         """Test validation with valid params."""
-        spec = PipelineSpec(
+        spec = OperationSpec(
             required_params={
                 "week_ending": ParamDef(
                     name="week_ending",
@@ -201,7 +201,7 @@ class TestPipelineSpec:
 
     def test_validate_missing_required(self):
         """Test validation with missing required params."""
-        spec = PipelineSpec(
+        spec = OperationSpec(
             required_params={
                 "file_path": ParamDef(
                     name="file_path",
@@ -221,7 +221,7 @@ class TestPipelineSpec:
 
     def test_validate_invalid_value(self):
         """Test validation with invalid param value."""
-        spec = PipelineSpec(
+        spec = OperationSpec(
             required_params={
                 "count": ParamDef(
                     name="count",
@@ -237,7 +237,7 @@ class TestPipelineSpec:
 
     def test_get_help_text(self):
         """Test help text generation."""
-        spec = PipelineSpec(
+        spec = OperationSpec(
             required_params={
                 "file_path": ParamDef(
                     name="file_path",

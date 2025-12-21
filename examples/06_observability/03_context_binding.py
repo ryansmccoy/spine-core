@@ -38,7 +38,7 @@ SCOPING PATTERNS
 BEST PRACTICES
 ──────────────
 • Bind request_id, batch_id, domain at the entry point.
-• Add stage context as the pipeline progresses.
+• Add stage context as the operation progresses.
 • Always clear_context() when a request/batch completes.
 • Use the isolation pattern for sub-operations that need
   their own context without polluting the parent.

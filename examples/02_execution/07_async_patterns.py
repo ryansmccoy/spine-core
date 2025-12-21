@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Async Patterns — Coordination Strategies for Concurrent Pipeline Tasks.
+"""Async Patterns — Coordination Strategies for Concurrent Operation Tasks.
 
 ================================================================================
 WHY ASYNC PATTERNS?
 ================================================================================
 
-Data pipelines often need to coordinate multiple concurrent operations::
+Data operations often need to coordinate multiple concurrent operations::
 
     # Sequential (slow) — 5 API calls × 2 seconds each = 10 seconds
     for ticker in ["AAPL", "MSFT", "GOOG", "AMZN", "META"]:
@@ -35,7 +35,7 @@ PATTERNS DEMONSTRATED
     ├─────────────────────┼────────────────────────────────────────────────────┤
     │ Fan-out / Gather    │ Fetch N items concurrently, wait for all          │
     │ Semaphore-bounded   │ Limit to K concurrent requests (rate limiting)    │
-    │ Pipeline chain      │ A → B → C where each step feeds the next         │
+    │ Operation chain      │ A → B → C where each step feeds the next         │
     │ Fire-and-forget     │ Submit async, don't wait for result              │
     │ Timeout-bounded     │ Cancel if not done in N seconds                  │
     │ Error-resilient     │ Collect successes even if some tasks fail         │

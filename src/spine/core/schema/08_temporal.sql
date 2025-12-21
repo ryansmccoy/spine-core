@@ -5,7 +5,7 @@
 -- Description: Infrastructure tables for temporal envelopes, watermark
 --              tracking, backfill plans, and bi-temporal fact storage.
 --
--- These tables support incremental pipeline resumption (watermarks),
+-- These tables support incremental operation resumption (watermarks),
 -- gap-filling orchestration (backfill plans), and point-in-time-correct
 -- bi-temporal storage (bitemporal facts).
 -- =============================================================================
@@ -14,7 +14,7 @@
 -- =============================================================================
 -- WATERMARKS
 -- =============================================================================
--- Track "how far have I read from this source?" for incremental pipelines.
+-- Track "how far have I read from this source?" for incremental operations.
 -- Each (domain, source, partition_key) triple has a single high-water mark.
 
 CREATE TABLE IF NOT EXISTS core_watermarks (

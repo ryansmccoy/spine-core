@@ -1,11 +1,19 @@
 """Declarative base, mixins and type-map for all spine-core ORM models.
 
+Manifesto:
+    Every ORM table needs a common declarative base with consistent
+    type mappings (str→Text, bool→Integer for SQLite compat, etc.)
+    and timestamp mixins.  Defining these once prevents subtle column
+    type mismatches across 30+ table classes.
+
 Uses SQLAlchemy 2.0 ``DeclarativeBase`` with a ``type_annotation_map``
 that maps Python built-in types to portable SA column types.
 
-Mixins
-------
-* **TimestampMixin** — ``created_at`` / ``updated_at`` with server defaults.
+Tags:
+    spine-core, orm, sqlalchemy, declarative-base, mixins, type-mapping
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

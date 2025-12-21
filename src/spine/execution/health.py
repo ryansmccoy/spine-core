@@ -12,6 +12,17 @@ Example:
     >>> checker = ExecutionHealthChecker(ledger, dlq, guard, repo)
     >>> health = checker.check()
     >>> print(health.status)  # "healthy" | "degraded" | "unhealthy"
+
+Manifesto:
+    Execution infrastructure must self-report health so operators
+    can detect capacity, queue depth, or executor failures before
+    they cascade into user-visible outages.
+
+Tags:
+    spine-core, execution, health, monitoring, readiness
+
+Doc-Types:
+    api-reference
 """
 
 from dataclasses import dataclass, field

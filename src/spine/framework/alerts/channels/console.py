@@ -1,4 +1,16 @@
-"""Console alert channel for development and testing."""
+"""Console alert channel for development and testing.
+
+Manifesto:
+    Developers need to see alerts in their terminal without
+    configuring Slack or email.  The console channel provides
+    that zero-config default.
+
+Tags:
+    spine-core, framework, alerts, console, development, testing
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

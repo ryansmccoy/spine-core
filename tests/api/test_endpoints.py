@@ -1,7 +1,7 @@
 """
 Integration tests for API endpoints using FastAPI TestClient.
 
-These tests exercise the full router → ops → response pipeline
+These tests exercise the full router → ops → response operation
 using an in-memory SQLite database with initialised schema.
 """
 
@@ -109,10 +109,10 @@ class TestRunEndpoints:
         assert body["data"]["run_id"] is not None
         assert body["data"]["would_execute"] is True
 
-    def test_submit_pipeline(self, client):
+    def test_submit_operation(self, client):
         resp = client.post(
             "/api/v1/runs",
-            json={"kind": "pipeline", "name": "etl_pipeline"},
+            json={"kind": "operation", "name": "etl_operation"},
         )
         assert resp.status_code == 202
         body = resp.json()
@@ -159,7 +159,7 @@ class TestRunEndpoints:
     def test_submit_and_cancel(self, client):
         resp = client.post(
             "/api/v1/runs",
-            json={"kind": "pipeline", "name": "cancel_me"},
+            json={"kind": "operation", "name": "cancel_me"},
         )
         run_id = resp.json()["data"]["run_id"]
 

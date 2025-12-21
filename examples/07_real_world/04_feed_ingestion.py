@@ -1,10 +1,10 @@
-"""Feed Ingestion Pipeline — Production-style feed processing.
+"""Feed Ingestion Operation — Production-style feed processing.
 
 WHY THIS EXAMPLE
 ────────────────
-This is a realistic end-to-end ingestion pipeline that mirrors how
+This is a realistic end-to-end ingestion operation that mirrors how
 feedspine processes SEC EDGAR and FINRA OTC data.  It demonstrates
-every layer of the execution contract: tasks, pipelines, workflows,
+every layer of the execution contract: tasks, operations, workflows,
 and the deduplication/sighting pattern that prevents re-processing.
 
 ARCHITECTURE
@@ -25,9 +25,9 @@ ARCHITECTURE
 
 TASK REGISTRY
 ─────────────
-    @register_task / @register_pipeline / @register_workflow
+    @register_task / @register_operation / @register_workflow
     • Decorators auto-register handlers with HandlerRegistry.
-    • WorkSpec types: task_spec, pipeline_spec, workflow_spec.
+    • WorkSpec types: task_spec, operation_spec, workflow_spec.
     • MemoryExecutor runs everything in-process for this demo.
 
 Run: python examples/07_real_world/04_feed_ingestion.py
@@ -47,11 +47,11 @@ from spine.execution import (
     EventDispatcher,
     WorkSpec,
     task_spec,
-    pipeline_spec,
+    operation_spec,
     workflow_spec,
     step_spec,
     register_task,
-    register_pipeline,
+    register_operation,
     register_workflow,
     HandlerRegistry,
     RunStatus,
@@ -266,12 +266,12 @@ async def notify_new_records(params: dict) -> dict:
 
 
 # =============================================================================
-# PIPELINE HANDLERS (composed from tasks)
+# operation HANDLERS (composed from tasks)
 # =============================================================================
 
-@register_pipeline("ingest_sec_filings", registry=registry, description="Full SEC filing ingestion")
+@register_operation("ingest_sec_filings", registry=registry, description="Full SEC filing ingestion")
 async def ingest_sec_filings(params: dict) -> dict:
-    """Complete pipeline: fetch → dedupe → store → notify."""
+    """Complete operation: fetch → dedupe → store → notify."""
     # This would normally use the dispatcher to run sub-tasks
     # For this example, we call handlers directly
     
@@ -293,7 +293,7 @@ async def ingest_sec_filings(params: dict) -> dict:
     }
 
 
-@register_pipeline("ingest_finra_otc", registry=registry, description="FINRA OTC data ingestion")
+@register_operation("ingest_finra_otc", registry=registry, description="FINRA OTC data ingestion")
 async def ingest_finra_otc(params: dict) -> dict:
     """Ingest FINRA OTC transparency data."""
     fetch_result = await fetch_finra_otc(params)
@@ -350,26 +350,26 @@ async def main():
     print(f"  Status: {run.status.value}")
     
     # -----------------------------------------------------------------
-    # Example 2: Submit pipelines
+    # Example 2: Submit operations
     # -----------------------------------------------------------------
-    print("\n📊 Example 2: Submit Pipelines")
+    print("\n📊 Example 2: Submit Operations")
     print("-" * 40)
     
-    # Run SEC ingestion pipeline
-    run_id = await dispatcher.submit_pipeline("ingest_sec_filings", {})
+    # Run SEC ingestion operation
+    run_id = await dispatcher.submit_operation("ingest_sec_filings", {})
     run = await dispatcher.get_run(run_id)
-    print(f"  Pipeline: ingest_sec_filings")
+    print(f"  Operation: ingest_sec_filings")
     print(f"  Run ID: {run_id[:8]}...")
     print(f"  Status: {run.status.value}")
     
-    # Run FINRA OTC pipeline
-    run_id = await dispatcher.submit_pipeline(
+    # Run FINRA OTC operation
+    run_id = await dispatcher.submit_operation(
         "ingest_finra_otc",
         {"date": "2026-01-15"},
         lane="backfill",
     )
     run = await dispatcher.get_run(run_id)
-    print(f"  Pipeline: ingest_finra_otc (lane=backfill)")
+    print(f"  Operation: ingest_finra_otc (lane=backfill)")
     print(f"  Run ID: {run_id[:8]}...")
     print(f"  Status: {run.status.value}")
     
@@ -407,9 +407,9 @@ async def main():
     task_runs = await dispatcher.list_runs(kind="task")
     print(f"  Total task runs: {len(task_runs)}")
     
-    # List all pipeline runs
-    pipeline_runs = await dispatcher.list_runs(kind="pipeline")
-    print(f"  Total pipeline runs: {len(pipeline_runs)}")
+    # List all operation runs
+    operation_runs = await dispatcher.list_runs(kind="operation")
+    print(f"  Total operation runs: {len(operation_runs)}")
     
     # List by name
     sec_runs = await dispatcher.list_runs(name="fetch_sec_rss")
@@ -449,7 +449,7 @@ async def main():
     print(f"\nTotal runs executed: {len(all_runs)}")
     print(f"Handlers registered: {len(registry.list_handlers())}")
     print(f"  - Tasks: {len(registry.list_handlers(kind='task'))}")
-    print(f"  - Pipelines: {len(registry.list_handlers(kind='pipeline'))}")
+    print(f"  - Operations: {len(registry.list_handlers(kind='operation'))}")
 
 
 if __name__ == "__main__":

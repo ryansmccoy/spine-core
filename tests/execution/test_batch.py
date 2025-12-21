@@ -20,11 +20,11 @@ class TestBatchItem:
         """Test creating a batch item."""
         item = BatchItem(
             id="item-1",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"date": "2024-01-01"},
         )
         assert item.id == "item-1"
-        assert item.workflow == "test.pipeline"
+        assert item.workflow == "test.operation"
         assert item.params == {"date": "2024-01-01"}
         assert item.execution_id is None
         assert item.status == ExecutionStatus.PENDING
@@ -34,7 +34,7 @@ class TestBatchItem:
         now = datetime.now(timezone.utc)
         item = BatchItem(
             id="item-123",
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
             execution_id="exec-456",
             status=ExecutionStatus.COMPLETED,

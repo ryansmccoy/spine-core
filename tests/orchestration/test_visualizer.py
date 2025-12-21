@@ -37,9 +37,9 @@ def _make_sequential():
     return Workflow(
         name="test.sequential",
         steps=[
-            Step.pipeline("extract", "data.extract"),
+            Step.operation("extract", "data.extract"),
             Step.lambda_("transform", _noop),
-            Step.pipeline("load", "data.load"),
+            Step.operation("load", "data.load"),
         ],
     )
 
@@ -49,10 +49,10 @@ def _make_dag():
     return Workflow(
         name="test.dag",
         steps=[
-            Step.pipeline("fetch_a", "source.a"),
-            Step.pipeline("fetch_b", "source.b"),
+            Step.operation("fetch_a", "source.a"),
+            Step.operation("fetch_b", "source.b"),
             Step.lambda_("merge", _noop, depends_on=("fetch_a", "fetch_b")),
-            Step.pipeline("store", "data.store", depends_on=("merge",)),
+            Step.operation("store", "data.store", depends_on=("merge",)),
         ],
     )
 
@@ -62,7 +62,7 @@ def _make_choice():
     return Workflow(
         name="test.choice",
         steps=[
-            Step.pipeline("ingest", "data.ingest"),
+            Step.operation("ingest", "data.ingest"),
             Step.choice("route", condition=_cond_true, then_step="process", else_step="reject"),
             Step.lambda_("process", _noop),
             Step.lambda_("reject", _noop),
@@ -110,10 +110,10 @@ class TestVisualizeMermaid:
         mermaid = visualize_mermaid(wf, direction="LR")
         assert "graph LR" in mermaid
 
-    def test_pipeline_label(self):
+    def test_operation_label(self):
         wf = _make_sequential()
         mermaid = visualize_mermaid(wf)
-        # Pipeline nodes show pipeline name in label
+        # Operation nodes show operation name in label
         assert "data.extract" in mermaid
 
     def test_lambda_shape(self):
@@ -139,7 +139,7 @@ class TestVisualizeMermaid:
         assert "title: My Workflow" in mermaid
 
     def test_single_step(self):
-        wf = Workflow(name="test", steps=[Step.pipeline("only", "single.step")])
+        wf = Workflow(name="test", steps=[Step.operation("only", "single.step")])
         mermaid = visualize_mermaid(wf)
         assert "only" in mermaid
         # No edges for single step
@@ -198,12 +198,12 @@ class TestVisualizeAscii:
         wf = Workflow(
             name="test.types",
             steps=[
-                Step.pipeline("pipe", "my.pipeline"),
+                Step.operation("pipe", "my.operation"),
                 Step.lambda_("func", _noop),
             ],
         )
         ascii_out = visualize_ascii(wf)
-        assert "[P]" in ascii_out  # Pipeline indicator
+        assert "[P]" in ascii_out  # Operation indicator
         assert "[\u03bb]" in ascii_out  # Lambda indicator (λ)
 
 
@@ -223,8 +223,8 @@ class TestVisualizeSummary:
         assert summary["has_dependencies"] is False
         assert summary["max_depth"] == 3
         assert summary["tier"] == "basic"
-        assert "data.extract" in summary["pipeline_names"]
-        assert "data.load" in summary["pipeline_names"]
+        assert "data.extract" in summary["operation_names"]
+        assert "data.load" in summary["operation_names"]
 
     def test_dag_summary(self):
         wf = _make_dag()
@@ -238,9 +238,9 @@ class TestVisualizeSummary:
     def test_step_types(self):
         wf = _make_sequential()
         summary = visualize_summary(wf)
-        assert "pipeline" in summary["step_types"]
+        assert "operation" in summary["step_types"]
         assert "lambda" in summary["step_types"]
-        assert summary["step_types"]["pipeline"] == 2
+        assert summary["step_types"]["operation"] == 2
         assert summary["step_types"]["lambda"] == 1
 
     def test_critical_path_sequential(self):

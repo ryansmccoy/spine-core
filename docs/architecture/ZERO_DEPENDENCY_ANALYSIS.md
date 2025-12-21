@@ -91,7 +91,7 @@ The dependency boundary falls naturally along a **library vs server** split:
 │  execution/       → Runtimes, LocalProcess, Packager, MockAdapters │
 │  core/            → Result, Errors, Temporal, Quality, Cache       │
 │  ops/             → Business logic (stateless operations)          │
-│  framework/       → Pipeline registry, alerts, sources             │
+│  framework/       → Operation registry, alerts, sources             │
 │  domain/          → Finance models (pure Python)                   │
 │  observability/   → StructuredLogger (pure stdlib)                 │
 │                                                                     │
@@ -238,7 +238,7 @@ class Schedule(BaseModel):
     """Schedule definition row (core_schedules)."""
     id: str
     name: str
-    target_type: str = "pipeline"
+    target_type: str = "operation"
     target_name: str = ""
     params: str | None = Field(default=None, description="JSON default parameters")
     schedule_type: str = "cron"
@@ -263,7 +263,7 @@ class Schedule:
     """Schedule definition row (core_schedules)."""
     id: str
     name: str
-    target_type: str = "pipeline"
+    target_type: str = "operation"
     target_name: str = ""
     params: str | None = None
     schedule_type: str = "cron"
@@ -295,7 +295,7 @@ Here's the full list of Category 3 files:
 | `core/models/workflow.py` | 3 (WorkflowRun, WorkflowStep, WorkflowEvent) | `Field(description=)` | Same |
 | `core/models/alerting.py` | 4 (AlertChannel, Alert, AlertDelivery, AlertThrottle) | `Field(description=)` | Same |
 | `core/models/sources.py` | 4 (Source, SourceFetch, SourceCacheEntry, DatabaseConnectionConfig) | `Field(description=)` | Same |
-| `core/models/orchestration.py` | 3 (PipelineGroupRecord, GroupRun, GroupRunStep) — **DEPRECATED** | `Field(description=)` | Same (these are going away anyway) |
+| `core/models/orchestration.py` | 3 (OperationGroupRecord, GroupRun, GroupRunStep) — **DEPRECATED** | `Field(description=)` | Same (these are going away anyway) |
 | `ops/webhooks.py` | 1 (WebhookTarget) | Nothing special at all | Nothing — it's `class WebhookTarget(BaseModel): url: str; events: list[str]` |
 
 **Total**: 29 classes that are pure data containers with **zero pydantic-specific features** 
@@ -320,9 +320,9 @@ def _row_to_schedule(self, row: tuple) -> Schedule:
 # framework/dispatcher.py — constructs directly:
 execution = Execution(
     id=execution_id,
-    pipeline=pipeline,
+    operation=operation,
     params=params or {},
-    status=PipelineStatus.PENDING,
+    status=OperationStatus.PENDING,
     created_at=now,
 )
 ```
@@ -470,8 +470,8 @@ from spine.orchestration.workflow import Workflow
 from spine.orchestration.step_types import Step
 
 wf = Workflow(name="my-wf", steps=[
-    Step.pipeline("fetch", "fetch_data"),
-    Step.pipeline("store", "persist", depends_on=("fetch",)),
+    Step.operation("fetch", "fetch_data"),
+    Step.operation("store", "persist", depends_on=("fetch",)),
 ])
 ```
 

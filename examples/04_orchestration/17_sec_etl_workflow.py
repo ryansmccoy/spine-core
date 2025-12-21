@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""SEC ETL Workflow — full filing pipeline with mock and real modes.
+"""SEC ETL Workflow — full filing operation with mock and real modes.
 
 The flagship stress-test example.  Builds a complete SEC filing ETL
-pipeline that mirrors how py-sec-edgar would integrate with spine-core:
+operation that mirrors how py-sec-edgar would integrate with spine-core:
 download the filing index, fetch a raw filing, parse it into sections,
 extract entities, evaluate data quality, persist to SQLite, and clean
 up temp files.
@@ -104,10 +104,10 @@ from spine.orchestration import (
 # ---------------------------------------------------------------------------
 
 class _StubRunnable:
-    def submit_pipeline_sync(self, pipeline_name, params=None, *,
+    def submit_operation_sync(self, operation_name, params=None, *,
                              parent_run_id=None, correlation_id=None):
-        from spine.execution.runnable import PipelineRunResult
-        return PipelineRunResult(status="failed", error="Not configured")
+        from spine.execution.runnable import OperationRunResult
+        return OperationRunResult(status="failed", error="Not configured")
 
 
 # ---------------------------------------------------------------------------
@@ -438,7 +438,7 @@ def cleanup(ctx: WorkflowContext, config: dict[str, Any]) -> StepResult:
     tmp_dir = ctx.get_param("tmp_dir", "")
     db_path = ctx.get_output("store_results", "db_path", "")
 
-    # In a real pipeline, you'd remove tmp_dir here.
+    # In a real operation, you'd remove tmp_dir here.
     # For this example, we keep the DB so users can inspect it.
     print(f"    [cleanup]           Temp dir: {tmp_dir}")
     print(f"                        DB preserved at: {db_path}")
@@ -452,7 +452,7 @@ def cleanup(ctx: WorkflowContext, config: dict[str, Any]) -> StepResult:
 def build_sec_etl_workflow() -> Workflow:
     """Build the full SEC ETL workflow with parallel extraction branches."""
     return Workflow(
-        name="sec.etl_pipeline",
+        name="sec.etl_operation",
         domain="sec.edgar",
         description="Full SEC filing ETL: index → download → extract(×3) → quality → store → cleanup",
         steps=[
@@ -488,7 +488,7 @@ def main() -> None:
     """Run the full SEC ETL workflow."""
 
     print("=" * 60)
-    print("SEC Filing ETL Pipeline")
+    print("SEC Filing ETL Operation")
     print("=" * 60)
 
     # --- 1. Build & inspect workflow ---
@@ -507,7 +507,7 @@ def main() -> None:
         print(f"    {src} → {targets}")
 
     # --- 2. Execute ---
-    print("\n--- 2. Execute ETL Pipeline ---")
+    print("\n--- 2. Execute ETL Operation ---")
     runner = WorkflowRunner(runnable=_StubRunnable())
     t0 = time.perf_counter()
     result: WorkflowResult = runner.execute(wf, params={"limit": 2})
@@ -578,7 +578,7 @@ def main() -> None:
     assert db_path and Path(db_path).exists(), "Database should exist"
 
     print("\n" + "=" * 60)
-    print(f"[OK] SEC ETL Pipeline — 9 steps completed in {elapsed:.3f}s ({mode} mode)")
+    print(f"[OK] SEC ETL Operation — 9 steps completed in {elapsed:.3f}s ({mode} mode)")
     print("=" * 60)
 
 

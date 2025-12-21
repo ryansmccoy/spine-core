@@ -1,7 +1,7 @@
 """Tests for Idea #6 — Workflow Templates & Recipes.
 
 Covers:
-- etl_pipeline template (with/without validation)
+- etl_operation template (with/without validation)
 - fan_out_fan_in template (with/without merge)
 - conditional_branch template
 - retry_wrapper template (with/without fallback)
@@ -18,7 +18,7 @@ from spine.orchestration import Step, StepResult, StepType, Workflow
 from spine.orchestration.step_types import ErrorPolicy, RetryPolicy
 from spine.orchestration.templates import (
     conditional_branch,
-    etl_pipeline,
+    etl_operation,
     fan_out_fan_in,
     get_template,
     list_templates,
@@ -49,16 +49,16 @@ def _notify_fn(ctx, config):
 
 
 # ---------------------------------------------------------------------------
-# ETL Pipeline template
+# ETL Operation template
 # ---------------------------------------------------------------------------
 
-class TestETLPipeline:
+class TestETLOperation:
     def test_basic_etl(self):
-        wf = etl_pipeline(
+        wf = etl_operation(
             name="test.etl",
-            extract_pipeline="extract.pipe",
-            transform_pipeline="transform.pipe",
-            load_pipeline="load.pipe",
+            extract_operation="extract.pipe",
+            transform_operation="transform.pipe",
+            load_operation="load.pipe",
         )
 
         assert isinstance(wf, Workflow)
@@ -67,14 +67,14 @@ class TestETLPipeline:
         assert wf.steps[0].name == "extract"
         assert wf.steps[1].name == "transform"
         assert wf.steps[2].name == "load"
-        assert all(s.step_type == StepType.PIPELINE for s in wf.steps)
+        assert all(s.step_type == StepType.OPERATION for s in wf.steps)
 
     def test_etl_with_validation(self):
-        wf = etl_pipeline(
+        wf = etl_operation(
             name="test.etl.validated",
-            extract_pipeline="ep",
-            transform_pipeline="tp",
-            load_pipeline="lp",
+            extract_operation="ep",
+            transform_operation="tp",
+            load_operation="lp",
             validate_handler=_validate_fn,
         )
 
@@ -83,22 +83,22 @@ class TestETLPipeline:
         assert wf.steps[1].step_type == StepType.LAMBDA
 
     def test_etl_dependencies(self):
-        wf = etl_pipeline(
+        wf = etl_operation(
             name="dep.test",
-            extract_pipeline="ep",
-            transform_pipeline="tp",
-            load_pipeline="lp",
+            extract_operation="ep",
+            transform_operation="tp",
+            load_operation="lp",
         )
 
         assert wf.steps[1].depends_on == ("extract",)
         assert wf.steps[2].depends_on == ("transform",)
 
     def test_etl_with_validation_dependencies(self):
-        wf = etl_pipeline(
+        wf = etl_operation(
             name="dep.test",
-            extract_pipeline="ep",
-            transform_pipeline="tp",
-            load_pipeline="lp",
+            extract_operation="ep",
+            transform_operation="tp",
+            load_operation="lp",
             validate_handler=_validate_fn,
         )
 
@@ -106,11 +106,11 @@ class TestETLPipeline:
         assert wf.steps[2].depends_on == ("validate",)  # transform
 
     def test_etl_metadata(self):
-        wf = etl_pipeline(
+        wf = etl_operation(
             name="meta.etl",
-            extract_pipeline="ep",
-            transform_pipeline="tp",
-            load_pipeline="lp",
+            extract_operation="ep",
+            transform_operation="tp",
+            load_operation="lp",
             domain="finance",
             description="Daily finance ETL",
             tags=["daily", "finance"],
@@ -130,7 +130,7 @@ class TestFanOutFanIn:
         wf = fan_out_fan_in(
             name="test.fanout",
             items_path="$.records",
-            iterator_pipeline="record.process",
+            iterator_operation="record.process",
         )
 
         assert len(wf.steps) == 1
@@ -142,7 +142,7 @@ class TestFanOutFanIn:
         wf = fan_out_fan_in(
             name="test.fanout.merge",
             items_path="$.items",
-            iterator_pipeline="process",
+            iterator_operation="process",
             merge_handler=_merge_fn,
         )
 
@@ -154,7 +154,7 @@ class TestFanOutFanIn:
         wf = fan_out_fan_in(
             name="concurrent",
             items_path="$.data",
-            iterator_pipeline="p",
+            iterator_operation="p",
             max_concurrency=16,
         )
 
@@ -170,8 +170,8 @@ class TestConditionalBranch:
         wf = conditional_branch(
             name="test.branch",
             condition=_condition_fn,
-            true_pipeline="path.a",
-            false_pipeline="path.b",
+            true_operation="path.a",
+            false_operation="path.b",
         )
 
         assert len(wf.steps) == 3
@@ -180,17 +180,17 @@ class TestConditionalBranch:
         assert choice_step.then_step == "on_true"
         assert choice_step.else_step == "on_false"
 
-    def test_branch_has_both_pipelines(self):
+    def test_branch_has_both_operations(self):
         wf = conditional_branch(
             name="test.branch",
             condition=_condition_fn,
-            true_pipeline="yes",
-            false_pipeline="no",
+            true_operation="yes",
+            false_operation="no",
         )
 
-        pipeline_steps = [s for s in wf.steps if s.step_type == StepType.PIPELINE]
-        assert len(pipeline_steps) == 2
-        names = {s.pipeline_name for s in pipeline_steps}
+        operation_steps = [s for s in wf.steps if s.step_type == StepType.OPERATION]
+        assert len(operation_steps) == 2
+        names = {s.operation_name for s in operation_steps}
         assert names == {"yes", "no"}
 
 
@@ -202,13 +202,13 @@ class TestRetryWrapper:
     def test_basic_retry(self):
         wf = retry_wrapper(
             name="test.retry",
-            target_pipeline="risky.pipeline",
+            target_operation="risky.operation",
             max_retries=5,
         )
 
         assert len(wf.steps) == 1
         step = wf.steps[0]
-        assert step.pipeline_name == "risky.pipeline"
+        assert step.operation_name == "risky.operation"
         assert step.on_error == ErrorPolicy.CONTINUE
         assert step.retry_policy is not None
         assert step.retry_policy.max_attempts == 5
@@ -216,18 +216,18 @@ class TestRetryWrapper:
     def test_retry_with_fallback(self):
         wf = retry_wrapper(
             name="test.retry.fb",
-            target_pipeline="risky",
-            fallback_pipeline="safe.fallback",
+            target_operation="risky",
+            fallback_operation="safe.fallback",
         )
 
         assert len(wf.steps) == 2
         assert wf.steps[1].name == "fallback"
-        assert wf.steps[1].pipeline_name == "safe.fallback"
+        assert wf.steps[1].operation_name == "safe.fallback"
 
     def test_retry_backoff(self):
         wf = retry_wrapper(
             name="test.retry",
-            target_pipeline="p",
+            target_operation="p",
         )
 
         rp = wf.steps[0].retry_policy
@@ -244,32 +244,32 @@ class TestScheduledBatch:
         wf = scheduled_batch(
             name="test.batch",
             wait_seconds=60,
-            execute_pipeline="batch.run",
+            execute_operation="batch.run",
         )
 
         assert len(wf.steps) == 2
         assert wf.steps[0].step_type == StepType.WAIT
         assert wf.steps[0].duration_seconds == 60
-        assert wf.steps[1].step_type == StepType.PIPELINE
+        assert wf.steps[1].step_type == StepType.OPERATION
 
     def test_batch_with_validate_and_notify(self):
         wf = scheduled_batch(
             name="full.batch",
             wait_seconds=30,
-            execute_pipeline="batch.run",
+            execute_operation="batch.run",
             validate_handler=_validate_fn,
             notify_handler=_notify_fn,
         )
 
         assert len(wf.steps) == 4
         types = [s.step_type for s in wf.steps]
-        assert types == [StepType.WAIT, StepType.PIPELINE, StepType.LAMBDA, StepType.LAMBDA]
+        assert types == [StepType.WAIT, StepType.OPERATION, StepType.LAMBDA, StepType.LAMBDA]
 
     def test_batch_dependencies(self):
         wf = scheduled_batch(
             name="dep.batch",
             wait_seconds=10,
-            execute_pipeline="p",
+            execute_operation="p",
             validate_handler=_validate_fn,
             notify_handler=_notify_fn,
         )
@@ -286,15 +286,15 @@ class TestScheduledBatch:
 class TestTemplateRegistry:
     def test_list_templates(self):
         names = list_templates()
-        assert "etl_pipeline" in names
+        assert "etl_operation" in names
         assert "fan_out_fan_in" in names
         assert "conditional_branch" in names
         assert "retry_wrapper" in names
         assert "scheduled_batch" in names
 
     def test_get_template(self):
-        factory = get_template("etl_pipeline")
-        assert factory is etl_pipeline
+        factory = get_template("etl_operation")
+        assert factory is etl_operation
 
     def test_get_unknown_template_raises(self):
         with pytest.raises(KeyError, match="Unknown template"):

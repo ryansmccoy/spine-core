@@ -1,5 +1,15 @@
-"""
-Error-handling middleware — maps ops-layer errors to RFC 7807 responses.
+"""Error-handling middleware — maps ops-layer errors to RFC 7807 responses.
+
+Manifesto:
+    Users should never see raw stack traces.  This middleware
+    converts internal exceptions to structured JSON error bodies
+    following RFC 7807 so clients get actionable diagnostics.
+
+Tags:
+    spine-core, api, middleware, error-handling, RFC-7807
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

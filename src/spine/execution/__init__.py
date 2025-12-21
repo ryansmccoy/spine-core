@@ -1,8 +1,7 @@
 """Spine Execution — unified work submission, tracking, and resilience.
 
-WHY
-───
-Pipelines, tasks, and workflows all need the same lifecycle: submit,
+Manifesto:
+Operations, tasks, and workflows all need the same lifecycle: submit,
 track, retry-on-failure, and report.  Rather than each project
 reimplementing this, ``spine.execution`` provides a single contract
 (``WorkSpec → EventDispatcher → RunRecord``) that works across
@@ -40,7 +39,7 @@ ARCHITECTURE
       ├── ExecutionLedger   ─ persistent execution storage
       ├── DLQManager        ─ dead-letter queue for failed work
       ├── ExecutionRepository ─ analytics + maintenance queries
-      ├── BatchExecutor     ─ coordinated multi-pipeline runs
+      ├── BatchExecutor     ─ coordinated multi-operation runs
       ├── AsyncBatchExecutor ─ asyncio fan-out / fan-in
       └── WorkerLoop        ─ polling loop for background work
 
@@ -58,7 +57,7 @@ Contracts & Models
   4. models.py            ─ Execution, ExecutionEvent, DeadLetter
 
 Submission & Dispatch
-  5. registry.py          ─ HandlerRegistry, register_task/pipeline
+  5. registry.py          ─ HandlerRegistry, register_task/operation
   6. dispatcher.py        ─ EventDispatcher (THE public API)
   7. handlers.py          ─ built-in example handlers
 
@@ -108,6 +107,12 @@ Example::
     run_id = await dispatcher.submit_task("send_email", {"to": "user@example.com"})
     run = await dispatcher.get_run(run_id)
     print(run.status)  # RunStatus.COMPLETED
+
+Tags:
+    spine-core, execution, dispatcher, executor, run-lifecycle, async
+
+Doc-Types:
+    api-reference
 """
 
 # Canonical contracts
@@ -177,7 +182,7 @@ from .registry import (
     HandlerRegistry,
     get_default_registry,
     register_handler,
-    register_pipeline,
+    register_operation,
     register_step,
     register_task,
     register_workflow,
@@ -197,9 +202,9 @@ from .retry import (
 )
 
 # Runnable protocol (v0.4)
-from .runnable import PipelineRunResult, Runnable
+from .runnable import OperationRunResult, Runnable
 from .runs import RUN_VALID_TRANSITIONS, RunRecord, RunStatus, RunSummary, validate_run_transition
-from .spec import WorkSpec, pipeline_spec, step_spec, task_spec, workflow_spec
+from .spec import WorkSpec, operation_spec, step_spec, task_spec, workflow_spec
 
 # Timeout enforcement (NEW)
 from .timeout import (
@@ -230,7 +235,7 @@ __all__ = [
     # Contracts
     "WorkSpec",
     "task_spec",
-    "pipeline_spec",
+    "operation_spec",
     "workflow_spec",
     "step_spec",
     "RunRecord",
@@ -246,7 +251,7 @@ __all__ = [
     "reset_default_registry",
     "register_handler",
     "register_task",
-    "register_pipeline",
+    "register_operation",
     "register_workflow",
     "register_step",
     # Execution models
@@ -309,7 +314,7 @@ __all__ = [
     "AsyncBatchResult",
     # Runnable protocol (v0.4)
     "Runnable",
-    "PipelineRunResult",
+    "OperationRunResult",
     # Timeout enforcement (NEW)
     "TimeoutExpired",
     "DeadlineContext",

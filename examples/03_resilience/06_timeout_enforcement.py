@@ -3,10 +3,10 @@
 
 WHY TIMEOUTS MATTER
 ───────────────────
-A pipeline without timeouts can hang indefinitely on a stalled network
+A operation without timeouts can hang indefinitely on a stalled network
 call, a deadlocked database, or an unexpectedly large dataset.  One
 hung worker blocks its thread/slot, reducing cluster throughput — and
-if every worker hangs, the entire pipeline stalls.  Explicit timeouts
+if every worker hangs, the entire operation stalls.  Explicit timeouts
 turn hangs into catchable exceptions with clear diagnostics.
 
 ARCHITECTURE
@@ -51,7 +51,7 @@ TimeoutExpired EXCEPTION
 BEST PRACTICES
 ──────────────
 • Set timeouts at every network boundary (API calls, DB queries).
-• Use nested deadlines to enforce per-step and per-pipeline limits.
+• Use nested deadlines to enforce per-step and per-operation limits.
 • Call check_deadline() inside long loops to fail fast.
 • Prefer @timeout decorator for simple function-level limits.
 • Combine with RetryStrategy — set total deadline > sum of retries.

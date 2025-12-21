@@ -162,10 +162,10 @@ from spine.orchestration import (
 # ---------------------------------------------------------------------------
 
 class _StubRunnable:
-    def submit_pipeline_sync(self, pipeline_name, params=None, *,
+    def submit_operation_sync(self, operation_name, params=None, *,
                              parent_run_id=None, correlation_id=None):
-        from spine.execution.runnable import PipelineRunResult
-        return PipelineRunResult(status="failed", error="Not configured")
+        from spine.execution.runnable import OperationRunResult
+        return OperationRunResult(status="failed", error="Not configured")
 
 
 # ============================================================================

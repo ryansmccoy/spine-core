@@ -2,19 +2,19 @@
 Generic work manifest for tracking multi-stage workflows.
 
 WorkManifest provides stage tracking for any domain's unit of work,
-enabling idempotent restarts and progress monitoring across pipeline stages.
+enabling idempotent restarts and progress monitoring across operation stages.
 
 Manifesto:
-    Financial data pipelines have multiple stages: ingest, normalize,
+    Financial data operations have multiple stages: ingest, normalize,
     aggregate, publish. Each stage must be tracked to support:
 
     - **Idempotent restarts:** Know where to resume after failure
-    - **Progress monitoring:** Dashboard visibility into pipeline state
+    - **Progress monitoring:** Dashboard visibility into operation state
     - **Metrics collection:** Row counts, timing, quality metrics per stage
     - **Audit trail:** When stages completed, by which execution
 
     WorkManifest is the single source of truth for "where is this
-    work item in the pipeline?" It uses a current-state table design
+    work item in the operation?" It uses a current-state table design
     (one row per stage per partition) optimized for fast lookups.
 
 Architecture:
@@ -89,18 +89,18 @@ Guardrails:
     - Metrics are JSON-serialized for flexibility
 
 Context:
-    - Domain: Pipeline orchestration, progress tracking
+    - Domain: Operation orchestration, progress tracking
     - Used By: All Spine workflows (Entity, Feed, Market)
     - Storage: Shared core_manifest table
     - Paired With: ExecutionContext for lineage tracking
 
 Tags:
     manifest, workflow, progress, idempotent, stage-tracking,
-    spine-core, pipeline, sync
+    spine-core, operation, sync
 
 Doc-Types:
     - API Reference
-    - Pipeline Orchestration Guide
+    - Operation Orchestration Guide
     - Idempotency Documentation
 
 SCHEMA:
@@ -146,7 +146,7 @@ class ManifestRow:
     execution lineage for audit and debugging.
 
     Manifesto:
-        Each stage in a pipeline needs to track:
+        Each stage in a operation needs to track:
         - **What:** stage name and rank for ordering
         - **When:** updated_at timestamp
         - **How much:** row_count for volume tracking
@@ -229,9 +229,9 @@ class WorkManifest:
     Uses a current-state table design with one row per (domain, partition, stage).
 
     Manifesto:
-        Knowing "where is this work in the pipeline?" is critical for:
+        Knowing "where is this work in the operation?" is critical for:
         - **Idempotent restarts:** Resume from the last completed stage
-        - **Progress dashboards:** Show pipeline status at a glance
+        - **Progress dashboards:** Show operation status at a glance
         - **Debugging:** Correlate issues with specific stages
         - **Metrics:** Track row counts and timing per stage
 
@@ -321,14 +321,14 @@ class WorkManifest:
         - Metrics are JSON-serialized for flexibility
 
     Context:
-        - Domain: Pipeline orchestration, progress tracking
+        - Domain: Operation orchestration, progress tracking
         - Used By: All Spine workflows
         - Storage: Shared core_manifest table
         - Paired With: ExecutionContext for lineage
 
     Tags:
         manifest, workflow, progress, idempotent, stage-tracking,
-        spine-core, pipeline, sync
+        spine-core, operation, sync
     """
 
     def __init__(

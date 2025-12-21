@@ -84,13 +84,13 @@ class TestLockManagerConcurrency:
 
     def test_acquire_concurrency_lock(self, lock_manager):
         """Acquire general concurrency lock."""
-        result = lock_manager.acquire_concurrency_lock("pipeline", "my-pipeline")
+        result = lock_manager.acquire_concurrency_lock("operation", "my-operation")
         assert result is True
 
     def test_release_concurrency_lock(self, lock_manager):
         """Release general concurrency lock."""
-        lock_manager.acquire_concurrency_lock("pipeline", "my-pipeline")
-        result = lock_manager.release_concurrency_lock("pipeline", "my-pipeline")
+        lock_manager.acquire_concurrency_lock("operation", "my-operation")
+        result = lock_manager.release_concurrency_lock("operation", "my-operation")
         assert result is True
 
 

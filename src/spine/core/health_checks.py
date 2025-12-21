@@ -5,17 +5,34 @@ raises on failure.  They are designed to be used with
 :class:`spine.core.health.HealthCheck` and ``functools.partial`` to bind
 connection URLs at app-startup time.
 
-Example::
+Manifesto:
+    Health checks are the bridge between infrastructure dependencies
+    and the health router. Each check is a pure async function that
+    probes a single dependency — easy to test, easy to compose.
 
-    from functools import partial
-    from spine.core.health import HealthCheck
-    from spine.core.health_checks import check_postgres, check_redis
+Features:
+    - **check_postgres():** PostgreSQL connectivity via asyncpg
+    - **check_redis():** Redis PING via aioredis
+    - **check_ollama():** Ollama API /api/tags via httpx
+    - **check_elasticsearch():** ES cluster health via httpx
+    - **Composable:** Use functools.partial to bind URLs at startup
 
-    checks = [
-        HealthCheck("postgres", partial(check_postgres, "postgresql://…")),
-        HealthCheck("redis", partial(check_redis, "redis://localhost:10379")),
-        HealthCheck("ollama", partial(check_ollama, "http://localhost:10434"), required=False),
-    ]
+Examples:
+    >>> from functools import partial
+    >>> from spine.core.health import HealthCheck
+    >>> from spine.core.health_checks import check_postgres, check_redis
+    >>> checks = [
+    ...     HealthCheck("postgres", partial(check_postgres, "postgresql://...")),
+    ...     HealthCheck("redis", partial(check_redis, "redis://localhost:10379")),
+    ... ]
+
+Tags:
+    health-checks, postgres, redis, ollama, elasticsearch, spine-core,
+    async, dependency-probing
+
+Doc-Types:
+    - API Reference
+    - Deployment Guide
 """
 
 from __future__ import annotations

@@ -5,6 +5,16 @@ supported database backend.  Domain repositories use ``Dialect`` methods
 to generate SQL fragments (placeholders, timestamps, upsert logic, JSON
 functions) without importing or referencing any specific database driver.
 
+Manifesto:
+    Domain code must be portable across SQLite, PostgreSQL, DB2, MySQL,
+    and Oracle. Without a dialect layer, SQL fragments are littered with
+    backend-specific syntax that breaks when switching tiers.
+
+    - **One interface:** Dialect protocol for all SQL generation
+    - **Zero coupling:** Domain code never imports database drivers
+    - **Auto-detection:** get_dialect(conn) chooses the right dialect
+    - **Testable:** SQLiteDialect for tests, PostgreSQLDialect for prod
+
 Architecture::
 
     ┌──────────────────────────────────────────────────────────────────┐
@@ -25,14 +35,14 @@ Architecture::
     │ datetime │ │ NOW()        │ │CURRENT │ │ NOW()  │ │SYSTIMEST │
     └──────────┘ └──────────────┘ └────────┘ └────────┘ └──────────┘
 
-Supported Dialects:
-    - **SQLiteDialect**: ``?`` placeholders, ``datetime('now')``
-    - **PostgreSQLDialect**: ``%s`` placeholders, ``NOW()``
-    - **DB2Dialect**: ``?`` placeholders, ``CURRENT TIMESTAMP``
-    - **MySQLDialect**: ``%s`` placeholders, ``NOW()``
-    - **OracleDialect**: ``:1, :2`` placeholders, ``SYSTIMESTAMP``
+Features:
+    - **SQLiteDialect:** ``?`` placeholders, ``datetime('now')``
+    - **PostgreSQLDialect:** ``%s`` placeholders, ``NOW()``
+    - **DB2Dialect:** ``?`` placeholders, ``CURRENT TIMESTAMP``
+    - **MySQLDialect / OracleDialect:** Additional backends
+    - **get_dialect():** Auto-detect dialect from connection object
 
-Usage:
+Examples:
     >>> from spine.core.dialect import get_dialect, SQLiteDialect
     >>> d = SQLiteDialect()
     >>> d.placeholders(3)
@@ -40,8 +50,21 @@ Usage:
     >>> d.now()
     "datetime('now')"
 
+Guardrails:
+    ❌ DON'T: Write backend-specific SQL in domain repositories
+    ✅ DO: Use Dialect methods for placeholders, timestamps, upserts
+
+    ❌ DON'T: Import sqlite3 or psycopg2 in domain code
+    ✅ DO: Use Dialect + Connection protocol for all SQL access
+
 Tags:
-    dialect, sql, abstraction, portability, database
+    dialect, sql, abstraction, portability, database, spine-core,
+    multi-backend, tier-agnostic
+
+Doc-Types:
+    - API Reference
+    - Architecture Documentation
+    - Database Portability Guide
 """
 
 from __future__ import annotations
@@ -372,7 +395,7 @@ class DB2Dialect:
         cols = ", ".join(columns)
         ph = self.placeholders(len(columns))
         vals = ", ".join(f"src.c{i}" for i in range(len(columns)))
-        src_cols = ", ".join(f"{self.placeholder(i)} AS c{i}" for i in range(len(columns)))
+        ", ".join(f"{self.placeholder(i)} AS c{i}" for i in range(len(columns)))
         return (
             f"MERGE INTO {table} AS tgt "
             f"USING (VALUES ({ph})) AS src({', '.join(f'c{i}' for i in range(len(columns)))}) "
@@ -527,8 +550,8 @@ class OracleDialect:
     def insert_or_ignore(self, table: str, columns: list[str]) -> str:
         # Oracle: MERGE with WHEN NOT MATCHED
         cols = ", ".join(columns)
-        ph = self.placeholders(len(columns))
-        src_cols = ", ".join(f"c{i}" for i in range(len(columns)))
+        self.placeholders(len(columns))
+        ", ".join(f"c{i}" for i in range(len(columns)))
         vals = ", ".join(f"src.c{i}" for i in range(len(columns)))
         return (
             f"MERGE INTO {table} tgt "
@@ -544,7 +567,7 @@ class OracleDialect:
 
     def upsert(self, table: str, columns: list[str], key_columns: list[str]) -> str:
         cols = ", ".join(columns)
-        src_cols = ", ".join(f"c{i}" for i in range(len(columns)))
+        ", ".join(f"c{i}" for i in range(len(columns)))
         vals = ", ".join(f"src.c{i}" for i in range(len(columns)))
         key_matches = " AND ".join(
             f"tgt.{k} = src.c{columns.index(k)}" for k in key_columns

@@ -1,4 +1,22 @@
-"""PostgreSQL database adapter."""
+"""PostgreSQL database adapter.
+
+Manifesto:
+    PostgreSQL is the production-grade backend for multi-user, high-throughput
+    spine deployments.  The adapter wraps ``psycopg2`` with connection pooling
+    and SSL support while conforming to the ``DatabaseAdapter`` interface.
+
+Features:
+    - Connection pooling with configurable pool_size
+    - SSL mode selection (prefer, require, disable)
+    - Import-guarded: psycopg2 loaded at ``connect()`` time only
+    - Compatible with TimescaleDB extensions
+
+Tags:
+    spine-core, database, postgresql, production, import-guarded
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

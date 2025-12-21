@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GitBranch, Play, ArrowUpRight, Layers } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { Button, Spinner, ErrorBox, EmptyState, Modal } from '../components/UI';
 import StatusBadge from '../components/StatusBadge';
-import { useWorkflows, useRunWorkflow } from '../api/hooks';
+import { useWorkflows, useRunWorkflow, useRuns } from '../api/hooks';
+import { formatRelativeTime } from '../lib/formatters';
 import type { WorkflowSummary } from '../types/api';
 
 function RunWorkflowModal({
@@ -81,11 +83,24 @@ function RunWorkflowModal({
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>Close</Button>
           <Button onClick={handleRun} disabled={runWorkflow.isPending}>
-            {runWorkflow.isPending ? 'Submitting…' : '▶ Execute'}
+            {runWorkflow.isPending ? 'Submitting…' : <><Play className="w-3.5 h-3.5 mr-1.5" />Execute</>}
           </Button>
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Inline recent-run indicator for each workflow card */
+function WorkflowLastRun({ workflowName }: { workflowName: string }) {
+  const runs = useRuns({ pipeline: workflowName, limit: 1 });
+  const lastRun = runs.data?.data?.[0];
+  if (!lastRun) return <span className="text-[10px] text-gray-400">No runs</span>;
+  return (
+    <span className="flex items-center gap-1.5">
+      <StatusBadge status={lastRun.status} />
+      <span className="text-[10px] text-gray-400">{formatRelativeTime(lastRun.started_at)}</span>
+    </span>
   );
 }
 
@@ -117,24 +132,34 @@ export default function Workflows() {
           {workflows.data.data.map((w) => (
             <div
               key={w.name}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-5 hover:shadow-md transition-shadow group"
             >
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{w.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{w.description || 'No description'}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-spine-500 shrink-0" />
+                    <h3 className="font-semibold text-gray-900 truncate">{w.name}</h3>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1.5 line-clamp-2">{w.description || 'No description'}</p>
                 </div>
-                <StatusBadge status={`${w.step_count} steps`} />
+                <span className="ml-2 shrink-0 flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                  <Layers className="w-3 h-3" />
+                  {w.step_count}
+                </span>
               </div>
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 gap-2">
+              {/* Last run status */}
+              <div className="mt-3 pt-2 border-t border-gray-100">
+                <WorkflowLastRun workflowName={w.name} />
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 gap-2">
                 <Link
                   to={`/workflows/${encodeURIComponent(w.name)}`}
-                  className="text-xs text-spine-600 hover:underline font-medium"
+                  className="flex items-center gap-1 text-xs text-spine-600 hover:underline font-medium"
                 >
-                  View Details →
+                  Details <ArrowUpRight className="w-3 h-3" />
                 </Link>
                 <Button size="xs" onClick={() => setSelectedWorkflow(w)}>
-                  ▶ Run
+                  <Play className="w-3 h-3 mr-1" />Run
                 </Button>
               </div>
             </div>

@@ -2,6 +2,23 @@
 
 Provides functions to apply SQL schema files to a database connection.
 For production use with migration tracking, use the MigrationRunner instead.
+
+Manifesto:
+    Schema loading is the bridge between SQL files and database state.
+    This module handles simple apply-once schemas for development and
+    testing. Production deployments should use tracked migrations.
+
+Features:
+    - **load_schema():** Apply a .sql file to a connection
+    - **Multi-statement:** Splits by semicolons and executes sequentially
+    - **Idempotent:** CREATE TABLE IF NOT EXISTS pattern
+
+Tags:
+    schema, sql, loader, migration, spine-core, database
+
+Doc-Types:
+    - API Reference
+    - Schema Documentation
 """
 
 from __future__ import annotations
@@ -188,7 +205,7 @@ def get_table_list(conn: Connection, dialect: Dialect = SQLiteDialect()) -> list
     list[str]
         Table names sorted alphabetically.
     """
-    query = dialect.table_exists_query().replace(
+    dialect.table_exists_query().replace(
         f"AND name = {dialect.placeholder(0)}",
         "",
     ).replace(

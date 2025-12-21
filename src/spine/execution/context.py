@@ -62,6 +62,18 @@ Example:
     ... ) as ctx:
     ...     result = await fetch_filings(ctx.params)
     ...     ctx.set_result(result)
+
+Manifesto:
+    Every execution needs a consistent view of its parameters,
+    credentials, and accumulated state.  ExecutionContext is the
+    single immutable token passed through the call chain so
+    downstream code never depends on ambient globals.
+
+Tags:
+    spine-core, execution, context, parameters, immutable-state
+
+Doc-Types:
+    api-reference
 """
 
 from collections.abc import AsyncGenerator, Generator

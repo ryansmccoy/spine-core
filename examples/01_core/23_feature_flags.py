@@ -18,7 +18,7 @@ Feature flags decouple **deployment** from **release**::
         else:
             use_old_parser(filing)
 
-Use cases in data pipelines:
+Use cases in data operations:
     - **Gradual rollout** — Enable new EDGAR parser for 10% of filings first
     - **Kill switches** — Disable expensive enrichment during outages
     - **A/B testing** — Compare two normalization strategies

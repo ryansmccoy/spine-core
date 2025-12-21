@@ -3,7 +3,7 @@
 
 Both DeploymentConfig and TestbedConfig can be driven entirely by
 environment variables (``SPINE_DEPLOY_*`` and ``SPINE_TESTBED_*``).
-This is essential for CI/CD pipelines where configuration is injected
+This is essential for CI/CD operations where configuration is injected
 via the environment.
 
 Demonstrates:

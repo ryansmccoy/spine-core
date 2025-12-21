@@ -34,8 +34,8 @@ class TestScheduleRepository:
         """Get schedule by ID."""
         spec = ScheduleCreate(
             name="get-test",
-            target_type="pipeline",
-            target_name="my-pipeline",
+            target_type="operation",
+            target_name="my-operation",
             schedule_type="interval",
             interval_seconds=300,
         )

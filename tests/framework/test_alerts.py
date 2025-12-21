@@ -39,11 +39,11 @@ class TestAlert:
             severity=AlertSeverity.ERROR,
             title="Test Alert",
             message="Something went wrong",
-            source="test_pipeline",
+            source="test_operation",
         )
         assert alert.severity == AlertSeverity.ERROR
         assert alert.title == "Test Alert"
-        assert alert.source == "test_pipeline"
+        assert alert.source == "test_operation"
 
     def test_create_alert_with_context(self):
         """Create alert with additional context."""
@@ -51,7 +51,7 @@ class TestAlert:
             severity=AlertSeverity.WARNING,
             title="Data Quality Issue",
             message="10% of records failed validation",
-            source="validation_pipeline",
+            source="validation_operation",
             domain="finra.otc_transparency",
             execution_id="exec_123",
             run_id="run_456",
@@ -79,13 +79,13 @@ class TestAlert:
             severity=AlertSeverity.ERROR,
             title="Test Alert",
             message="Message 1",
-            source="test_pipeline",
+            source="test_operation",
         )
         alert2 = Alert(
             severity=AlertSeverity.ERROR,
             title="Test Alert",
             message="Message 2",  # Different message
-            source="test_pipeline",
+            source="test_operation",
         )
         # Same fingerprint (severity + source + title)
         assert alert1.fingerprint == alert2.fingerprint

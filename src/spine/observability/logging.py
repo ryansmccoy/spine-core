@@ -22,7 +22,7 @@ Example:
     >>> configure_logging(level="INFO", json_output=True)
     >>> logger = get_logger("my.module")
     >>>
-    >>> logger.info("Processing started", pipeline="sec.filings", records=100)
+    >>> logger.info("Processing started", operation="sec.filings", records=100)
     >>> # Output: {"timestamp": "2024-01-01T00:00:00Z", "level": "INFO", ...}
 """
 
@@ -346,8 +346,8 @@ class StructuredLogger:
         """Create a bound logger with preset fields.
 
         Example:
-            >>> log = logger.bind(pipeline="sec.filings", execution_id="abc")
-            >>> log.info("Started")  # includes pipeline and execution_id
+            >>> log = logger.bind(operation="sec.filings", execution_id="abc")
+            >>> log.info("Started")  # includes operation and execution_id
         """
         return BoundLogger(self, fields)
 

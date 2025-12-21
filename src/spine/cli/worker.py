@@ -49,7 +49,7 @@ def start(
         console.print("\n[yellow]Worker stopped by user[/yellow]")
     except Exception as exc:
         console.print(f"[red]Worker error: {exc}[/red]")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command("status")

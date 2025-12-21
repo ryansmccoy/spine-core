@@ -1,20 +1,19 @@
 """Database adapters -- unified interface for 5 database backends.
 
-Why This Package Exists
------------------------
-Financial data pipelines must run identically on SQLite (dev), PostgreSQL
-(production), and sometimes DB2/Oracle (enterprise).  Without a common
-adapter interface, every pipeline embeds backend-specific SQL and connection
-logic -- making migrations between databases a multi-week project instead
-of a config change.
+Manifesto:
+    Financial data operations must run identically on SQLite (dev), PostgreSQL
+    (production), and sometimes DB2/Oracle (enterprise).  Without a common
+    adapter interface, every operation embeds backend-specific SQL and connection
+    logic -- making migrations between databases a multi-week project instead
+    of a config change.
 
-Each adapter is **import-guarded**: the database driver is only required at
-``connect()`` time, not at import time.  Install the corresponding extra::
+    Each adapter is **import-guarded**: the database driver is only required at
+    ``connect()`` time, not at import time.  Install the corresponding extra::
 
-    pip install spine-core[postgresql]   # psycopg2-binary
-    pip install spine-core[db2]          # ibm-db
-    pip install spine-core[mysql]        # mysql-connector-python
-    pip install spine-core[oracle]       # oracledb
+        pip install spine-core[postgresql]   # psycopg2-binary
+        pip install spine-core[db2]          # ibm-db
+        pip install spine-core[mysql]        # mysql-connector-python
+        pip install spine-core[oracle]       # oracledb
 
 Architecture::
 
@@ -40,6 +39,21 @@ db2             IBM DB2 adapter (requires ibm-db)
 mysql           MySQL / MariaDB adapter (requires mysql-connector-python)
 oracle          Oracle adapter (requires oracledb)
 database        Backward-compatible re-export shim
+
+Guardrails:
+    ❌ ``conn.execute("SELECT * FROM t WHERE id=" + user_input)``
+    ✅ ``conn.execute("SELECT * FROM t WHERE id=?", [user_input])``
+    ❌ Importing optional drivers at module scope
+    ✅ Import-guarded at ``connect()`` time with clear ``ConfigError``
+    ❌ ``adapter = PostgreSQLAdapter(...)`` directly
+    ✅ ``adapter = get_adapter(DatabaseType.POSTGRESQL, config)``
+
+Tags:
+    spine-core, database, adapters, multi-backend, import-guarded,
+    registry-pattern, postgresql, sqlite, db2, mysql, oracle
+
+Doc-Types:
+    package-overview, architecture-map, module-index
 """
 
 from spine.core.dialect import Dialect, get_dialect

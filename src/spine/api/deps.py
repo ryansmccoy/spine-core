@@ -8,17 +8,28 @@ Usage in routers::
     @router.get("/things")
     def list_things(ctx: OpContext, settings: Settings):
         ...
+
+Manifesto:
+    Dependency injection keeps routers thin.  Singletons (settings,
+    DB connection) are created once; per-request objects (OpContext)
+    carry request-scoped state through the call chain.
+
+Tags:
+    spine-core, api, dependency-injection, singletons, OpContext
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 import uuid
 from collections.abc import Generator
+from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 
 from spine.api.settings import SpineCoreAPISettings
 from spine.core.connection import create_connection
@@ -73,11 +84,6 @@ def get_operation_context(
 
 
 # ── Pagination parameters (per-request) ─────────────────────────────────
-
-
-from dataclasses import dataclass
-
-from fastapi import Query
 
 
 @dataclass(frozen=True, slots=True)

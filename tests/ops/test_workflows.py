@@ -27,8 +27,8 @@ def sample_workflow():
         name="test.workflow",
         domain="test",
         steps=[
-            Step.pipeline("step1", "test.pipe1"),
-            Step.pipeline("step2", "test.pipe2"),
+            Step.operation("step1", "test.pipe1"),
+            Step.operation("step2", "test.pipe2"),
         ],
     )
     register_workflow(workflow)

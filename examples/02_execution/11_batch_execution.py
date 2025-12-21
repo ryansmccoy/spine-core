@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""BatchExecutor — Coordinated Multi-Pipeline Execution with Progress Tracking.
+"""BatchExecutor — Coordinated Multi-Operation Execution with Progress Tracking.
 
 ================================================================================
 WHY BATCH EXECUTION?
 ================================================================================
 
-Data platforms often need to run multiple pipelines as a **coordinated unit**::
+Data platforms often need to run multiple operations as a **coordinated unit**::
 
     # "Ingest all 5 data sources, then run analytics"
     batch = BatchBuilder()
@@ -88,7 +88,7 @@ def main():
     
     print("\n1. Building a batch with BatchBuilder...")
     
-    # Define pipeline handlers
+    # Define operation handlers
     def ingest_handler(params: dict) -> dict:
         """Simulate ingestion work."""
         time.sleep(0.05)
@@ -101,7 +101,7 @@ def main():
         return {"rows_processed": 1000, "tier": tier}
     
     def generic_handler(params: dict) -> dict:
-        """Generic pipeline handler."""
+        """Generic operation handler."""
         time.sleep(0.05)
         return {"rows_processed": 500, "params": params}
     
@@ -156,9 +156,9 @@ def main():
         default_handler=lambda params: {"processed": True},
     )
     
-    executor.add("pipeline.a", {"x": 1})
-    executor.add("pipeline.b", {"x": 2})
-    executor.add("pipeline.c", {"x": 3})
+    executor.add("operation.a", {"x": 1})
+    executor.add("operation.b", {"x": 2})
+    executor.add("operation.c", {"x": 3})
     
     exec_result = executor.run_all(parallel=False)
     

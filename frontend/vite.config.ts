@@ -9,6 +9,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1500, // Monaco adds ~1.2MB (lazy-loaded by @monaco-editor/react)
+  },
   server: {
     port: 12001,
     proxy: {

@@ -89,7 +89,7 @@ class TestExecutionContext:
     def test_create_with_execution(self):
         """Test creating context with execution object."""
         execution = Execution.create(
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
         )
         ledger = MockLedger()
@@ -97,7 +97,7 @@ class TestExecutionContext:
         ctx = ExecutionContext(execution=execution, ledger=ledger)
         
         assert ctx.id == execution.id
-        assert ctx.workflow == "test.pipeline"
+        assert ctx.workflow == "test.operation"
         assert ctx.params == {"key": "value"}
 
     def test_set_result(self):
@@ -135,11 +135,11 @@ class TestTrackedExecution:
             ledger=ledger,
             guard=guard,
             dlq=dlq,
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"date": "2024-01-01"},
         ) as ctx:
             assert ctx.id is not None
-            assert ctx.workflow == "test.pipeline"
+            assert ctx.workflow == "test.operation"
             assert ctx.params == {"date": "2024-01-01"}
         
         # Verify execution was created
@@ -164,7 +164,7 @@ class TestTrackedExecution:
                 ledger=ledger,
                 guard=guard,
                 dlq=dlq,
-                workflow="test.pipeline",
+                workflow="test.operation",
             ) as ctx:
                 raise ValueError("Test error")
         
@@ -186,13 +186,13 @@ class TestTrackedExecution:
             ledger=ledger,
             guard=guard,
             dlq=dlq,
-            workflow="test.pipeline",
+            workflow="test.operation",
         ) as ctx:
             pass
         
         # Verify lock was acquired
         assert len(guard.acquire_calls) == 1
-        assert "workflow:test.pipeline" in guard.acquire_calls[0]["lock_key"]
+        assert "workflow:test.operation" in guard.acquire_calls[0]["lock_key"]
         
         # Verify lock was released
         assert len(guard.release_calls) == 1
@@ -208,7 +208,7 @@ class TestTrackedExecution:
                 ledger=ledger,
                 guard=guard,
                 dlq=dlq,
-                workflow="test.pipeline",
+                workflow="test.operation",
             ) as ctx:
                 raise ValueError("Error")
         
@@ -226,7 +226,7 @@ class TestTrackedExecution:
                 ledger=ledger,
                 guard=guard,
                 dlq=dlq,
-                workflow="test.pipeline",
+                workflow="test.operation",
             ) as ctx:
                 pass
         
@@ -243,7 +243,7 @@ class TestTrackedExecution:
             ledger=ledger,
             guard=None,
             dlq=dlq,
-            workflow="test.pipeline",
+            workflow="test.operation",
         ) as ctx:
             assert ctx.id is not None
         
@@ -260,7 +260,7 @@ class TestTrackedExecution:
                 ledger=ledger,
                 guard=None,
                 dlq=None,
-                workflow="test.pipeline",
+                workflow="test.operation",
             ) as ctx:
                 raise ValueError("No DLQ")
         
@@ -276,7 +276,7 @@ class TestTrackedExecution:
             ledger=ledger,
             guard=None,
             dlq=None,
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"date": "2024-01-01", "ticker": "AAPL"},
         ) as ctx:
             assert ctx.params == {"date": "2024-01-01", "ticker": "AAPL"}
@@ -289,7 +289,7 @@ class TestTrackedExecution:
             ledger=ledger,
             guard=None,
             dlq=None,
-            workflow="test.pipeline",
+            workflow="test.operation",
         ) as ctx:
             ctx.set_result({"output": "data"})
         
@@ -303,7 +303,7 @@ class TestTrackedExecution:
         
         # Create an already-completed execution
         existing = Execution.create(
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={},
             idempotency_key="my-key",
         )
@@ -315,7 +315,7 @@ class TestTrackedExecution:
             ledger=ledger,
             guard=None,
             dlq=None,
-            workflow="test.pipeline",
+            workflow="test.operation",
             idempotency_key="my-key",
             skip_if_completed=True,
         ) as ctx:
@@ -342,7 +342,7 @@ class TestTrackedExecutionAsync:
             ledger=ledger,
             guard=guard,
             dlq=dlq,
-            workflow="test.async_pipeline",
+            workflow="test.async_operation",
         ) as ctx:
             assert ctx.id is not None
             await asyncio.sleep(0.01)  # Simulate async work
@@ -362,7 +362,7 @@ class TestTrackedExecutionAsync:
                 ledger=ledger,
                 guard=None,
                 dlq=dlq,
-                workflow="test.async_pipeline",
+                workflow="test.async_operation",
             ) as ctx:
                 raise RuntimeError("Async error")
         
@@ -378,7 +378,7 @@ class TestTrackedExecutionAsync:
             ledger=ledger,
             guard=None,
             dlq=None,
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"async_param": True},
         ) as ctx:
             assert ctx.params == {"async_param": True}
@@ -395,7 +395,7 @@ class TestTrackedExecutionAsync:
                 ledger=ledger,
                 guard=guard,
                 dlq=dlq,
-                workflow="test.pipeline",
+                workflow="test.operation",
             ) as ctx:
                 raise ValueError("Error")
         

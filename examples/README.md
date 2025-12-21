@@ -1,6 +1,6 @@
 # Spine Core — Examples
 
-> **142 examples** across **14 categories** — auto-generated from docstrings.
+> **144 examples** across **15 categories** — auto-generated from docstrings.
 > Regenerate: `python examples/generate_readme.py`
 
 ---
@@ -25,15 +25,16 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | 02 | `02_execution/` | 23 | Execution engine — WorkSpec, handlers, dispatcher, executors, lifecycle, ledger. |
 | 03 | `03_resilience/` | 6 | Resilience patterns — Retry, circuit breaker, rate limiting, dead-letter queue. |
 | 04 | `04_orchestration/` | 25 | Orchestration — Workflows, step adapters, DAG execution, and YAML specs. |
-| 05 | `05_infrastructure/` | 1 | Infrastructure integration — Complete pipeline with all components wired together. |
+| 05 | `05_infrastructure/` | 2 | Infrastructure integration — Complete operation with all components wired together. |
 | 06 | `06_observability/` | 3 | Observability — Structured logging, metrics collection, context binding. |
 | 07 | `07_real_world/` | 5 | Real-world integration — EntitySpine, FeedSpine, and cross-project scenarios. |
-| 08 | `08_framework/` | 7 | Framework — Pipeline building blocks, alerts, connectors, and structured logging. |
+| 08 | `08_framework/` | 7 | Framework — Operation building blocks, alerts, connectors, and structured logging. |
 | 09 | `09_data_layer/` | 11 | Data layer — Adapters, protocols, DB portability, ORM, migrations. |
 | 10 | `10_operations/` | 10 | Operations — Database lifecycle, runs, alerts, sources, processing, schedules, locks, DLQ, quality. |
 | 11 | `11_scheduling/` | 5 | Scheduling — Backends, distributed locks, scheduler service. |
 | 12 | `12_deploy/` | 12 | Deploy — Container orchestration, testbed runs, compose generation, and result models. |
 | 13 | `13_runtimes/` | 4 | Job Engine runtimes --- verbose deep-dive examples for every capability. |
+| 13 | `13_workflows/` | 1 | Workflows |
 | 14 | `14_golden_workflows/` | 6 | Golden Workflows — end-to-end "golden path" workflow patterns. |
 
 ## Examples by Category
@@ -43,18 +44,18 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | # | Example | Description |
 |---|---------|-------------|
 | 01 | [01_result_pattern.py](01_core/01_result_pattern.py) | Result Pattern — Explicit Success/Failure Handling Without Exceptions |
-| 02 | [02_error_handling.py](01_core/02_error_handling.py) | 02 error handling |
+| 02 | [02_error_handling.py](01_core/02_error_handling.py) | Error Handling — Structured Error Types with Automatic Retry Decisions |
 | 03 | [03_advanced_errors.py](01_core/03_advanced_errors.py) | Advanced Error Handling — SpineError Hierarchy with Result[T] Integration |
-| 04 | [04_reject_handling.py](01_core/04_reject_handling.py) | RejectSink — Capturing Validation Failures Without Stopping Pipelines |
+| 04 | [04_reject_handling.py](01_core/04_reject_handling.py) | RejectSink — Capturing Validation Failures Without Stopping Operations |
 | 05 | [05_temporal_weekending.py](01_core/05_temporal_weekending.py) | WeekEnding — Friday-Anchored Temporal Primitive for Financial Data |
 | 06 | [06_temporal_envelope.py](01_core/06_temporal_envelope.py) | Temporal Envelope — PIT-correct timestamp wrappers and bi-temporal records |
 | 07 | [07_rolling_windows.py](01_core/07_rolling_windows.py) | RollingWindow — Time-Series Aggregations Over Sliding Periods |
-| 08 | [08_watermark_tracking.py](01_core/08_watermark_tracking.py) | Watermark Store — Cursor-based progress tracking for incremental pipelines |
+| 08 | [08_watermark_tracking.py](01_core/08_watermark_tracking.py) | Watermark Store — Cursor-based progress tracking for incremental operations |
 | 09 | [09_quality_checks.py](01_core/09_quality_checks.py) | Quality Checks — Automated Data Validation Framework |
-| 10 | [10_idempotency.py](01_core/10_idempotency.py) | Idempotency — Safe, Re-runnable Data Pipelines |
-| 11 | [11_anomaly_recording.py](01_core/11_anomaly_recording.py) | AnomalyRecorder — Structured Pipeline Anomaly Tracking and Resolution |
+| 10 | [10_idempotency.py](01_core/10_idempotency.py) | Idempotency — Safe, Re-runnable Data Operations |
+| 11 | [11_anomaly_recording.py](01_core/11_anomaly_recording.py) | AnomalyRecorder — Structured Operation Anomaly Tracking and Resolution |
 | 12 | [12_content_hashing.py](01_core/12_content_hashing.py) | Hashing — Deterministic Record Hashing for Deduplication |
-| 13 | [13_execution_context.py](01_core/13_execution_context.py) | ExecutionContext — Lineage Tracking and Correlation IDs for Data Pipelines |
+| 13 | [13_execution_context.py](01_core/13_execution_context.py) | ExecutionContext — Lineage Tracking and Correlation IDs for Data Operations |
 | 14 | [14_work_manifest.py](01_core/14_work_manifest.py) | WorkManifest — Multi-Stage Workflow Progress Tracking |
 | 15 | [15_backfill_planning.py](01_core/15_backfill_planning.py) | Backfill Plan — Structured backfill planning with checkpoint resume |
 | 16 | [16_cache_backends.py](01_core/16_cache_backends.py) | Cache Backends — Tiered Caching with Protocol-Based Swappability |
@@ -71,18 +72,18 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 
 | # | Example | Description |
 |---|---------|-------------|
-| 01 | [01_workspec_basics.py](02_execution/01_workspec_basics.py) | WorkSpec — The Universal Work Description for Tasks, Pipelines, and Workflows |
+| 01 | [01_workspec_basics.py](02_execution/01_workspec_basics.py) | WorkSpec — The Universal Work Description for Tasks, Operations, and Workflows |
 | 02 | [02_handler_registration.py](02_execution/02_handler_registration.py) | Handler Registration — Mapping WorkSpecs to Executable Functions |
 | 03 | [03_dispatcher_basics.py](02_execution/03_dispatcher_basics.py) | Dispatcher — The Central Hub for Submitting and Tracking Work |
 | 04 | [04_run_lifecycle.py](02_execution/04_run_lifecycle.py) | Run Lifecycle — Understanding RunRecord State Transitions |
 | 05 | [05_memory_executor.py](02_execution/05_memory_executor.py) | MemoryExecutor — In-Process Async Execution for Development and Testing |
 | 06 | [06_local_executor.py](02_execution/06_local_executor.py) | LocalExecutor — ThreadPool-Based Execution for I/O-Bound Concurrency |
-| 07 | [07_async_patterns.py](02_execution/07_async_patterns.py) | Async Patterns — Coordination Strategies for Concurrent Pipeline Tasks |
-| 08 | [08_fastapi_integration.py](02_execution/08_fastapi_integration.py) | FastAPI Integration — Building REST APIs for Pipeline Orchestration |
+| 07 | [07_async_patterns.py](02_execution/07_async_patterns.py) | Async Patterns — Coordination Strategies for Concurrent Operation Tasks |
+| 08 | [08_fastapi_integration.py](02_execution/08_fastapi_integration.py) | FastAPI Integration — Building REST APIs for Operation Orchestration |
 | 09 | [09_execution_ledger.py](02_execution/09_execution_ledger.py) | ExecutionLedger — Persistent Execution Audit Trail with Full Lifecycle |
 | 10 | [10_execution_repository.py](02_execution/10_execution_repository.py) | ExecutionRepository — Analytics and Maintenance Queries for Executions |
-| 11 | [11_batch_execution.py](02_execution/11_batch_execution.py) | BatchExecutor — Coordinated Multi-Pipeline Execution with Progress Tracking |
-| 12 | [12_health_checks.py](02_execution/12_health_checks.py) | ExecutionHealthChecker — System Health Monitoring for Pipeline Infrastructure |
+| 11 | [11_batch_execution.py](02_execution/11_batch_execution.py) | BatchExecutor — Coordinated Multi-Operation Execution with Progress Tracking |
+| 12 | [12_health_checks.py](02_execution/12_health_checks.py) | ExecutionHealthChecker — System Health Monitoring for Operation Infrastructure |
 | 13 | [13_tracked_execution.py](02_execution/13_tracked_execution.py) | TrackedExecution — Context Manager for Automatic Execution Recording |
 | 14 | [14_worker_loop.py](02_execution/14_worker_loop.py) | WorkerLoop — Background Polling Engine for Database-Backed Task Execution |
 | 15 | [15_async_local_executor.py](02_execution/15_async_local_executor.py) | AsyncLocalExecutor — Native asyncio Execution Without Thread Overhead |
@@ -102,7 +103,7 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | 01 | [01_retry_strategies.py](03_resilience/01_retry_strategies.py) | Retry Strategies — Configurable retry patterns for transient failures |
 | 02 | [02_circuit_breaker.py](03_resilience/02_circuit_breaker.py) | Circuit Breaker — Fail-fast protection for external services |
 | 03 | [03_rate_limiting.py](03_resilience/03_rate_limiting.py) | Rate Limiting — Control request throughput to external services |
-| 04 | [04_concurrency_guard.py](03_resilience/04_concurrency_guard.py) | Concurrency Guard — Prevent overlapping pipeline runs |
+| 04 | [04_concurrency_guard.py](03_resilience/04_concurrency_guard.py) | Concurrency Guard — Prevent overlapping operation runs |
 | 05 | [05_dead_letter_queue.py](03_resilience/05_dead_letter_queue.py) | Dead Letter Queue — Handle failed executions gracefully |
 | 06 | [06_timeout_enforcement.py](03_resilience/06_timeout_enforcement.py) | Timeout Enforcement — Deadlines and timeouts for reliable execution |
 
@@ -111,7 +112,7 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | # | Example | Description |
 |---|---------|-------------|
 | 01 | [01_workflow_basics.py](04_orchestration/01_workflow_basics.py) | Simple Workflow — Basic multi-step orchestration |
-| 02 | [02_pipeline_vs_workflow.py](04_orchestration/02_pipeline_vs_workflow.py) | Pipeline vs Workflow — Understanding the differences |
+| 02 | [02_operation_vs_workflow.py](04_orchestration/02_operation_vs_workflow.py) | Operation vs Workflow — Understanding the differences |
 | 03 | [03_workflow_context.py](04_orchestration/03_workflow_context.py) | WorkflowContext — Data passing between steps |
 | 04 | [04_step_adapters.py](04_orchestration/04_step_adapters.py) | Decoupled Functions — plain Python that works anywhere AND as workflow steps |
 | 05 | [05_choice_branching.py](04_orchestration/05_choice_branching.py) | Choice & Branching — conditional routing and error handling |
@@ -121,12 +122,12 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | 09 | [09_workflow_playground.py](04_orchestration/09_workflow_playground.py) | Workflow Playground — interactive step-by-step execution and debugging |
 | 10 | [10_workflow_registry_yaml.py](04_orchestration/10_workflow_registry_yaml.py) | Workflow Registry & YAML Specs — discovery, lookup, and declarative definitions |
 | 11 | [11_workflow_serialization.py](04_orchestration/11_workflow_serialization.py) | Workflow Serialization — to_dict, from_dict, to_yaml round-trips |
-| 12 | [12_managed_workflow.py](04_orchestration/12_managed_workflow.py) | Managed Pipelines — import existing code, get full lifecycle management |
+| 12 | [12_managed_workflow.py](04_orchestration/12_managed_workflow.py) | Managed Operations — import existing code, get full lifecycle management |
 | 13 | [13_workflow_templates.py](04_orchestration/13_workflow_templates.py) | Workflow Templates — pre-built patterns for common workflow shapes |
 | 14 | [14_container_runnable.py](04_orchestration/14_container_runnable.py) | ContainerRunnable — bridging orchestration workflows with container execution |
-| 15 | [15_runnable_protocol.py](04_orchestration/15_runnable_protocol.py) | Runnable Protocol — Unified pipeline execution interface |
-| 16 | [16_webhook_triggers.py](04_orchestration/16_webhook_triggers.py) | Webhook Triggers — HTTP-triggered workflow and pipeline execution |
-| 17 | [17_sec_etl_workflow.py](04_orchestration/17_sec_etl_workflow.py) | SEC ETL Workflow — full filing pipeline with mock and real modes |
+| 15 | [15_runnable_protocol.py](04_orchestration/15_runnable_protocol.py) | Runnable Protocol — Unified operation execution interface |
+| 16 | [16_webhook_triggers.py](04_orchestration/16_webhook_triggers.py) | Webhook Triggers — HTTP-triggered workflow and operation execution |
+| 17 | [17_sec_etl_workflow.py](04_orchestration/17_sec_etl_workflow.py) | SEC ETL Workflow — full filing operation with mock and real modes |
 | 18 | [18_parallel_vs_multiprocessing.py](04_orchestration/18_parallel_vs_multiprocessing.py) | Multiprocessing Comparison — raw parallelism vs orchestrated workflows |
 | 19 | [19_workflow_linter.py](04_orchestration/19_workflow_linter.py) | Workflow Linter — static analysis for workflow definitions |
 | 20 | [20_step_recorder.py](04_orchestration/20_step_recorder.py) | Step Recorder — capture and replay workflow executions |
@@ -140,7 +141,8 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 
 | # | Example | Description |
 |---|---------|-------------|
-| 01 | [01_complete_pipeline.py](05_infrastructure/01_complete_pipeline.py) | Complete Execution Infrastructure — Full pipeline with all resilience primitives |
+| 01 | [01_complete_operation.py](05_infrastructure/01_complete_operation.py) | Complete Execution Infrastructure — Full operation with all resilience primitives |
+| 02 | [02_mcp_server.py](05_infrastructure/02_mcp_server.py) | MCP Server — AI-native Orchestration Interface |
 
 ### 06_observability — Observability
 
@@ -157,17 +159,17 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | 01 | [01_entityspine_integration.py](07_real_world/01_entityspine_integration.py) | EntitySpine Integration — Using spine-core with EntitySpine |
 | 02 | [02_feedspine_integration.py](07_real_world/02_feedspine_integration.py) | FeedSpine Integration — Using spine-core with FeedSpine |
 | 03 | [03_combined_workflow.py](07_real_world/03_combined_workflow.py) | Combined Workflow — Using EntitySpine and FeedSpine together |
-| 04 | [04_feed_ingestion.py](07_real_world/04_feed_ingestion.py) | Feed Ingestion Pipeline — Production-style feed processing |
-| 05 | [05_sec_filing_workflow.py](07_real_world/05_sec_filing_workflow.py) | SEC Filing Workflow — Multi-step filing processing pipeline |
+| 04 | [04_feed_ingestion.py](07_real_world/04_feed_ingestion.py) | Feed Ingestion Operation — Production-style feed processing |
+| 05 | [05_sec_filing_workflow.py](07_real_world/05_sec_filing_workflow.py) | SEC Filing Workflow — Multi-step filing processing operation |
 
 ### 08_framework — Framework
 
 | # | Example | Description |
 |---|---------|-------------|
-| 01 | [01_pipeline_basics.py](08_framework/01_pipeline_basics.py) | Pipeline Base Class — The building block of Spine workflows |
-| 02 | [02_pipeline_runner.py](08_framework/02_pipeline_runner.py) | PipelineRunner — Executing pipelines by name |
-| 03 | [03_pipeline_registry.py](08_framework/03_pipeline_registry.py) | Pipeline Registry — Registering and discovering pipelines |
-| 04 | [04_params_validation.py](08_framework/04_params_validation.py) | Parameter Validation — PipelineSpec with ParamDef |
+| 01 | [01_operation_basics.py](08_framework/01_operation_basics.py) | Operation Base Class — The building block of Spine workflows |
+| 02 | [02_operation_runner.py](08_framework/02_operation_runner.py) | OperationRunner — Executing operations by name |
+| 03 | [03_operation_registry.py](08_framework/03_operation_registry.py) | Operation Registry — Registering and discovering operations |
+| 04 | [04_params_validation.py](08_framework/04_params_validation.py) | Parameter Validation — OperationSpec with ParamDef |
 | 05 | [05_alert_routing.py](08_framework/05_alert_routing.py) | Alert Routing — AlertRegistry and delivery channels |
 | 06 | [06_source_connectors.py](08_framework/06_source_connectors.py) | Source Connectors — File ingestion with change detection |
 | 07 | [07_framework_logging.py](08_framework/07_framework_logging.py) | Framework Logging — Structured logging with context and timing |
@@ -198,7 +200,7 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | 04 | [04_health_and_capabilities.py](10_operations/04_health_and_capabilities.py) | Health & Capabilities — Aggregate health checks and runtime introspection |
 | 05 | [05_alert_management.py](10_operations/05_alert_management.py) | Alert Management — Channels, alerts, acknowledgement, and delivery tracking |
 | 06 | [06_source_management.py](10_operations/06_source_management.py) | Source Management — Data sources, fetches, cache, and database connections |
-| 07 | [07_pipeline_data.py](10_operations/07_pipeline_data.py) | Pipeline Data Processing — Manifest, rejects, and work items |
+| 07 | [07_operation_data.py](10_operations/07_operation_data.py) | Operation Data Processing — Manifest, rejects, and work items |
 | 08 | [08_schedule_metadata.py](10_operations/08_schedule_metadata.py) | Schedule Metadata — Calc dependencies, expected schedules, and data readiness |
 | 09 | [09_locks_dlq_quality.py](10_operations/09_locks_dlq_quality.py) | Lock and DLQ Management — Concurrency locks, schedule locks, dead letters |
 | 10 | [10_full_table_population.py](10_operations/10_full_table_population.py) | Full Table Population - Populates ALL 27 tables into a persistent SQLite file |
@@ -239,12 +241,18 @@ Categories are numbered by conceptual dependency — start at `01` and work forw
 | 03 | [03_error_taxonomy.py](13_runtimes/03_error_taxonomy.py) | Error taxonomy — JobError, ErrorCategory, and retryable semantics |
 | 04 | [04_mock_adapters.py](13_runtimes/04_mock_adapters.py) | Mock Runtime Adapters — test doubles for edge-case simulation |
 
+### 13_workflows — Workflows
+
+| # | Example | Description |
+|---|---------|-------------|
+| 04 | [04_sec_etl_workflow.py](13_workflows/04_sec_etl_workflow.py) | SEC ETL Workflow — full filing operation with mock and real modes |
+
 ### 14_golden_workflows — Golden Workflows
 
 | # | Example | Description |
 |---|---------|-------------|
 | 01 | [01_golden_path_workflow.py](14_golden_workflows/01_golden_path_workflow.py) | Golden Path Workflow — all 7 phases in one end-to-end run |
-| 02 | [02_medallion_pipeline.py](14_golden_workflows/02_medallion_pipeline.py) | Multi-Stage Medallion Workflow — Bronze → Silver → Gold with quality gates |
+| 02 | [02_medallion_operation.py](14_golden_workflows/02_medallion_operation.py) | Multi-Stage Medallion Workflow — Bronze → Silver → Gold with quality gates |
 | 03 | [03_long_running_monitor.py](14_golden_workflows/03_long_running_monitor.py) | Long-Running Workflow Monitor — timeouts, progress, concurrency guards |
 | 04 | [04_container_deployment.py](14_golden_workflows/04_container_deployment.py) | Container Deployment — same workflow running in Docker/Podman |
 | 05 | [05_cli_sdk_api_parity.py](14_golden_workflows/05_cli_sdk_api_parity.py) | CLI / SDK / API Parity — one workflow, three surfaces, same results |
@@ -332,7 +340,7 @@ The registry is an in-memory dictionary keyed by workflow name.
         WorkflowSpec   ← root (apiVersion, kind, metadata, spec)
         ├── WorkflowMetadataSpec  (name, domain, version, description, tags)
         └── WorkflowSpecSection   (steps, defaults, policy)
-            ├── WorkflowStepSpec[]  (name, pipeline, depends_on, params)
+            ├── WorkflowStepSpec[]  (name, operation, depends_on, params)
             └── WorkflowPolicySpec  (execution, max_concurrency, failure)
 ```
 
@@ -354,7 +362,7 @@ Serialization flows in two directions::
     without a ref — they must be rewired after deserialization.
 ```
 
-### SEC ETL Workflow — full filing pipeline with mock and real modes.
+### SEC ETL Workflow — full filing operation with mock and real modes.
 *From [17_sec_etl_workflow.py](04_orchestration/17_sec_etl_workflow.py)*
 
 ```
@@ -548,8 +556,29 @@ TestbedRunner.run()
             └── backend_dir()        → {backend}/ (JUnit XML, logs)
 ```
 
+### SEC ETL Workflow — full filing operation with mock and real modes.
+*From [04_sec_etl_workflow.py](13_workflows/04_sec_etl_workflow.py)*
+
+```
+The workflow combines sequential and parallel phases::
+
+        configure → fetch_index → download_filing
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    ▼                  ▼                   ▼
+              extract_sections   extract_entities   extract_financials
+                    │                  │                   │
+                    └──────────────────┼──────────────────┘
+                                       ▼
+                                  quality_gate
+                                       │
+                                  store_results
+                                       │
+                                    cleanup
+```
+
 ### Multi-Stage Medallion Workflow — Bronze → Silver → Gold with quality gates.
-*From [02_medallion_pipeline.py](14_golden_workflows/02_medallion_pipeline.py)*
+*From [02_medallion_operation.py](14_golden_workflows/02_medallion_operation.py)*
 
 ```
 ┌──────────┐   QualityGate   ┌──────────┐   QualityGate   ┌──────────┐
@@ -576,6 +605,14 @@ Spine modules used:
 Tier: Basic (spine-core only)
 ```
 
+## Prerequisites
+
+Some examples require optional dependencies:
+
+```bash
+pip install spine-core[mcp]
+```
+
 ## Infrastructure
 
 | File | Purpose |
@@ -588,4 +625,4 @@ The [`mock/`](mock/) directory contains shared test fixtures and mock implementa
 
 ---
 
-*Generated on 2026-02-17 from 142 examples across 14 categories.*
+*Generated on 2026-02-19 from 144 examples across 15 categories.*

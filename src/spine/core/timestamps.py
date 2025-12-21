@@ -5,6 +5,29 @@ Shared platform primitives for generating time-sortable unique IDs
 and working with UTC timestamps. All spines should import from here
 instead of maintaining their own copies.
 
+Manifesto:
+    Every spine needs unique IDs and UTC timestamps. Without a shared
+    module, each project reinvents these with subtle differences
+    (timezone handling, ID format, precision). This module provides:
+
+    - **generate_ulid():** Time-sortable unique IDs (26-char, base32)
+    - **utc_now():** Timezone-aware UTC datetime
+    - **to_iso8601() / from_iso8601():** Safe serialization round-trip
+
+Features:
+    - **ULID generation:** Time-sortable, 26-char, Crockford base32
+    - **UTC utilities:** utc_now(), to_iso8601(), from_iso8601()
+    - **stdlib-only:** No external dependencies
+    - **Deterministic ordering:** ULIDs sort by creation time
+
+Tags:
+    timestamps, ulid, utc, datetime, spine-core, stdlib-only,
+    unique-id, serialization
+
+Doc-Types:
+    - API Reference
+    - Utility Documentation
+
 STDLIB ONLY - NO PYDANTIC.
 """
 

@@ -52,7 +52,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     """)
 
 
-def _insert_pending(conn: sqlite3.Connection, pipeline: str = "task:echo",
+def _insert_pending(conn: sqlite3.Connection, operation: str = "task:echo",
                      params: dict | None = None, run_id: str | None = None) -> str:
     """Insert a pending execution row and return its ID."""
     rid = run_id or str(uuid.uuid4())
@@ -60,7 +60,7 @@ def _insert_pending(conn: sqlite3.Connection, pipeline: str = "task:echo",
     conn.execute(
         "INSERT INTO core_executions (id, workflow, params, status, created_at) "
         "VALUES (?, ?, ?, 'pending', ?)",
-        (rid, pipeline, json.dumps(params or {}), now),
+        (rid, operation, json.dumps(params or {}), now),
     )
     conn.commit()
     return rid
@@ -301,7 +301,7 @@ class TestWorkerLifecycle:
 
 
 class TestWorkerKindParsing:
-    """Test pipeline field parsing for kind:name format."""
+    """Test operation field parsing for kind:name format."""
 
     def test_kind_name_format(self, db, worker):
         """'task:echo' should resolve to kind=task, name=echo."""

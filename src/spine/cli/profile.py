@@ -147,7 +147,7 @@ def create_profile(
         console.print(f"  {profile.path}")
     except FileExistsError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("use")

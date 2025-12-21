@@ -1,5 +1,13 @@
 """Scheduler package for spine-core.
 
+Manifesto:
+    Cron-based scheduling in distributed deployments requires more than
+    ``time.sleep()`` in a loop.  It needs lock-guarded execution (so two
+    instances don't fire the same schedule), misfire detection (so delayed
+    ticks don't silently skip), and health monitoring (so time drift is
+    caught before it causes silent data gaps).  The scheduling package
+    provides all three with pluggable timing backends.
+
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  SPINE SCHEDULER - Production-Grade Cron Scheduling                          │
 │                                                                               │
@@ -67,12 +75,48 @@
 │  - core_schedule_runs: Execution history                                     │
 │  - core_schedule_locks: Distributed locks                                    │
 └──────────────────────────────────────────────────────────────────────────────┘
+
+Guardrails:
+    ❌ Running schedule callbacks without acquiring a distributed lock
+    ✅ ``LockManager.acquire_schedule_lock()`` before dispatch
+    ❌ Silently skipping misfired schedules
+    ✅ ``misfire_grace_seconds`` with explicit skip/fire decision
+    ❌ Constructing scheduler components individually
+    ✅ ``create_scheduler(conn, dispatcher)`` factory function
+
+Tags:
+    spine-core, scheduling, cron, distributed-locks, health-monitoring,
+    beat-as-poller, pluggable-backends, thread, apscheduler, celery
+
+Doc-Types:
+    package-overview, architecture-map, module-index
 """
 
 from __future__ import annotations
 
+# Repository
+# Health
+from .health import (
+    SchedulerHealthReport,
+    check_scheduler_health,
+    check_tick_interval_stability,
+    get_ntp_time,
+)
+
+# Lock Manager
+from .lock_manager import LockManager
+
 # Protocol
 from .protocol import BackendHealth, SchedulerBackend
+from .repository import (
+    ScheduleCreate,
+    ScheduleRepository,
+    ScheduleRunCreate,
+    ScheduleUpdate,
+)
+
+# Service
+from .service import SchedulerHealth, SchedulerService, SchedulerStats
 
 # Backends
 from .thread_backend import ThreadSchedulerBackend
@@ -93,28 +137,6 @@ def __getattr__(name: str):  # noqa: N807
 
         return CeleryBeatBackend
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-# Repository
-# Health
-from .health import (
-    SchedulerHealthReport,
-    check_scheduler_health,
-    check_tick_interval_stability,
-    get_ntp_time,
-)
-
-# Lock Manager
-from .lock_manager import LockManager
-from .repository import (
-    ScheduleCreate,
-    ScheduleRepository,
-    ScheduleRunCreate,
-    ScheduleUpdate,
-)
-
-# Service
-from .service import SchedulerHealth, SchedulerService, SchedulerStats
 
 __all__ = [
     # Protocol

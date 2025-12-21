@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CI Artifacts — Structured output for continuous integration.
 
-After a testbed run, CI pipelines need machine-readable artifacts
+After a testbed run, CI operations need machine-readable artifacts
 for test reporting, trend analysis, and failure triage. This example
 shows how to produce a complete artifact directory from a testbed run
 — including JSON summaries, HTML reports, JUnit XML, and per-backend

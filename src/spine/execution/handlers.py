@@ -1,7 +1,6 @@
-"""Built-in Example Handlers — reference task and pipeline implementations.
+"""Built-in Example Handlers — reference task and operation implementations.
 
-WHY
-───
+Manifesto:
 New users and integration tests need concrete handlers to exercise
 the execution stack.  These register into the global
 :class:`~spine.execution.registry.HandlerRegistry` on import,
@@ -17,7 +16,7 @@ ARCHITECTURE
       task:add           ─ add a + b
       task:fail          ─ always raises (DLQ / retry testing)
       task:transform     ─ apply a transform function
-      pipeline:etl_stub  ─ simulates extract → transform → load
+      operation:etl_stub  ─ simulates extract → transform → load
 
 Usage::
 
@@ -28,6 +27,12 @@ Usage::
 Related modules:
     registry.py — HandlerRegistry these register into
     worker.py   — WorkerLoop that resolves handlers by name
+
+Tags:
+    spine-core, execution, handlers, callable, processing
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -36,7 +41,7 @@ import logging
 import time
 from typing import Any
 
-from spine.execution.registry import get_default_registry, register_pipeline, register_task
+from spine.execution.registry import get_default_registry, register_operation, register_task
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +100,10 @@ def transform_handler(params: dict[str, Any]) -> dict[str, Any]:
     return {"original": value, "operation": operation, "result": result}
 
 
-# ── Pipeline handlers ────────────────────────────────────────────────────
+# ── Operation handlers ────────────────────────────────────────────────────
 
 
-@register_pipeline("etl_stub", description="Simulate an ETL pipeline with 3 phases.")
+@register_operation("etl_stub", description="Simulate an ETL operation with 3 phases.")
 def etl_stub_handler(params: dict[str, Any]) -> dict[str, Any]:
     """ETL stub — simulates extract → transform → load with configurable delays."""
     delay = float(params.get("phase_delay", 0.01))
@@ -120,7 +125,7 @@ def etl_stub_handler(params: dict[str, Any]) -> dict[str, Any]:
     phases.append({"phase": "load", "records": transformed})
 
     return {
-        "pipeline": "etl_stub",
+        "operation": "etl_stub",
         "phases": phases,
         "total_records": transformed,
     }

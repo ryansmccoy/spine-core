@@ -14,7 +14,7 @@ from spine.core.errors import (
     ParseError,
     ValidationError,
     ConfigError,
-    PipelineError,
+    OperationError,
     is_retryable,
     get_retry_after,
 )
@@ -34,7 +34,7 @@ class TestErrorCategory:
             ErrorCategory.VALIDATION,
             ErrorCategory.CONFIG,
             ErrorCategory.AUTH,
-            ErrorCategory.PIPELINE,
+            ErrorCategory.operation,
             ErrorCategory.ORCHESTRATION,
             ErrorCategory.INTERNAL,
             ErrorCategory.UNKNOWN,
@@ -48,19 +48,19 @@ class TestErrorContext:
     def test_create_empty_context(self):
         """Create context with no fields set."""
         ctx = ErrorContext()
-        assert ctx.pipeline is None
+        assert ctx.operation is None
         assert ctx.workflow is None
         assert ctx.metadata == {}
 
     def test_create_context_with_fields(self):
         """Create context with specific fields."""
         ctx = ErrorContext(
-            pipeline="my_pipeline",
+            operation="my_operation",
             workflow="my_workflow",
             run_id="run_123",
             metadata={"foo": "bar"},
         )
-        assert ctx.pipeline == "my_pipeline"
+        assert ctx.operation == "my_operation"
         assert ctx.workflow == "my_workflow"
         assert ctx.run_id == "run_123"
         assert ctx.metadata["foo"] == "bar"
@@ -68,12 +68,12 @@ class TestErrorContext:
     def test_to_dict_includes_set_fields(self):
         """to_dict includes only non-None fields."""
         ctx = ErrorContext(
-            pipeline="my_pipeline",
+            operation="my_operation",
             run_id="run_123",
             metadata={"key": "value"},
         )
         d = ctx.to_dict()
-        assert d["pipeline"] == "my_pipeline"
+        assert d["operation"] == "my_operation"
         assert d["run_id"] == "run_123"
         assert d["key"] == "value"
         assert "workflow" not in d
@@ -103,9 +103,9 @@ class TestSpineError:
 
     def test_create_with_context(self):
         """Create error with context."""
-        ctx = ErrorContext(pipeline="test_pipeline")
+        ctx = ErrorContext(operation="test_operation")
         err = SpineError("Failed", context=ctx)
-        assert err.context.pipeline == "test_pipeline"
+        assert err.context.operation == "test_operation"
 
     def test_create_with_cause(self):
         """Create error with underlying cause."""
@@ -117,10 +117,10 @@ class TestSpineError:
     def test_with_context_fluent_api(self):
         """Use with_context to add metadata."""
         err = SpineError("Failed").with_context(
-            pipeline="test_pipeline",
+            operation="test_operation",
             run_id="run_123",
         )
-        assert err.context.pipeline == "test_pipeline"
+        assert err.context.operation == "test_operation"
         assert err.context.run_id == "run_123"
 
     def test_to_dict(self):
@@ -129,13 +129,13 @@ class TestSpineError:
             "Failed",
             category=ErrorCategory.NETWORK,
             retryable=True,
-        ).with_context(pipeline="test_pipeline")
+        ).with_context(operation="test_operation")
         
         d = err.to_dict()
         assert d["message"] == "Failed"
         assert d["category"] == "NETWORK"
         assert d["retryable"] is True
-        assert d["context"]["pipeline"] == "test_pipeline"
+        assert d["context"]["operation"] == "test_operation"
 
 
 class TestSourceError:
@@ -234,13 +234,13 @@ class TestConfigError:
         assert err.retryable is False
 
 
-class TestPipelineError:
-    """Test PipelineError subclass."""
+class TestOperationError:
+    """Test OperationError subclass."""
 
     def test_defaults(self):
-        """PipelineError is non-retryable by default."""
-        err = PipelineError("Pipeline failed")
-        assert err.category == ErrorCategory.PIPELINE
+        """OperationError is non-retryable by default."""
+        err = OperationError("Operation failed")
+        assert err.category == ErrorCategory.operation
         assert err.retryable is False
 
 

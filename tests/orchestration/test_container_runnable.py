@@ -1,7 +1,7 @@
 """Tests for Idea #4 — ContainerRunnable.
 
 Covers:
-- spec building from pipeline name/params
+- spec building from operation name/params
 - image resolver hook
 - command template substitution
 - env var mapping (params → SPINE_PARAM_*)
@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 from spine.execution.runtimes._types import ContainerJobSpec, JobStatus
 from spine.execution.runtimes.engine import SubmitResult
 from spine.orchestration.container_runnable import ContainerRunnable
@@ -75,13 +75,13 @@ class TestBuildSpec:
     def test_basic_spec(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine)
-        spec = cr._build_spec("my.pipeline", None, None, None)
+        spec = cr._build_spec("my.operation", None, None, None)
 
         assert isinstance(spec, ContainerJobSpec)
-        assert spec.name == "pipeline-my-pipeline"
-        assert spec.image == "spine-pipeline:latest"
+        assert spec.name == "operation-my-operation"
+        assert spec.image == "spine-operation:latest"
         assert "spine-cli" in spec.command[0]
-        assert "my.pipeline" in spec.command[-1]
+        assert "my.operation" in spec.command[-1]
 
     def test_params_become_env_vars(self):
         engine = _make_engine_mock()
@@ -118,33 +118,33 @@ class TestBuildSpec:
         engine = _make_engine_mock()
         cr = ContainerRunnable(
             engine=engine,
-            command_template=["python", "-m", "spine.run", "{pipeline}"],
+            command_template=["python", "-m", "spine.run", "{operation}"],
         )
         spec = cr._build_spec("my.pipe", None, None, None)
 
         assert spec.command == ["python", "-m", "spine.run", "my.pipe"]
 
-    def test_labels_include_pipeline_name(self):
+    def test_labels_include_operation_name(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine)
         spec = cr._build_spec("etl.daily", None, None, None)
 
-        assert spec.labels["spine.pipeline"] == "etl.daily"
+        assert spec.labels["spine.operation"] == "etl.daily"
 
 
 # ---------------------------------------------------------------------------
-# submit_pipeline_sync
+# submit_operation_sync
 # ---------------------------------------------------------------------------
 
-class TestSubmitPipelineSync:
+class TestSubmitOperationSync:
     def test_success(self):
         engine = _make_engine_mock(
             status_sequence=[JobStatus(state="succeeded", exit_code=0)],
         )
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("my.pipe")
+        result = cr.submit_operation_sync("my.pipe")
 
-        assert isinstance(result, PipelineRunResult)
+        assert isinstance(result, OperationRunResult)
         assert result.succeeded
         assert result.status == "completed"
         assert result.run_id == "exec-001"
@@ -160,7 +160,7 @@ class TestSubmitPipelineSync:
             ],
         )
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("failing.pipe")
+        result = cr.submit_operation_sync("failing.pipe")
 
         assert not result.succeeded
         assert result.status == "failed"
@@ -176,7 +176,7 @@ class TestSubmitPipelineSync:
             ],
         )
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("slow.pipe")
+        result = cr.submit_operation_sync("slow.pipe")
 
         assert result.succeeded
         # Should have called status multiple times
@@ -189,7 +189,7 @@ class TestSubmitPipelineSync:
             ],
         )
         cr = ContainerRunnable(engine=engine, poll_interval=0.01, timeout=0.05)
-        result = cr.submit_pipeline_sync("hanging.pipe")
+        result = cr.submit_operation_sync("hanging.pipe")
 
         assert not result.succeeded
         assert result.status == "failed"
@@ -198,7 +198,7 @@ class TestSubmitPipelineSync:
     def test_params_forwarded(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        cr.submit_pipeline_sync("pipe", params={"key": "val"})
+        cr.submit_operation_sync("pipe", params={"key": "val"})
 
         # Verify submit was called with correct spec
         engine.submit.assert_called_once()
@@ -208,7 +208,7 @@ class TestSubmitPipelineSync:
     def test_parent_run_id_forwarded(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        cr.submit_pipeline_sync("pipe", parent_run_id="parent-123")
+        cr.submit_operation_sync("pipe", parent_run_id="parent-123")
 
         spec = engine.submit.call_args[0][0]
         assert spec.env["SPINE_PARENT_RUN_ID"] == "parent-123"
@@ -221,7 +221,7 @@ class TestSubmitPipelineSync:
             ],
         )
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("cancelled.pipe")
+        result = cr.submit_operation_sync("cancelled.pipe")
 
         assert not result.succeeded
         assert result.status == "failed"
@@ -232,7 +232,7 @@ class TestSubmitPipelineSync:
             status_sequence=[JobStatus(state="succeeded", exit_code=0)],
         )
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("pipe")
+        result = cr.submit_operation_sync("pipe")
 
         assert result.metrics["exit_code"] == 0
         assert result.metrics["execution_id"] == "exec-001"
@@ -248,14 +248,14 @@ class TestProtocol:
         cr = ContainerRunnable(engine=engine)
         assert isinstance(cr, Runnable)
 
-    def test_has_submit_pipeline_sync(self):
-        assert hasattr(ContainerRunnable, "submit_pipeline_sync")
+    def test_has_submit_operation_sync(self):
+        assert hasattr(ContainerRunnable, "submit_operation_sync")
 
     def test_signature_matches_protocol(self):
         import inspect
-        sig = inspect.signature(ContainerRunnable.submit_pipeline_sync)
+        sig = inspect.signature(ContainerRunnable.submit_operation_sync)
         params = list(sig.parameters.keys())
-        assert "pipeline_name" in params
+        assert "operation_name" in params
         assert "params" in params
         assert "parent_run_id" in params
         assert "correlation_id" in params
@@ -269,27 +269,27 @@ class TestEdgeCases:
     def test_empty_params(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("pipe", params={})
+        result = cr.submit_operation_sync("pipe", params={})
 
         assert result.succeeded
 
     def test_none_params(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine, poll_interval=0.01)
-        result = cr.submit_pipeline_sync("pipe", params=None)
+        result = cr.submit_operation_sync("pipe", params=None)
 
         assert result.succeeded
 
-    def test_pipeline_name_with_dots(self):
+    def test_operation_name_with_dots(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine)
         spec = cr._build_spec("finra.otc.transparency.ingest", None, None, None)
 
-        assert spec.name == "pipeline-finra-otc-transparency-ingest"
+        assert spec.name == "operation-finra-otc-transparency-ingest"
 
     def test_image_resolver_returns_none_uses_default(self):
         engine = _make_engine_mock()
         cr = ContainerRunnable(engine=engine, image_resolver=lambda n: None)
         spec = cr._build_spec("pipe", None, None, None)
 
-        assert spec.image == "spine-pipeline:latest"
+        assert spec.image == "spine-operation:latest"

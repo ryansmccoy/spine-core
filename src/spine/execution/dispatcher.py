@@ -1,8 +1,7 @@
 """Event Dispatcher — central submission and query API.
 
-WHY
-───
-Every work item (task, pipeline, workflow, step) needs the same
+Manifesto:
+Every work item (task, operation, workflow, step) needs the same
 lifecycle: submit → track → query → cancel/retry.  Rather than
 scattering this logic across callers, ``EventDispatcher`` is the
 **single public API** for all execution, regardless of work type,
@@ -14,8 +13,8 @@ ARCHITECTURE
 
     EventDispatcher
       ├── .submit_task(name, params)      ─ fire-and-forget
-      ├── .submit_pipeline(name, params)  ─ tracked pipeline run
-      ├── .submit_pipeline_sync(...)      ─ blocking (Runnable protocol)
+      ├── .submit_operation(name, params)  ─ tracked operation run
+      ├── .submit_operation_sync(...)      ─ blocking (Runnable protocol)
       ├── .submit(work_spec)              ─ generic submission
       ├── .get_run(run_id)                ─ query status
       ├── .list_runs(status=, kind=)      ─ filtered listing
@@ -29,15 +28,21 @@ ARCHITECTURE
 BEST PRACTICES
 ──────────────
 - Create ONE dispatcher per application; pass it as a dependency.
-- Use ``submit_pipeline_sync`` when the caller needs to block.
+- Use ``submit_operation_sync`` when the caller needs to block.
 - The dispatcher is also the ``Runnable`` used by WorkflowRunner,
-  so pipeline steps inside workflows get full RunRecord tracking.
+  so operation steps inside workflows get full RunRecord tracking.
 
 Related modules:
     spec.py     — WorkSpec (what to run)
     runs.py     — RunRecord (execution state)
     registry.py — HandlerRegistry (name → handler)
     runnable.py — Runnable protocol (blocking interface)
+
+Tags:
+    spine-core, execution, dispatcher, event-driven, routing
+
+Doc-Types:
+    api-reference
 """
 
 import uuid
@@ -51,7 +56,7 @@ from .spec import WorkSpec
 
 if TYPE_CHECKING:
     from .executors.protocol import Executor
-    from .runnable import PipelineRunResult
+    from .runnable import OperationRunResult
 
 
 class EventDispatcher:
@@ -205,13 +210,13 @@ class EventDispatcher:
         spec = WorkSpec(kind="task", name=name, params=params or {}, **kwargs)
         return await self.submit(spec)
 
-    async def submit_pipeline(self, name: str, params: dict | None = None, **kwargs) -> str:
-        """Convenience: submit a pipeline.
+    async def submit_operation(self, name: str, params: dict | None = None, **kwargs) -> str:
+        """Convenience: submit a operation.
 
         Example:
-            >>> run_id = await dispatcher.submit_pipeline("ingest_otc", {"date": "2026-01-15"})
+            >>> run_id = await dispatcher.submit_operation("ingest_otc", {"date": "2026-01-15"})
         """
-        spec = WorkSpec(kind="pipeline", name=name, params=params or {}, **kwargs)
+        spec = WorkSpec(kind="operation", name=name, params=params or {}, **kwargs)
         return await self.submit(spec)
 
     async def submit_workflow(self, name: str, params: dict | None = None, **kwargs) -> str:
@@ -272,9 +277,9 @@ class EventDispatcher:
         """List runs with filters.
 
         Args:
-            kind: Filter by work kind (task, pipeline, workflow, step)
+            kind: Filter by work kind (task, operation, workflow, step)
             status: Filter by status
-            name: Filter by handler/pipeline name
+            name: Filter by handler/operation name
             parent_run_id: Filter steps by parent workflow
             limit: Max results (default 50)
             offset: Skip first N results
@@ -283,8 +288,8 @@ class EventDispatcher:
             List of RunSummary objects
 
         Example:
-            >>> # List failed pipelines
-            >>> runs = await dispatcher.list_runs(kind="pipeline", status=RunStatus.FAILED)
+            >>> # List failed operations
+            >>> runs = await dispatcher.list_runs(kind="operation", status=RunStatus.FAILED)
         """
         if self.ledger:
             return await self.ledger.list_runs(
@@ -566,50 +571,50 @@ class EventDispatcher:
         self._memory_events.clear()
         self._idempotency_index.clear()
 
-    # === RUNNABLE PROTOCOL (synchronous pipeline dispatch) ===
+    # === RUNNABLE PROTOCOL (synchronous operation dispatch) ===
 
-    def submit_pipeline_sync(
+    def submit_operation_sync(
         self,
-        pipeline_name: str,
+        operation_name: str,
         params: dict[str, Any] | None = None,
         *,
         parent_run_id: str | None = None,
         correlation_id: str | None = None,
-    ) -> "PipelineRunResult":
-        """Run a pipeline synchronously and return the result.
+    ) -> "OperationRunResult":
+        """Run a operation synchronously and return the result.
 
         This method satisfies the :class:`~spine.execution.runnable.Runnable`
         protocol.  It is the synchronous bridge used by ``WorkflowRunner``
-        to execute **pipeline steps** inside a workflow while still creating
+        to execute **operation steps** inside a workflow while still creating
         a full ``RunRecord`` with events.
 
         Internally it:
         1. Creates a ``RunRecord`` in the execution ledger.
-        2. Runs the pipeline via ``PipelineRunner`` (synchronously, current thread).
+        2. Runs the operation via ``OperationRunner`` (synchronously, current thread).
         3. Updates the ``RunRecord`` with the outcome.
-        4. Returns a ``PipelineRunResult``.
+        4. Returns a ``OperationRunResult``.
 
         Args:
-            pipeline_name: Registered pipeline name.
-            params: Parameters for the pipeline.
+            operation_name: Registered operation name.
+            params: Parameters for the operation.
             parent_run_id: Workflow run ID (links child → parent).
             correlation_id: Shared ID across related runs.
 
         Returns:
-            ``PipelineRunResult`` with status, error, metrics, and ``run_id``.
+            ``OperationRunResult`` with status, error, metrics, and ``run_id``.
         """
         import uuid
 
-        from spine.execution.runnable import PipelineRunResult
-        from spine.framework.runner import PipelineRunner
+        from spine.execution.runnable import OperationRunResult
+        from spine.framework.runner import OperationRunner
 
         run_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
         # Create RunRecord
         spec = WorkSpec(
-            kind="pipeline",
-            name=pipeline_name,
+            kind="operation",
+            name=operation_name,
             params=params or {},
             parent_run_id=parent_run_id,
             correlation_id=correlation_id or parent_run_id,
@@ -622,34 +627,34 @@ class EventDispatcher:
             created_at=now,
             started_at=now,
             executor_name="sync_inline",
-            tags={"kind": "pipeline", "name": pipeline_name},
+            tags={"kind": "operation", "name": operation_name},
         )
 
         # Persist (sync — write to in-memory or ledger)
         self._memory_runs[run_id] = run
 
-        # Run pipeline via PipelineRunner
-        runner = PipelineRunner()
+        # Run operation via OperationRunner
+        runner = OperationRunner()
         try:
-            pipeline_result = runner.run(pipeline_name, params)
+            operation_result = runner.run(operation_name, params)
 
             run.status = (
                 RunStatus.COMPLETED
-                if pipeline_result.status.value == "completed"
+                if operation_result.status.value == "completed"
                 else RunStatus.FAILED
             )
             run.completed_at = datetime.utcnow()
-            if pipeline_result.error:
-                run.error = pipeline_result.error
+            if operation_result.error:
+                run.error = operation_result.error
             self._memory_runs[run_id] = run
 
-            return PipelineRunResult(
-                status=pipeline_result.status.value,
-                error=pipeline_result.error,
-                metrics=pipeline_result.metrics or {},
+            return OperationRunResult(
+                status=operation_result.status.value,
+                error=operation_result.error,
+                metrics=operation_result.metrics or {},
                 run_id=run_id,
-                started_at=pipeline_result.started_at,
-                completed_at=pipeline_result.completed_at,
+                started_at=operation_result.started_at,
+                completed_at=operation_result.completed_at,
             )
 
         except Exception as e:
@@ -659,7 +664,7 @@ class EventDispatcher:
             run.error_type = type(e).__name__
             self._memory_runs[run_id] = run
 
-            return PipelineRunResult(
+            return OperationRunResult(
                 status="failed",
                 error=str(e),
                 run_id=run_id,

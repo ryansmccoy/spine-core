@@ -3,14 +3,14 @@
 Manages ephemeral containers via the ``docker`` CLI (subprocess).
 No ``docker-py`` dependency — spine-core stays dependency-light.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     During a testbed run, the testbed runner needs to start a PostgreSQL
     container, wait until it passes health checks, run the test suite,
     collect logs, and tear it down — all in under 5 minutes. The
     ``ContainerManager`` handles this lifecycle with exponential-backoff
     health polling and automatic orphan cleanup.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Container lifecycle management via CLI subprocess is portable across
     Docker Desktop, Podman, Colima, and CI runners. No native Docker
     SDK means no version conflicts or platform-specific wheels.

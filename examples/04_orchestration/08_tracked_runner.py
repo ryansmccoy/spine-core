@@ -53,7 +53,7 @@ See Also:
 
 import sqlite3
 from spine.core import create_core_tables
-from spine.execution.runnable import PipelineRunResult, Runnable
+from spine.execution.runnable import OperationRunResult, Runnable
 from spine.orchestration import (
     Workflow,
     Step,
@@ -67,8 +67,8 @@ from spine.orchestration import (
 class _NoOpRunnable:
     """Minimal Runnable for examples that only use lambda steps."""
 
-    def submit_pipeline_sync(self, pipeline_name, params=None, *, parent_run_id=None, correlation_id=None):
-        return PipelineRunResult(status="completed")
+    def submit_operation_sync(self, operation_name, params=None, *, parent_run_id=None, correlation_id=None):
+        return OperationRunResult(status="completed")
 
 
 def main():

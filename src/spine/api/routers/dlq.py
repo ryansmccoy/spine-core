@@ -8,6 +8,13 @@ Endpoints:
     GET  /dlq              List dead-letter entries with filtering
     POST /dlq/{id}/replay  Replay a dead-letter item (re-queue for execution)
 
+Manifesto:
+    Failed executions must be inspectable and retryable through
+    the API so operators don't need direct database access.
+
+Tags:
+    spine-core, api, dead-letter-queue, retry, failure-management
+
 Doc-Types: API_REFERENCE
 """
 

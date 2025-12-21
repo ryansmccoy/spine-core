@@ -2,12 +2,12 @@
 """ContainerRunnable — bridging orchestration workflows with container execution.
 
 Demonstrates how ``ContainerRunnable`` connects the workflow orchestration
-layer with the Job Engine, allowing pipeline steps to run inside isolated
+layer with the Job Engine, allowing operation steps to run inside isolated
 containers rather than in-process.
 
 Demonstrates:
     1. ``ContainerRunnable`` creation with engine reference
-    2. Spec building from pipeline names + params
+    2. Spec building from operation names + params
     3. Image resolution via custom resolvers
     4. Workflow execution through container delegation
     5. Integration with ``WorkflowRunner`` via the ``Runnable`` protocol
@@ -16,7 +16,7 @@ Demonstrates:
 Architecture::
 
     WorkflowRunner
-        │  (calls submit_pipeline_sync)
+        │  (calls submit_operation_sync)
         ▼
     ContainerRunnable   ◄── implements Runnable protocol
         │  (builds ContainerJobSpec, submits, polls)
@@ -27,14 +27,14 @@ Architecture::
     RuntimeAdapter      ◄── LocalProcess / Docker / K8s
 
 Key Concepts:
-    - **Runnable protocol**: Single method ``submit_pipeline_sync()`` that
-      ``WorkflowRunner`` calls for each pipeline step.
-    - **Spec building**: Converts pipeline name + params into a full
+    - **Runnable protocol**: Single method ``submit_operation_sync()`` that
+      ``WorkflowRunner`` calls for each operation step.
+    - **Spec building**: Converts operation name + params into a full
       ``ContainerJobSpec`` with image, command, env, labels.
-    - **Image resolver**: Callable ``(pipeline_name) → image`` for
-      per-pipeline container images.
+    - **Image resolver**: Callable ``(operation_name) → image`` for
+      per-operation container images.
     - **Polling loop**: Calls ``engine.status()`` until terminal state
-      or timeout, then converts to ``PipelineRunResult``.
+      or timeout, then converts to ``OperationRunResult``.
 
 See Also:
     - ``15_runnable_protocol.py``   — basic Runnable usage
@@ -59,7 +59,7 @@ from spine.orchestration.container_runnable import (
 )
 from spine.orchestration import Workflow, Step, StepType
 from spine.execution.runtimes._types import ContainerJobSpec
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 
 
 def main() -> None:
@@ -77,28 +77,28 @@ def main() -> None:
     print(f"Default poll interval: {_DEFAULT_POLL_INTERVAL}s")
     print(f"Default timeout:       {_DEFAULT_TIMEOUT}s")
 
-    # The Runnable protocol requires submit_pipeline_sync():
+    # The Runnable protocol requires submit_operation_sync():
     import inspect
     from spine.execution.runnable import Runnable
 
-    assert hasattr(Runnable, "submit_pipeline_sync")
-    print(f"\nRunnable protocol method: submit_pipeline_sync()")
-    print("  Args: pipeline_name, params, *, parent_run_id, correlation_id")
-    print("  Returns: PipelineRunResult")
+    assert hasattr(Runnable, "submit_operation_sync")
+    print(f"\nRunnable protocol method: submit_operation_sync()")
+    print("  Args: operation_name, params, *, parent_run_id, correlation_id")
+    print("  Returns: OperationRunResult")
 
     # Verify ContainerRunnable satisfies the protocol
-    print(f"\nContainerRunnable has submit_pipeline_sync: "
-          f"{hasattr(ContainerRunnable, 'submit_pipeline_sync')}")
+    print(f"\nContainerRunnable has submit_operation_sync: "
+          f"{hasattr(ContainerRunnable, 'submit_operation_sync')}")
 
     # ─────────────────────────────────────────────────────────────────
     print("\n" + "=" * 72)
-    print("SECTION 2: Spec Building — Pipeline to Container Translation")
+    print("SECTION 2: Spec Building — Operation to Container Translation")
     print("=" * 72)
 
-    # The _build_spec method translates pipeline parameters into
+    # The _build_spec method translates operation parameters into
     # a ContainerJobSpec. Let's simulate this manually.
 
-    pipeline_name = "finra.daily_ingest"
+    operation_name = "finra.daily_ingest"
     params = {"date": "2026-01-15", "source": "finra", "batch_size": "1000"}
 
     # Parameter → env var conversion: SPINE_PARAM_{KEY_UPPER}
@@ -108,17 +108,17 @@ def main() -> None:
     env["SPINE_PARENT_RUN_ID"] = "run-abc-123"
 
     spec = ContainerJobSpec(
-        name=f"pipeline-{pipeline_name.replace('.', '-')}",
+        name=f"operation-{operation_name.replace('.', '-')}",
         image=_DEFAULT_IMAGE,
-        command=["spine-cli", "run", pipeline_name],
+        command=["spine-cli", "run", operation_name],
         env=env,
         labels={
-            "spine.pipeline": pipeline_name,
+            "spine.operation": operation_name,
             "spine.parent_run_id": "run-abc-123",
         },
     )
 
-    print(f"\nPipeline:    {pipeline_name}")
+    print(f"\nOperation:    {operation_name}")
     print(f"Image:       {spec.image}")
     print(f"Command:     {spec.command}")
     print(f"Env vars:    {len(spec.env)} entries")
@@ -132,48 +132,48 @@ def main() -> None:
     print("SECTION 3: Custom Image Resolver")
     print("=" * 72)
 
-    # Image resolvers let you map pipeline names to container images
+    # Image resolvers let you map operation names to container images
     IMAGE_MAP = {
         "finra.daily_ingest": "spine-finra:v2.1",
         "sec.filing_fetch": "spine-sec:latest",
         "edgar.parse_10k": "spine-edgar:v1.0",
     }
 
-    def resolve_image(pipeline_name: str) -> str:
-        """Map pipeline names to specific container images."""
-        return IMAGE_MAP.get(pipeline_name, _DEFAULT_IMAGE)
+    def resolve_image(operation_name: str) -> str:
+        """Map operation names to specific container images."""
+        return IMAGE_MAP.get(operation_name, _DEFAULT_IMAGE)
 
     print("\nImage resolution map:")
-    for pipeline, image in IMAGE_MAP.items():
-        resolved = resolve_image(pipeline)
-        print(f"  {pipeline:30s} → {resolved}")
+    for operation, image in IMAGE_MAP.items():
+        resolved = resolve_image(operation)
+        print(f"  {operation:30s} → {resolved}")
 
-    # Unknown pipelines get the default
-    unknown = resolve_image("unknown.pipeline")
-    print(f"  {'unknown.pipeline':30s} → {unknown} (default)")
+    # Unknown operations get the default
+    unknown = resolve_image("unknown.operation")
+    print(f"  {'unknown.operation':30s} → {unknown} (default)")
 
     # ─────────────────────────────────────────────────────────────────
     print("\n" + "=" * 72)
     print("SECTION 4: Command Template Customization")
     print("=" * 72)
 
-    # The default command is ["spine-cli", "run", "{pipeline}"]
-    # but you can provide a custom template with {pipeline} placeholder
+    # The default command is ["spine-cli", "run", "{operation}"]
+    # but you can provide a custom template with {operation} placeholder
 
-    custom_template = ["python", "-m", "spine.cli", "pipeline", "execute", "{pipeline}"]
-    expanded = [part.replace("{pipeline}", "my.pipeline") for part in custom_template]
+    custom_template = ["python", "-m", "spine.cli", "operation", "execute", "{operation}"]
+    expanded = [part.replace("{operation}", "my.operation") for part in custom_template]
     print(f"\nCustom template: {custom_template}")
     print(f"Expanded:        {expanded}")
 
     # Docker-specific template
-    docker_template = ["/app/run.sh", "--pipeline={pipeline}", "--mode=production"]
-    expanded_docker = [part.replace("{pipeline}", "sec.10k") for part in docker_template]
+    docker_template = ["/app/run.sh", "--operation={operation}", "--mode=production"]
+    expanded_docker = [part.replace("{operation}", "sec.10k") for part in docker_template]
     print(f"\nDocker template: {docker_template}")
     print(f"Expanded:        {expanded_docker}")
 
     # ─────────────────────────────────────────────────────────────────
     print("\n" + "=" * 72)
-    print("SECTION 5: PipelineRunResult — What Comes Back")
+    print("SECTION 5: OperationRunResult — What Comes Back")
     print("=" * 72)
 
     from datetime import datetime, UTC, timedelta
@@ -181,7 +181,7 @@ def main() -> None:
     # Successful result
     started = datetime.now(UTC)
     completed = started + timedelta(seconds=45)
-    success_result = PipelineRunResult(
+    success_result = OperationRunResult(
         status="completed",
         error=None,
         metrics={
@@ -200,7 +200,7 @@ def main() -> None:
     print(f"  exit_code: {success_result.metrics.get('exit_code')}")
 
     # Failed result
-    fail_result = PipelineRunResult(
+    fail_result = OperationRunResult(
         status="failed",
         error="Container exited with code 1: OOM killed",
         metrics={"execution_id": "exec-99999", "exit_code": 137},
@@ -215,7 +215,7 @@ def main() -> None:
     print(f"  exit_code: {fail_result.metrics.get('exit_code')}")
 
     # Timeout result
-    timeout_result = PipelineRunResult(
+    timeout_result = OperationRunResult(
         status="failed",
         error="Timed out after 600s",
         metrics={"execution_id": "exec-88888"},
@@ -236,10 +236,10 @@ def main() -> None:
     wf = Workflow(
         name="etl.containerized",
         steps=[
-            Step.pipeline("fetch", "data.fetch_source"),
-            Step.pipeline("normalize", "data.normalize", depends_on=("fetch",)),
-            Step.pipeline("validate", "data.validate", depends_on=("normalize",)),
-            Step.pipeline("store", "data.store_results", depends_on=("validate",)),
+            Step.operation("fetch", "data.fetch_source"),
+            Step.operation("normalize", "data.normalize", depends_on=("fetch",)),
+            Step.operation("validate", "data.validate", depends_on=("normalize",)),
+            Step.operation("store", "data.store_results", depends_on=("validate",)),
         ],
         domain="data",
         description="4-step ETL running each step in a container",
@@ -248,8 +248,8 @@ def main() -> None:
 
     print(f"\nWorkflow: {wf.name}")
     print(f"Steps:    {len(wf.steps)}")
-    print(f"Pipeline names used:")
-    for name in wf.pipeline_names():
+    print(f"Operation names used:")
+    for name in wf.operation_names():
         image = resolve_image(name)
         print(f"  {name:30s} → container: {image}")
 
@@ -273,7 +273,7 @@ Integration code (not run here — requires live engine):
         timeout=300,
     )
 
-    # Run the workflow — each pipeline step runs in a container!
+    # Run the workflow — each operation step runs in a container!
     runner = WorkflowRunner(runnable=runnable)
     result = runner.execute(wf, params={"date": "2026-01-15"})
 """)

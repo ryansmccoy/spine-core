@@ -17,7 +17,7 @@ When to use:
     ✓ Unit tests (fast, no infrastructure)
     ✓ Development (immediate feedback)
     ✓ Simple automation scripts
-    ✓ Low-latency single-process pipelines
+    ✓ Low-latency single-process operations
 
 When NOT to use:
     ✗ CPU-bound work (blocks the event loop)

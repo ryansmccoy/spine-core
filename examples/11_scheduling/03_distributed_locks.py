@@ -135,13 +135,13 @@ def main():
     # --- 5. Concurrency locks (general purpose) ---------------------------
     print("\n[5] General Concurrency Locks")
 
-    mgr_a.acquire_concurrency_lock("pipeline", "data-refresh", ttl_seconds=120)
-    print(f"  acquired pipeline:data-refresh")
+    mgr_a.acquire_concurrency_lock("operation", "data-refresh", ttl_seconds=120)
+    print(f"  acquired operation:data-refresh")
 
-    b_blocked = mgr_b.acquire_concurrency_lock("pipeline", "data-refresh")
+    b_blocked = mgr_b.acquire_concurrency_lock("operation", "data-refresh")
     print(f"  B blocked  : {not b_blocked}")
 
-    mgr_a.release_concurrency_lock("pipeline", "data-refresh")
+    mgr_a.release_concurrency_lock("operation", "data-refresh")
     print(f"  released")
 
     # --- 6. Maintenance: cleanup & listing --------------------------------

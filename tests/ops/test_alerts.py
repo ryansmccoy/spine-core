@@ -200,7 +200,7 @@ class TestUpdateAlertChannel:
 
 
 def _insert_alert(ctx, alert_id="alert_test1", severity="ERROR",
-                   title="Test Alert", source="test-pipeline"):
+                   title="Test Alert", source="test-operation"):
     """Insert a test alert row."""
     ctx.conn.execute(
         """
@@ -243,13 +243,13 @@ class TestListAlerts:
 
     def test_filter_by_source(self, ctx):
         initialize_database(ctx)
-        _insert_alert(ctx, "a1", source="pipeline-a")
-        _insert_alert(ctx, "a2", source="pipeline-b")
+        _insert_alert(ctx, "a1", source="operation-a")
+        _insert_alert(ctx, "a2", source="operation-b")
 
-        result = list_alerts(ctx, ListAlertsRequest(source="pipeline-a"))
+        result = list_alerts(ctx, ListAlertsRequest(source="operation-a"))
         assert result.success is True
         assert result.total == 1
-        assert result.data[0].source == "pipeline-a"
+        assert result.data[0].source == "operation-a"
 
     def test_pagination(self, ctx):
         initialize_database(ctx)

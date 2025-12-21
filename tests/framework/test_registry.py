@@ -2,22 +2,22 @@
 Tests for spine.framework.registry module.
 
 Tests cover:
-- Pipeline registration via decorator
-- Pipeline lookup by name
-- Listing registered pipelines
+- Operation registration via decorator
+- Operation lookup by name
+- Listing registered operations
 - Registry clearing (for test isolation)
-- Error handling for missing pipelines
+- Error handling for missing operations
 """
 
 import pytest
 
 from spine.framework.registry import (
-    register_pipeline,
-    get_pipeline,
-    list_pipelines,
+    register_operation,
+    get_operation,
+    list_operations,
     clear_registry,
 )
-from spine.framework.pipelines import Pipeline
+from spine.framework.operations import Operation
 
 
 @pytest.fixture(autouse=True)
@@ -28,121 +28,121 @@ def clean_registry():
     clear_registry()
 
 
-class TestRegisterPipeline:
-    """Tests for register_pipeline decorator."""
+class TestRegisterOperation:
+    """Tests for register_operation decorator."""
 
-    def test_register_pipeline_basic(self):
-        """Test basic pipeline registration."""
-        @register_pipeline("test.basic")
-        class BasicPipeline(Pipeline):
+    def test_register_operation_basic(self):
+        """Test basic operation registration."""
+        @register_operation("test.basic")
+        class BasicOperation(Operation):
             def run(self):
                 pass
         
-        assert "test.basic" in list_pipelines()
+        assert "test.basic" in list_operations()
 
-    def test_register_pipeline_returns_class(self):
+    def test_register_operation_returns_class(self):
         """Test that decorator returns the original class."""
-        @register_pipeline("test.returns_class")
-        class MyPipeline(Pipeline):
+        @register_operation("test.returns_class")
+        class MyOperation(Operation):
             custom_attr = "value"
             
             def run(self):
                 pass
         
-        assert MyPipeline.custom_attr == "value"
+        assert MyOperation.custom_attr == "value"
 
     def test_register_duplicate_raises_error(self):
         """Test that registering duplicate name raises error."""
-        @register_pipeline("test.duplicate")
-        class First(Pipeline):
+        @register_operation("test.duplicate")
+        class First(Operation):
             def run(self):
                 pass
         
         with pytest.raises(ValueError, match="already registered"):
-            @register_pipeline("test.duplicate")
-            class Second(Pipeline):
+            @register_operation("test.duplicate")
+            class Second(Operation):
                 def run(self):
                     pass
 
 
-class TestGetPipeline:
-    """Tests for get_pipeline function."""
+class TestGetOperation:
+    """Tests for get_operation function."""
 
-    def test_get_registered_pipeline(self):
-        """Test getting a registered pipeline."""
-        @register_pipeline("test.get")
-        class MyPipeline(Pipeline):
+    def test_get_registered_operation(self):
+        """Test getting a registered operation."""
+        @register_operation("test.get")
+        class MyOperation(Operation):
             def run(self):
                 pass
         
-        retrieved = get_pipeline("test.get")
-        assert retrieved is MyPipeline
+        retrieved = get_operation("test.get")
+        assert retrieved is MyOperation
 
-    def test_get_nonexistent_pipeline_raises(self):
-        """Test that getting non-existent pipeline raises KeyError."""
+    def test_get_nonexistent_operation_raises(self):
+        """Test that getting non-existent operation raises KeyError."""
         with pytest.raises(KeyError, match="not found"):
-            get_pipeline("nonexistent.pipeline")
+            get_operation("nonexistent.operation")
 
-    def test_get_pipeline_error_shows_available(self):
-        """Test that error message shows available pipelines."""
-        @register_pipeline("test.available1")
-        class Pipeline1(Pipeline):
+    def test_get_operation_error_shows_available(self):
+        """Test that error message shows available operations."""
+        @register_operation("test.available1")
+        class Operation1(Operation):
             def run(self):
                 pass
         
-        @register_pipeline("test.available2")
-        class Pipeline2(Pipeline):
+        @register_operation("test.available2")
+        class Operation2(Operation):
             def run(self):
                 pass
         
         with pytest.raises(KeyError) as exc_info:
-            get_pipeline("test.missing")
+            get_operation("test.missing")
         
         error_msg = str(exc_info.value)
         assert "test.available1" in error_msg
         assert "test.available2" in error_msg
 
 
-class TestListPipelines:
-    """Tests for list_pipelines function."""
+class TestListOperations:
+    """Tests for list_operations function."""
 
     def test_list_empty_registry(self):
-        """Test listing with no registered pipelines."""
-        # Note: registry may have auto-loaded pipelines depending on setup
+        """Test listing with no registered operations."""
+        # Note: registry may have auto-loaded operations depending on setup
         # This test verifies the function works, not that registry is empty
-        result = list_pipelines()
+        result = list_operations()
         assert isinstance(result, list)
 
-    def test_list_registered_pipelines(self):
-        """Test listing registered pipelines."""
-        @register_pipeline("test.list.a")
-        class PipelineA(Pipeline):
+    def test_list_registered_operations(self):
+        """Test listing registered operations."""
+        @register_operation("test.list.a")
+        class OperationA(Operation):
             def run(self):
                 pass
         
-        @register_pipeline("test.list.b")
-        class PipelineB(Pipeline):
+        @register_operation("test.list.b")
+        class OperationB(Operation):
             def run(self):
                 pass
         
-        names = list_pipelines()
+        names = list_operations()
         assert "test.list.a" in names
         assert "test.list.b" in names
 
-    def test_list_pipelines_sorted(self):
-        """Test that listed pipelines are sorted."""
-        @register_pipeline("test.z_last")
-        class ZPipeline(Pipeline):
+    def test_list_operations_sorted(self):
+        """Test that listed operations are sorted."""
+        @register_operation("test.z_last")
+        class ZOperation(Operation):
             def run(self):
                 pass
         
-        @register_pipeline("test.a_first")
-        class APipeline(Pipeline):
+        @register_operation("test.a_first")
+        class AOperation(Operation):
             def run(self):
                 pass
         
-        names = list_pipelines()
-        # Filter to just our test pipelines
+        names = list_operations()
+        # Filter to just our test operations
         test_names = [n for n in names if n.startswith("test.")]
         assert test_names == sorted(test_names)
 
@@ -150,26 +150,26 @@ class TestListPipelines:
 class TestClearRegistry:
     """Tests for clear_registry function."""
 
-    def test_clear_removes_all_pipelines(self):
-        """Test that clear_registry removes all pipelines."""
-        @register_pipeline("test.clear.a")
-        class PipelineA(Pipeline):
+    def test_clear_removes_all_operations(self):
+        """Test that clear_registry removes all operations."""
+        @register_operation("test.clear.a")
+        class OperationA(Operation):
             def run(self):
                 pass
         
-        @register_pipeline("test.clear.b")
-        class PipelineB(Pipeline):
+        @register_operation("test.clear.b")
+        class OperationB(Operation):
             def run(self):
                 pass
         
-        assert "test.clear.a" in list_pipelines()
-        assert "test.clear.b" in list_pipelines()
+        assert "test.clear.a" in list_operations()
+        assert "test.clear.b" in list_operations()
         
         clear_registry()
         
-        # After clearing, pipelines should not be found
+        # After clearing, operations should not be found
         with pytest.raises(KeyError):
-            get_pipeline("test.clear.a")
+            get_operation("test.clear.a")
         
         with pytest.raises(KeyError):
-            get_pipeline("test.clear.b")
+            get_operation("test.clear.b")

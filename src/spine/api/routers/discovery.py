@@ -9,6 +9,13 @@ Endpoints:
     GET /health         System health with database connectivity check
     GET /capabilities   Server feature flags and tier information
 
+Manifesto:
+    External consumers need to discover available operations,
+    handlers, and capabilities at runtime for dynamic integration.
+
+Tags:
+    spine-core, api, discovery, introspection, capabilities
+
 Doc-Types: API_REFERENCE
 """
 

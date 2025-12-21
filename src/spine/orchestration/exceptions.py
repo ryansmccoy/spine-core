@@ -1,5 +1,11 @@
 """Orchestration exceptions — structured error hierarchy.
 
+Manifesto:
+    Orchestration failures span many categories (plan resolution, group
+    specs, step dependencies, timeout, execution).  A structured hierarchy
+    lets callers catch broad (``OrchestrationError``) or narrow
+    (``PlanResolutionError``) as needed.
+
 All orchestration exceptions inherit from ``spine.core.errors.OrchestrationError``
 so that callers can catch the entire family with a single ``except`` clause.
 
@@ -7,12 +13,18 @@ Hierarchy::
 
     OrchestrationError  (from spine.core.errors)
       └── GroupError                  ── base for all orchestration errors
-            ├── GroupNotFoundError      ── pipeline group not registered
-            ├── StepNotFoundError       ── step references unknown pipeline
+            ├── GroupNotFoundError      ── operation group not registered
+            ├── StepNotFoundError       ── step references unknown operation
             ├── CycleDetectedError      ── dependency graph has a cycle
             ├── PlanResolutionError     ── cannot resolve execution plan
             ├── InvalidGroupSpecError   ── YAML/dict spec is invalid
             └── DependencyError         ── step dependencies are invalid
+
+Tags:
+    spine-core, orchestration, exceptions, error-hierarchy
+
+Doc-Types:
+    api-reference
 """
 
 from spine.core.errors import OrchestrationError
@@ -25,20 +37,20 @@ class GroupError(OrchestrationError):
 
 
 class GroupNotFoundError(GroupError):
-    """Raised when a requested pipeline group is not registered."""
+    """Raised when a requested operation group is not registered."""
 
     def __init__(self, group_name: str):
         self.group_name = group_name
-        super().__init__(f"Pipeline group not found: {group_name}")
+        super().__init__(f"Operation group not found: {group_name}")
 
 
 class StepNotFoundError(GroupError):
-    """Raised when a step references a non-existent pipeline."""
+    """Raised when a step references a non-existent operation."""
 
-    def __init__(self, step_name: str, pipeline_name: str):
+    def __init__(self, step_name: str, operation_name: str):
         self.step_name = step_name
-        self.pipeline_name = pipeline_name
-        super().__init__(f"Step '{step_name}' references unknown pipeline: {pipeline_name}")
+        self.operation_name = operation_name
+        super().__init__(f"Step '{step_name}' references unknown operation: {operation_name}")
 
 
 class CycleDetectedError(GroupError):

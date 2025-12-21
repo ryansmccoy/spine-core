@@ -78,7 +78,7 @@ def _insert_work_item(
     ctx,
     item_id=1,
     domain="finance",
-    pipeline="ingest",
+    workflow="ingest",
     partition_key="2026-01",
     state="PENDING",
     priority=100,
@@ -87,11 +87,11 @@ def _insert_work_item(
     ctx.conn.execute(
         """
         INSERT INTO core_work_items (
-            id, domain, pipeline, partition_key, state, priority,
+            id, domain, workflow, partition_key, state, priority,
             attempt_count, max_attempts, created_at, updated_at, desired_at
         ) VALUES (?, ?, ?, ?, ?, ?, 0, 3, datetime('now'), datetime('now'), datetime('now'))
         """,
-        (item_id, domain, pipeline, partition_key, state, priority),
+        (item_id, domain, workflow, partition_key, state, priority),
     )
     ctx.conn.commit()
 
@@ -298,8 +298,8 @@ class TestListWorkItems:
 
     def test_filter_by_workflow(self, ctx):
         initialize_database(ctx)
-        _insert_work_item(ctx, item_id=1, pipeline="ingest")
-        _insert_work_item(ctx, item_id=2, pipeline="transform", partition_key="2026-02")
+        _insert_work_item(ctx, item_id=1, workflow="ingest")
+        _insert_work_item(ctx, item_id=2, workflow="transform", partition_key="2026-02")
 
         result = list_work_items(ctx, ListWorkItemsRequest(workflow="transform"))
         assert result.success is True

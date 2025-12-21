@@ -4,7 +4,7 @@ Request-scoped context for operations.
 Every operation function receives an :class:`OperationContext` as its first
 argument.  The context carries the database connection, caller identity,
 dry-run flag, and arbitrary metadata.  It is *not* the same as
-``spine.execution.context.ExecutionContext`` (which tracks pipeline runs at
+``spine.execution.context.ExecutionContext`` (which tracks operation runs at
 the infrastructure level).
 """
 

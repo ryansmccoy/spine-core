@@ -71,7 +71,7 @@ class Alert:
     severity: AlertSeverity
     title: str
     message: str
-    source: str  # Pipeline, workflow, or service name
+    source: str  # Operation, workflow, or service name
 
     # Optional context
     domain: str | None = None

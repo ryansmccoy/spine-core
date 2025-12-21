@@ -1,5 +1,11 @@
 """SQLAlchemy 2.0 ORM table definitions for spine-core.
 
+Manifesto:
+    Every ``CREATE TABLE`` in ``spine.core.schema/*.sql`` has a corresponding
+    ``Mapped`` class here so the ORM and raw-SQL layers share the same
+    schema.  This is the single authoritative Python-side representation
+    of spine-core's database structure.
+
 Every ``CREATE TABLE`` in ``spine.core.schema/*.sql`` has a corresponding
 ``Mapped`` class here.  Column types are aligned with the SQL DDL:
 
@@ -9,6 +15,12 @@ Every ``CREATE TABLE`` in ``spine.core.schema/*.sql`` has a corresponding
 * ``is_*`` / ``enabled`` / ``error_retryable`` -> ``Boolean``
   (stored as ``Integer`` on SQLite via ``type_annotation_map``)
 * ``ForeignKey`` declared where the SQL DDL has ``FOREIGN KEY``
+
+Tags:
+    spine-core, orm, sqlalchemy, tables, schema-mapping, 30-tables
+
+Doc-Types:
+    api-reference, data-model
 
 Usage::
 
@@ -251,7 +263,7 @@ class CalcDependencyTable(SpineBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     calc_domain: Mapped[str] = mapped_column(Text, nullable=False)
-    calc_pipeline: Mapped[str] = mapped_column(Text, nullable=False)
+    calc_operation: Mapped[str] = mapped_column(Text, nullable=False)
     calc_table: Mapped[str | None] = mapped_column(Text)
     depends_on_domain: Mapped[str] = mapped_column(Text, nullable=False)
     depends_on_table: Mapped[str] = mapped_column(Text, nullable=False)
@@ -429,7 +441,7 @@ class ScheduleTable(SpineBase):
     id: Mapped[str] = mapped_column(Text, primary_key=True)
     name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     target_type: Mapped[str] = mapped_column(
-        Text, default="pipeline", nullable=False
+        Text, default="operation", nullable=False
     )
     target_name: Mapped[str] = mapped_column(Text, nullable=False)
     params: Mapped[dict | None] = mapped_column(JSON)

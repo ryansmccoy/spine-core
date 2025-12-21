@@ -1,7 +1,6 @@
 """Execution Repository — analytics and maintenance queries.
 
-WHY
-───
+Manifesto:
 The :class:`ExecutionLedger` handles basic CRUD (create, update,
 get-by-id).  The repository adds higher-level analytic queries
 (stats over time, stale-execution detection, bulk cleanup) used
@@ -14,7 +13,7 @@ ARCHITECTURE
     ExecutionRepository(conn)
       ├── .get_execution_stats(hours)       ─ counts + durations
       ├── .get_stale_executions(minutes)    ─ stuck “running” rows
-      ├── .get_pipeline_stats(pipeline)     ─ per-pipeline analytics
+      ├── .get_operation_stats(operation)     ─ per-operation analytics
       ├── .cleanup_old(days)                ─ purge completed records
       └── .get_execution_timeline(hours)    ─ time-series for charts
 
@@ -29,6 +28,12 @@ Example::
     stats = repo.get_execution_stats(hours=24)
     print(stats["status_counts"])  # {'completed': 50, 'failed': 5}
     stale = repo.get_stale_executions(older_than_minutes=60)
+
+Tags:
+    spine-core, execution, repository, persistence, query
+
+Doc-Types:
+    api-reference
 """
 
 from datetime import UTC, datetime, timedelta

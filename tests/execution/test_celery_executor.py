@@ -113,12 +113,12 @@ class TestCeleryExecutorSubmit:
     @pytest.mark.asyncio
     async def test_submit_creates_correct_task_name(self):
         """submit() uses spine.execute.{kind} naming convention."""
-        spec = _make_spec(kind="pipeline")
+        spec = _make_spec(kind="operation")
         await self.executor.submit(spec)
 
         self.app.signature.assert_called_once()
         call_args = self.app.signature.call_args
-        assert call_args[0][0] == "spine.execute.pipeline"
+        assert call_args[0][0] == "spine.execute.operation"
 
     @pytest.mark.asyncio
     async def test_submit_passes_params(self):

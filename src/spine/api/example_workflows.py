@@ -3,12 +3,21 @@ Example workflow definitions auto-registered on API startup.
 
 These provide real-looking workflows for the frontend dashboard,
 and demonstrate the v2 Workflow DSL for spine-core consumers.
+
+Manifesto:
+    Shipped examples prove the happy path works and give new users
+    something to explore in the dashboard from the first launch.
+
+Tags:
+    spine-core, api, example-workflows, onboarding, DSL
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 from spine.core.logging import get_logger
-
 from spine.orchestration.step_types import Step
 from spine.orchestration.workflow import Workflow
 from spine.orchestration.workflow_registry import register_workflow
@@ -31,12 +40,12 @@ def register_example_workflows() -> int:
         Workflow(
             name="etl.daily_ingest",
             domain="core",
-            description="Daily data ingestion pipeline — extract, transform, load",
+            description="Daily data ingestion operation — extract, transform, load",
             steps=[
-                Step.pipeline("extract", "core.extract"),
-                Step.pipeline("validate", "core.validate", depends_on=["extract"]),
-                Step.pipeline("transform", "core.transform", depends_on=["validate"]),
-                Step.pipeline("load", "core.load", depends_on=["transform"]),
+                Step.operation("extract", "core.extract"),
+                Step.operation("validate", "core.validate", depends_on=["extract"]),
+                Step.operation("transform", "core.transform", depends_on=["validate"]),
+                Step.operation("load", "core.load", depends_on=["transform"]),
             ],
             tags=["etl", "daily"],
         ),
@@ -45,10 +54,10 @@ def register_example_workflows() -> int:
             domain="quality",
             description="Run all quality checks across loaded datasets",
             steps=[
-                Step.pipeline("schema_check", "quality.schema"),
-                Step.pipeline("completeness", "quality.completeness"),
-                Step.pipeline("business_rules", "quality.rules", depends_on=["schema_check", "completeness"]),
-                Step.pipeline("report", "quality.report", depends_on=["business_rules"]),
+                Step.operation("schema_check", "quality.schema"),
+                Step.operation("completeness", "quality.completeness"),
+                Step.operation("business_rules", "quality.rules", depends_on=["schema_check", "completeness"]),
+                Step.operation("report", "quality.report", depends_on=["business_rules"]),
             ],
             tags=["quality", "audit"],
         ),
@@ -57,9 +66,9 @@ def register_example_workflows() -> int:
             domain="reporting",
             description="Generate weekly summary reports and dashboards",
             steps=[
-                Step.pipeline("aggregate", "reporting.aggregate"),
-                Step.pipeline("render", "reporting.render", depends_on=["aggregate"]),
-                Step.pipeline("distribute", "reporting.distribute", depends_on=["render"]),
+                Step.operation("aggregate", "reporting.aggregate"),
+                Step.operation("render", "reporting.render", depends_on=["aggregate"]),
+                Step.operation("distribute", "reporting.distribute", depends_on=["render"]),
             ],
             tags=["reporting", "weekly"],
         ),

@@ -24,7 +24,7 @@ from spine.orchestration.recorder import (
     replay,
 )
 from spine.orchestration.workflow_runner import WorkflowRunner
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 
 
 # ---------------------------------------------------------------------------
@@ -34,8 +34,8 @@ from spine.execution.runnable import PipelineRunResult
 class _NoOpRunnable:
     """Minimal Runnable for recorder tests."""
 
-    def submit_pipeline_sync(self, pipeline_name, params=None, *, parent_run_id=None, correlation_id=None):
-        return PipelineRunResult(status="completed")
+    def submit_operation_sync(self, operation_name, params=None, *, parent_run_id=None, correlation_id=None):
+        return OperationRunResult(status="completed")
 
 
 def _noop_runnable():
@@ -73,7 +73,7 @@ class TestStepRecording:
     def test_creation(self):
         r = StepRecording(
             step_name="fetch",
-            step_type="pipeline",
+            step_type="operation",
             params_snapshot={"date": "2026-01-15"},
             outputs_snapshot={"rows": 100},
             result_status="completed",
@@ -82,7 +82,7 @@ class TestStepRecording:
             timestamp="2026-01-15T00:00:00",
         )
         assert r.step_name == "fetch"
-        assert r.step_type == "pipeline"
+        assert r.step_type == "operation"
         assert r.duration_ms == 123.4
         assert r.error is None
 
@@ -98,7 +98,7 @@ class TestStepRecording:
 
     def test_to_dict(self):
         r = StepRecording(
-            step_name="fetch", step_type="pipeline",
+            step_name="fetch", step_type="operation",
             params_snapshot={"a": 1}, outputs_snapshot={"b": 2},
             result_status="completed", result_output={"b": 2},
             duration_ms=50.0, timestamp="2026-01-15T00:00:00",
@@ -201,7 +201,7 @@ class TestWorkflowRecording:
             params={"key": "val"},
             status="completed",
             recordings=[
-                StepRecording("a", "pipeline", {}, {}, "ok", {"x": 1}, 50.0, ""),
+                StepRecording("a", "operation", {}, {}, "ok", {"x": 1}, 50.0, ""),
             ],
         )
         json_str = wr.to_json()

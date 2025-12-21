@@ -65,6 +65,18 @@ Example:
     >>> execution = Execution.create(workflow="finra.otc.ingest")
     >>> ledger.create_execution(execution)
     >>> ledger.record_event(execution.id, EventType.STARTED)
+
+Manifesto:
+    Every execution must have an auditable history of who ran what,
+    when, and with what outcome.  The ledger is the single source
+    of truth for execution lineage and powers replay, debugging,
+    and compliance reporting.
+
+Tags:
+    spine-core, execution, ledger, audit-trail, lineage, persistence
+
+Doc-Types:
+    api-reference
 """
 
 import json

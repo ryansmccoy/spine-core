@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""AnomalyRecorder — Structured Pipeline Anomaly Tracking and Resolution.
+"""AnomalyRecorder — Structured Operation Anomaly Tracking and Resolution.
 
 ================================================================================
 WHY ANOMALY RECORDING?
 ================================================================================
 
-Pipeline anomalies aren't always errors.  They're *unexpected conditions*
+Operation anomalies aren't always errors.  They're *unexpected conditions*
 that need human attention:
 
     - Row count dropped 30% from last week — source broken or holiday?
@@ -39,7 +39,7 @@ ARCHITECTURE: ANOMALY LIFECYCLE
     ┌──────────┐     record()      ┌──────────────┐     resolve()     ┌──────────┐
     │ Detected │───────────────────►│     OPEN     │──────────────────►│ RESOLVED │
     │          │                    │              │                   │          │
-    │ Pipeline │                    │ core_anomaly │                   │ With     │
+    │ Operation │                    │ core_anomaly │                   │ With     │
     │ checks   │                    │   table      │                   │ reason   │
     └──────────┘                    └──────┬───────┘                   └──────────┘
                                            │
@@ -55,7 +55,7 @@ ARCHITECTURE: ANOMALY LIFECYCLE
     │ INFO     │ Noteworthy but not actionable (new filing type seen)  │
     │ WARN     │ Potential issue, monitor (row count dip 15%)          │
     │ ERROR    │ Threshold breached, investigate (null rate 35%)       │
-    │ CRITICAL │ Pipeline integrity at risk, page on-call              │
+    │ CRITICAL │ Operation integrity at risk, page on-call              │
     └──────────┴───────────────────────────────────────────────────────┘
 
 
@@ -95,7 +95,13 @@ See Also:
     - ``examples/01_core/04_reject_handling.py`` — Per-record rejection
 """
 
-import sqlite3
+import sys
+from pathlib import Path
+
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 from spine.core import (
     AnomalyRecorder,
     Severity,
@@ -107,12 +113,13 @@ from spine.core import (
 def main():
     """Demonstrate AnomalyRecorder for anomaly tracking."""
     print("=" * 60)
-    print("AnomalyRecorder - Pipeline Anomaly Tracking")
+    print("AnomalyRecorder - Operation Anomaly Tracking")
     print("=" * 60)
     
-    # Create in-memory database with core tables
-    conn = sqlite3.connect(":memory:")
-    create_core_tables(conn)
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
     
     # Create recorder for the "finra.otc" domain
     recorder = AnomalyRecorder(
@@ -160,8 +167,7 @@ def main():
     # Query open anomalies
     print("\n2. Querying open anomalies...")
     
-    cursor = conn.cursor()
-    cursor.execute("""
+    conn.execute("""
         SELECT id, severity, category, message, resolved_at
         FROM core_anomalies
         WHERE domain = 'finra.otc_transparency'
@@ -170,7 +176,7 @@ def main():
     """)
     
     print("   Open anomalies:")
-    for row in cursor.fetchall():
+    for row in conn.fetchall():
         print(f"     [{row[1]}] {row[2]}: {row[3][:40]}...")
     
     # Resolve an anomaly
@@ -183,12 +189,12 @@ def main():
     print(f"   ✓ Resolved network error anomaly")
     
     # Check remaining open anomalies
-    cursor.execute("""
+    conn.execute("""
         SELECT COUNT(*) FROM core_anomalies
         WHERE domain = 'finra.otc_transparency'
           AND resolved_at IS NULL
     """)
-    open_count = cursor.fetchone()[0]
+    open_count = conn.fetchone()[0]
     print(f"   Remaining open anomalies: {open_count}")
     
     # Severity levels demo
@@ -204,7 +210,7 @@ def main():
     # Audit trail query
     print("\n6. Full audit trail...")
     
-    cursor.execute("""
+    conn.execute("""
         SELECT detected_at, severity, category, message, 
                CASE WHEN resolved_at IS NOT NULL THEN 'RESOLVED' ELSE 'OPEN' END as status
         FROM core_anomalies
@@ -212,7 +218,7 @@ def main():
         ORDER BY detected_at
     """)
     
-    for row in cursor.fetchall():
+    for row in conn.fetchall():
         print(f"   [{row[4]}] {row[1]} {row[2]}: {row[3][:35]}...")
     
     conn.close()

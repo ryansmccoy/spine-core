@@ -1,8 +1,7 @@
 """Concurrency Guard — DB-level locking to prevent duplicate runs.
 
-WHY
-───
-If two workers pick up the same pipeline+params (e.g. both try to
+Manifesto:
+If two workers pick up the same operation+params (e.g. both try to
 ingest ``finra.otc:2025-01-09``), the second run wastes resources and
 can corrupt data.  ConcurrencyGuard uses database-level advisory
 locking with automatic expiry so that even if a process crashes, the
@@ -19,7 +18,7 @@ ARCHITECTURE
       ├── .cleanup_expired()           ─ reap stale locks
       └── .list_active()               ─ list all held locks
 
-    Lock key convention: “pipeline_name:partition_key”
+    Lock key convention: “operation_name:partition_key”
       e.g. "finra.otc.ingest:2025-01-09"
 
 BEST PRACTICES
@@ -38,9 +37,15 @@ Example::
     key = "finra.otc.ingest:2025-01-09"
     if guard.acquire(key, execution_id="exec-123"):
         try:
-            run_pipeline()
+            run_operation()
         finally:
             guard.release(key)
+
+Tags:
+    spine-core, execution, concurrency, semaphore, mutex, rate-control
+
+Doc-Types:
+    api-reference
 """
 
 from datetime import UTC, datetime, timedelta
@@ -52,12 +57,12 @@ def utcnow() -> datetime:
 
 
 class ConcurrencyGuard:
-    """Guards against concurrent execution of the same pipeline/params.
+    """Guards against concurrent execution of the same operation/params.
 
     Uses database-level locking with automatic expiry. If a process crashes,
     the lock will automatically expire after the timeout.
 
-    Lock keys should be unique per pipeline+params combination:
+    Lock keys should be unique per operation+params combination:
     - "finra.otc.ingest:2025-01-09" for weekly data
     - "finra.otc.ingest:2025-01-09:NMS_TIER_1" for tier-specific
     """
@@ -79,7 +84,7 @@ class ConcurrencyGuard:
         """Try to acquire a lock.
 
         Args:
-            lock_key: Unique key for the lock (e.g., "pipeline:params_hash")
+            lock_key: Unique key for the lock (e.g., "operation:params_hash")
             execution_id: Execution ID trying to acquire the lock
             timeout_seconds: Lock expires after this many seconds (default: 1 hour)
 

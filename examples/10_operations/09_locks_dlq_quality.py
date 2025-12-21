@@ -20,7 +20,7 @@ ARCHITECTURE
     │                                                 │
     │  ops.dlq                                        │
     │    list_dead_letters() → core_dead_letters      │
-    │    replay(id) → re-submit to pipeline           │
+    │    replay(id) → re-submit to operation           │
     │                                                 │
     │  ops.quality                                    │
     │    list_anomalies() → core_anomalies            │
@@ -42,13 +42,18 @@ See Also:
     01_core/11_anomaly_recording — anomaly lifecycle
 """
 
+import sys
 import json
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
-from spine.core.schema import create_core_tables
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
 from spine.core.schema_loader import apply_all_schemas
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.locks import (
     list_locks,
     release_lock,
@@ -71,9 +76,9 @@ def _seed_locks(conn) -> None:
     """Insert sample concurrency lock records."""
     now = datetime.now(timezone.utc)
     locks = [
-        ("pipeline:otc.ingest", "exec-001", now, now + timedelta(minutes=30)),
-        ("pipeline:equity.eod", "exec-002", now - timedelta(minutes=10), now + timedelta(minutes=20)),
-        ("pipeline:recon.full", "exec-003", now - timedelta(hours=2), now - timedelta(hours=1)),
+        ("operation:otc.ingest", "exec-001", now, now + timedelta(minutes=30)),
+        ("operation:equity.eod", "exec-002", now - timedelta(minutes=10), now + timedelta(minutes=20)),
+        ("operation:recon.full", "exec-003", now - timedelta(hours=2), now - timedelta(hours=1)),
     ]
     for key, exec_id, acquired, expires in locks:
         conn.execute(
@@ -169,9 +174,12 @@ def main():
     print("=" * 60)
     print("Operations Layer — Locks, DLQ & Quality")
     print("=" * 60)
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
-    create_core_tables(conn)
     apply_all_schemas(conn)
     ctx = OperationContext(conn=conn, caller="example")
 
@@ -197,9 +205,9 @@ def main():
     # --- 3. Release a lock ------------------------------------------------
     print("\n[3] Release Expired Lock")
 
-    rel = release_lock(ctx, "pipeline:recon.full")
+    rel = release_lock(ctx, "operation:recon.full")
     assert rel.success
-    print(f"  released : pipeline:recon.full")
+    print(f"  released : operation:recon.full")
 
     remaining = list_locks(ctx)
     print(f"  remaining : {remaining.total}")
@@ -250,7 +258,7 @@ def main():
         print(f"  {dl.id}  {dl.workflow:25s}  replays={dl.replay_count}  {dl.error[:50]}")
 
     # --- 9. Filter by domain ----------------------------------------------
-    print("\n[9] Filter Dead Letters by Pipeline")
+    print("\n[9] Filter Dead Letters by Operation")
 
     result = list_dead_letters(ctx, ListDeadLettersRequest(workflow="finra.otc.ingest"))
     assert result.success
@@ -285,7 +293,7 @@ def main():
         print(f"  [{a.severity:7s}]  workflow={a.workflow}  metric={a.metric}")
 
     # --- 13. Filter by domain ---------------------------------------------
-    print("\n[13] Filter Anomalies by Pipeline")
+    print("\n[13] Filter Anomalies by Operation")
 
     result = list_anomalies(ctx, ListAnomaliesRequest(workflow="finra.otc.ingest"))
     assert result.success
@@ -310,8 +318,8 @@ def main():
     for q in result.data:
         print(f"  {q.workflow:12s}  passed={q.checks_passed}  failed={q.checks_failed}  score={q.score:.2f}")
 
-    # --- 16. Filter by pipeline ----------------------------------------
-    print("\n[16] Filter Quality by Pipeline = 'equity'")
+    # --- 16. Filter by operation ----------------------------------------
+    print("\n[16] Filter Quality by Operation = 'equity'")
 
     result = list_quality_results(ctx, ListQualityResultsRequest(workflow="equity"))
     assert result.success

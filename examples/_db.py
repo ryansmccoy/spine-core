@@ -183,7 +183,7 @@ def get_orm_connection(
     bridge = SAConnectionBridge(session)
 
     # The ORM models use `workflow` column names.  The raw SQL schema
-    # files still use `pipeline` in some tables, so we skip
+    # files still use `operation` in some tables, so we skip
     # apply_all_schemas() here — SpineBase.metadata.create_all() has
     # already created every table we need.
     #
@@ -206,6 +206,103 @@ def get_orm_connection(
 # ---------------------------------------------------------------------------
 # Run recording
 # ---------------------------------------------------------------------------
+
+
+# Shared connection for individual examples to import
+_SHARED_CONN: Any = None
+_SHARED_INFO: ConnectionInfo | None = None
+
+
+def get_demo_connection(
+    *,
+    persist: bool | None = None,
+    init_schema: bool = True,
+) -> tuple[Any, ConnectionInfo]:
+    """Get a database connection for an individual example demo.
+
+    This is the canonical way for examples to get a database connection.
+    It respects environment configuration while defaulting to in-memory.
+
+    Parameters
+    ----------
+    persist:
+        If True, use file-based SQLite for persistent storage.
+        If False, use in-memory SQLite (default).
+        If None, reads from SPINE_EXAMPLES_PERSIST env var (default: False).
+    init_schema:
+        If True (default), creates all core tables.
+
+    Returns
+    -------
+    tuple[Connection, ConnectionInfo]
+        A Connection object and metadata about the connection.
+
+    Environment Variables
+    --------------------
+    SPINE_EXAMPLES_PERSIST
+        If "1" or "true", use persistent file-based storage.
+        Default: "0" (in-memory).
+
+    SPINE_EXAMPLES_SHARED_DB
+        Path to the shared database file when persist=True.
+        Default: examples/results/shared_demo.db
+
+    Usage
+    -----
+    ::
+
+        # In any example file:
+        from _db import get_demo_connection, load_env
+
+        load_env()  # Load .env settings
+        conn, info = get_demo_connection()
+
+        # Or explicitly request persistence:
+        conn, info = get_demo_connection(persist=True)
+    """
+    global _SHARED_CONN, _SHARED_INFO
+
+    # Load .env if not already loaded
+    load_env()
+
+    # Determine persistence mode
+    if persist is None:
+        persist_env = os.environ.get("SPINE_EXAMPLES_PERSIST", "0").strip().lower()
+        persist = persist_env in ("1", "true", "yes")
+
+    if persist:
+        # Use shared persistent database
+        _ensure_results_dir()
+        db_path = os.environ.get(
+            "SPINE_EXAMPLES_SHARED_DB",
+            str(_RESULTS_DIR / "shared_demo.db"),
+        )
+        _maybe_reset(Path(db_path))
+        conn, info = create_connection(db_path, init_schema=init_schema)
+    else:
+        # In-memory (isolated per example)
+        conn, info = create_connection(init_schema=init_schema)
+
+    return conn, info
+
+
+def get_shared_connection() -> tuple[Any, ConnectionInfo]:
+    """Get or create a shared persistent connection.
+
+    Multiple calls return the same connection instance.
+    Useful when you want all examples to write to the same database.
+
+    Returns
+    -------
+    tuple[Connection, ConnectionInfo]
+        A shared Connection object that persists across calls.
+    """
+    global _SHARED_CONN, _SHARED_INFO
+
+    if _SHARED_CONN is None:
+        _SHARED_CONN, _SHARED_INFO = get_demo_connection(persist=True)
+
+    return _SHARED_CONN, _SHARED_INFO
 
 
 def record_example_run(

@@ -1,7 +1,6 @@
 """Rate Limiting — token-bucket and sliding-window throughput control.
 
-WHY
-───
+Manifesto:
 External APIs (SEC EDGAR, LLM endpoints) enforce rate limits.
 Exceeding them causes bans or 429 errors.  In-process rate limiters
 let spine throttle outgoing calls *before* hitting the limit.
@@ -38,6 +37,12 @@ Example::
         make_api_call()
     else:
         raise RateLimitExceeded("Too many requests")
+
+Tags:
+    spine-core, execution, rate-limit, throttle, token-bucket
+
+Doc-Types:
+    api-reference
 """
 
 import threading

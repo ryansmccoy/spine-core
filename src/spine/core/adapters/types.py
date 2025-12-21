@@ -1,4 +1,21 @@
-"""Database types and configuration."""
+"""Database types and configuration.
+
+Manifesto:
+    Centralise the enumeration of supported database backends and the
+    connection parameter model so every adapter, factory, and registry
+    speaks the same vocabulary.
+
+Features:
+    - ``DatabaseType`` enum: SQLITE, POSTGRESQL, DB2, MYSQL, ORACLE
+    - ``DatabaseConfig`` dataclass: union of all backend connection fields
+    - Validation via ``validate()`` method with backend-specific rules
+
+Tags:
+    spine-core, database, types, configuration, enum
+
+Doc-Types:
+    api-reference
+"""
 
 from __future__ import annotations
 

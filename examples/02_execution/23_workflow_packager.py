@@ -98,7 +98,7 @@ def _build_test_workflow():
         Step.lambda_(name="transform", handler=transform_handler, depends_on=["extract"]),
         Step.lambda_(name="load", handler=load_handler, depends_on=["transform"]),
     ]
-    wf = Workflow(name="etl-pipeline", steps=steps, version=1)
+    wf = Workflow(name="etl-operation", steps=steps, version=1)
     return wf
 
 
@@ -114,7 +114,7 @@ def demo_package():
     wf = _build_test_workflow()
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        output = Path(tmpdir) / "etl_pipeline.pyz"
+        output = Path(tmpdir) / "etl_operation.pyz"
         archive_path, manifest = packager.package(wf, output=output)
 
         print(f"  Archive:       {archive_path}")
@@ -149,7 +149,7 @@ def demo_inspect(archive_path):
     print(f"  warnings:         {manifest.warnings}")
     print(f"  tags:             {manifest.tags}")
 
-    assert manifest.workflow_name == "etl-pipeline"
+    assert manifest.workflow_name == "etl-operation"
     assert manifest.step_count == 3
     print("  ✓ Manifest inspected\n")
 
@@ -217,7 +217,7 @@ def demo_round_trip():
         tmpdir = Path(tmpdir)
 
         # Pack
-        archive, manifest = packager.package(wf, output=tmpdir / "pipeline.pyz")
+        archive, manifest = packager.package(wf, output=tmpdir / "operation.pyz")
         print(f"  1. Packed:     {archive.name} ({manifest.step_count} steps)")
 
         # Inspect

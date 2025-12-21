@@ -1,4 +1,4 @@
-.PHONY: install test lint format clean build docs help up down up-standard up-full logs ps
+.PHONY: install test lint format clean build docs help up down up-standard up-full logs ps changelog detect-headers migrate migration migrate-check migrate-history
 
 # Default target
 help:
@@ -17,6 +17,14 @@ help:
 	@echo "  build         Build package"
 	@echo "  clean         Remove build artifacts"
 	@echo "  docs          Build documentation"
+	@echo "  changelog     Generate CHANGELOG, review, and API index"
+	@echo "  detect-headers Find modules missing Doc Headers"
+	@echo ""
+	@echo "Migrations:"
+	@echo "  migrate       Run all pending Alembic migrations"
+	@echo "  migration     Auto-generate a new migration (MSG=description)"
+	@echo "  migrate-check Check if migrations are up-to-date"
+	@echo "  migrate-history Show migration history"
 	@echo ""
 	@echo "Docker (Tiered Architecture):"
 	@echo "  up            Tier 1: API + Frontend (SQLite)"
@@ -84,6 +92,38 @@ clean:
 docs:
 	@echo "Documentation is in docs/ directory"
 	@echo "To serve locally: uv run mkdocs serve (requires mkdocs)"
+
+# Generate changelog, review, and API index
+changelog:
+	uv run python -m spine.tools.changelog generate \
+		--source-root src/spine \
+		--output-dir docs/_generated \
+		--phase-map docs/commit_notes/phase_map.json
+
+# Find modules missing Doc Headers
+detect-headers:
+	uv run python -m spine.tools.changelog detect-headers \
+		--source-root src/spine
+
+# ====================================================================
+# Database Migrations (Alembic)
+# ====================================================================
+
+# Run all pending migrations
+migrate:
+	uv run alembic upgrade head
+
+# Auto-generate a new migration (usage: make migration MSG="add foo table")
+migration:
+	uv run alembic revision --autogenerate -m "$(MSG)"
+
+# Check if model definitions match current DB state
+migrate-check:
+	uv run alembic check
+
+# Show migration history
+migrate-history:
+	uv run alembic history --verbose
 
 # ====================================================================
 # Docker — Tiered Architecture

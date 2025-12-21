@@ -1,68 +1,53 @@
 """
-Watermark tracking for incremental data pipelines.
+Watermark tracking for incremental data operations.
 
 Provides cursor-based "how far have I read?" tracking so that
-incremental pipelines can resume from their last position after
+incremental operations can resume from their last position after
 restart, crash, or scale-out.
 
-Why This Matters — Financial Pipelines:
-    SEC EDGAR publishes tens of thousands of filings per quarter.
-    Polygon streams tick-level price data continuously.  Bloomberg
-    pushes earnings estimates as analysts revise them.  Without
-    watermarks, a pipeline restart forces a full re-crawl — expensive
-    in API credits, time, and rate-limit headroom.
+Manifesto:
+    Financial data sources publish continuously — SEC EDGAR, Polygon,
+    Bloomberg. Without watermarks, a restart forces a full re-crawl,
+    wasting API credits, time, and rate-limit headroom.
 
-    Watermarks solve the "where did I leave off?" problem by recording
-    the last-processed position per (domain, source, partition) tuple.
-    On restart, the pipeline reads its watermark and resumes from there.
+    Watermarks record the last-processed position per (domain, source,
+    partition) tuple. On restart the operation reads its watermark and
+    resumes from there. Key principles:
 
-    Gap detection (``list_gaps()``) flags partitions where no watermark
-    exists — critical for audit: "have we ingested all 10-K, 10-Q, 8-K,
-    *and* 20-F filings, or did we miss a filing type?"
-
-Why This Matters — General Pipelines:
-    Any system that processes an ordered stream — Kafka offsets, CDC
-    sequences, paginated API cursors, or log tail positions — needs
-    the same checkpoint/resume pattern.  WatermarkStore provides a
-    persistence-agnostic implementation with forward-only (monotonic)
-    advancement, preventing accidental backward movement that would
-    cause duplicate processing.
-
-Key Concepts:
-    Watermark: A frozen dataclass capturing the high-water mark for
-        a given (domain, source, partition_key) triple.
-
-    WatermarkStore: Persistence-agnostic store with ``advance()``
-        (forward-only), ``get()``, ``list_gaps()``.
-
-    WatermarkGap: Describes a detected gap — a partition that should
-        have a watermark but doesn't.  Feed this to
-        :class:`~spine.core.backfill.BackfillPlan` for structured recovery.
-
-Related Modules:
-    - :mod:`spine.core.temporal_envelope` — 4-timestamp context for each record
-    - :mod:`spine.core.backfill` — structured gap-fill plans driven by gap detection
-    - :mod:`spine.core.finance.corrections` — what changed and why
+    - **Forward-only advancement:** Prevents accidental backward movement
+    - **Gap detection:** ``list_gaps()`` flags missing partitions for audit
+    - **Persistence-agnostic:** Database or in-memory (tests)
+    - **Partition-aware:** Per-source, per-partition tracking
 
 Architecture:
-    The store persists to a ``core_watermarks`` table when a database
-    connection is supplied.  Without a connection it falls back to an
-    in-memory dict (useful for tests).
+    ::
 
-    Database schema::
+        ┌──────────────────────────────────────────────────────────┐
+        │                  WatermarkStore                           │
+        └──────────────────────────────────────────────────────────┘
 
-        CREATE TABLE core_watermarks (
-            domain        TEXT NOT NULL,
-            source        TEXT NOT NULL,
-            partition_key TEXT NOT NULL,
-            high_water    TEXT NOT NULL,
-            low_water     TEXT,
-            metadata_json TEXT,
-            updated_at    TEXT NOT NULL,
-            UNIQUE (domain, source, partition_key)
-        );
+        advance("equity", "polygon", "AAPL", cursor)
+              │
+              ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ core_watermarks table (or in-memory dict)                │
+        │ domain | source  | partition_key | high_water | updated  │
+        │ equity | polygon | AAPL          | 2026-02-15 | ...      │
+        └──────────────────────────────────────────────────────────┘
 
-Example:
+        list_gaps(expected=["AAPL","MSFT","GOOG"])
+              │
+              ▼
+        WatermarkGap("MSFT") → BackfillPlan
+
+Features:
+    - **Watermark dataclass:** Frozen high-water mark per (domain, source, key)
+    - **WatermarkStore:** advance(), get(), list_gaps() with DB or memory backend
+    - **Forward-only:** Monotonic advancement prevents duplicate processing
+    - **Gap detection:** Compare expected vs actual partitions
+    - **WatermarkGap:** Feeds into BackfillPlan for structured recovery
+
+Examples:
     >>> from spine.core.watermarks import Watermark, WatermarkStore
     >>> store = WatermarkStore()
     >>> store.advance("equity", "polygon", "AAPL", "2026-02-15T00:00:00Z")
@@ -70,11 +55,39 @@ Example:
     >>> wm.high_water
     '2026-02-15T00:00:00Z'
 
-STDLIB ONLY — no Pydantic.
+Performance:
+    - advance(): Single UPSERT, O(1)
+    - get(): Single SELECT by (domain, source, partition_key), O(1)
+    - list_gaps(): O(expected) comparison against stored watermarks
+
+Guardrails:
+    ❌ DON'T: Move watermark backward (causes duplicate processing)
+    ✅ DO: Use advance() which enforces forward-only semantics
+
+    ❌ DON'T: Skip gap detection after backfills
+    ✅ DO: Run list_gaps() periodically for completeness audits
+
+    ❌ DON'T: Store mutable state in watermark metadata
+    ✅ DO: Use metadata for context only (source URL, batch_id)
+
+Context:
+    Problem: Incremental operations need crash-safe resume and completeness
+        auditing across partitioned data sources.
+    Solution: Per-partition watermark tracking with forward-only advancement,
+        gap detection, and persistence-agnostic backend.
+    Alternatives Considered: Kafka offsets (Kafka-only), custom checkpoint
+        files (no gap detection), database sequences (no partition awareness).
 
 Tags:
-    watermark, incremental, cursor, resume, pipeline, spine-core,
+    watermark, incremental, cursor, resume, operation, spine-core,
     checkpoint, gap-detection, idempotent
+
+Doc-Types:
+    - API Reference
+    - Operation Patterns Guide
+    - Data Engineering Best Practices
+
+STDLIB ONLY — no Pydantic.
 """
 
 from __future__ import annotations

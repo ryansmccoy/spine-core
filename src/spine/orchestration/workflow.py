@@ -1,8 +1,7 @@
 """Workflow — named collection of steps with dependency graph.
 
-WHY
-───
-Pipelines do one thing well; Workflows compose multiple pipelines (and
+Manifesto:
+    Operations do one thing well; Workflows compose multiple operations (and
 lambda/choice/wait steps) into a reliable, observable multi-step process.
 The Workflow dataclass is the ‘‘blueprint’’ — it declares **what** to run and
 in what order, but never **how** to run it (that’s WorkflowRunner’s job).
@@ -28,7 +27,7 @@ KEY CLASSES
 - ``WorkflowExecutionPolicy`` — groups mode + concurrency + timeout
 
 Related modules:
-    step_types.py          — Step definitions (lambda, pipeline, choice)
+    step_types.py          — Step definitions (lambda, operation, choice)
     workflow_runner.py     — executes the workflow
     workflow_context.py    — immutable context passed between steps
 
@@ -40,11 +39,17 @@ Example::
         name="finra.weekly_refresh",
         domain="finra.otc_transparency",
         steps=[
-            Step.pipeline("ingest", "finra.otc_transparency.ingest_week"),
+            Step.operation("ingest", "finra.otc_transparency.ingest_week"),
             Step.lambda_("validate", validate_fn),
-            Step.pipeline("normalize", "finra.otc_transparency.normalize_week"),
+            Step.operation("normalize", "finra.otc_transparency.normalize_week"),
         ],
     )
+
+Tags:
+    spine-core, orchestration, workflow, DAG, steps, conditions
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -274,13 +279,13 @@ class Workflow:
         """Check if workflow uses inline lambda functions."""
         return any(s.step_type == StepType.LAMBDA for s in self.steps)
 
-    def has_pipeline_steps(self) -> bool:
-        """Check if workflow uses registered pipelines."""
-        return any(s.step_type == StepType.PIPELINE for s in self.steps)
+    def has_operation_steps(self) -> bool:
+        """Check if workflow uses registered operations."""
+        return any(s.step_type == StepType.OPERATION for s in self.steps)
 
-    def pipeline_names(self) -> list[str]:
-        """Get list of all pipeline names referenced by pipeline steps."""
-        return [s.pipeline_name for s in self.steps if s.step_type == StepType.PIPELINE and s.pipeline_name]
+    def operation_names(self) -> list[str]:
+        """Get list of all operation names referenced by operation steps."""
+        return [s.operation_name for s in self.steps if s.step_type == StepType.OPERATION and s.operation_name]
 
     # =========================================================================
     # Serialization
@@ -331,14 +336,14 @@ class Workflow:
 
         steps: list[Step] = []
         for sd in data.get("steps", []):
-            step_type = sd.get("type", "pipeline")
+            step_type = sd.get("type", "operation")
             depends_on = tuple(sd.get("depends_on", []))
 
-            if step_type == "pipeline":
+            if step_type == "operation":
                 steps.append(
-                    Step.pipeline(
+                    Step.operation(
                         name=sd["name"],
-                        pipeline_name=sd["pipeline"],
+                        operation_name=sd["operation"],
                         params=sd.get("config"),
                         depends_on=depends_on,
                     )

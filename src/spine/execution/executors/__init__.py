@@ -18,6 +18,18 @@ Example:
     >>> executor: Executor = MemoryExecutor()
     >>> ref = await executor.submit(spec)
     >>> status = await executor.get_status(ref)
+
+Manifesto:
+    Executor backends must be swappable.  This package provides
+    local, async, process-pool, Celery, memory, and stub
+    implementations behind a single protocol so deployments
+    choose the right backend without changing application code.
+
+Tags:
+    spine-core, execution, executors, backend-abstraction, swappable
+
+Doc-Types:
+    api-reference
 """
 
 from .async_local import AsyncLocalExecutor

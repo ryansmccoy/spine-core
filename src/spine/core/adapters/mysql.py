@@ -1,5 +1,10 @@
 """MySQL database adapter.
 
+Manifesto:
+    Web-scale and cloud-native deployments often use MySQL or MariaDB.
+    This adapter wraps ``mysql.connector`` with the ``DatabaseAdapter``
+    interface so spine operations run identically across backends.
+
 Uses ``mysql.connector`` from the ``mysql-connector-python`` package.
 MySQL uses **format** (``%s``) placeholder style.
 
@@ -11,6 +16,12 @@ Install the driver::
 This adapter is import-guarded: if ``mysql.connector`` is not installed
 a clear :class:`~spine.core.errors.ConfigError` is raised at
 ``connect()`` time.
+
+Tags:
+    spine-core, database, mysql, mariadb, cloud, import-guarded
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

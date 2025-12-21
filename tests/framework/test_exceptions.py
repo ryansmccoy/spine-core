@@ -11,10 +11,10 @@ import pytest
 
 from spine.framework.exceptions import (
     SpineError,
-    PipelineNotFoundError,
+    OperationNotFoundError,
     BadParamsError,
     ValidationError,
-    PipelineError,
+    OperationError,
 )
 
 
@@ -31,27 +31,27 @@ class TestSpineError:
         assert str(error) == "Test error message"
 
 
-class TestPipelineNotFoundError:
-    """Tests for PipelineNotFoundError exception."""
+class TestOperationNotFoundError:
+    """Tests for OperationNotFoundError exception."""
 
     def test_inherits_from_spine_error(self):
         """Test inheritance from SpineError."""
-        assert issubclass(PipelineNotFoundError, SpineError)
+        assert issubclass(OperationNotFoundError, SpineError)
 
-    def test_stores_pipeline_name(self):
-        """Test that pipeline name is stored."""
-        error = PipelineNotFoundError("my.pipeline")
-        assert error.pipeline_name == "my.pipeline"
+    def test_stores_operation_name(self):
+        """Test that operation name is stored."""
+        error = OperationNotFoundError("my.operation")
+        assert error.operation_name == "my.operation"
 
     def test_error_message_includes_name(self):
-        """Test that error message includes pipeline name."""
-        error = PipelineNotFoundError("my.missing.pipeline")
-        assert "my.missing.pipeline" in str(error)
+        """Test that error message includes operation name."""
+        error = OperationNotFoundError("my.missing.operation")
+        assert "my.missing.operation" in str(error)
 
     def test_can_be_caught_as_spine_error(self):
         """Test that it can be caught as SpineError."""
         with pytest.raises(SpineError):
-            raise PipelineNotFoundError("test.pipeline")
+            raise OperationNotFoundError("test.operation")
 
 
 class TestBadParamsError:
@@ -110,17 +110,17 @@ class TestValidationError:
         assert "validation failed" in str(error).lower()
 
 
-class TestPipelineError:
-    """Tests for PipelineError exception."""
+class TestOperationError:
+    """Tests for OperationError exception."""
 
     def test_inherits_from_spine_error(self):
         """Test inheritance from SpineError."""
-        assert issubclass(PipelineError, SpineError)
+        assert issubclass(OperationError, SpineError)
 
     def test_error_message(self):
-        """Test PipelineError message."""
-        error = PipelineError("Pipeline execution failed at step 3")
-        assert "Pipeline execution failed" in str(error)
+        """Test OperationError message."""
+        error = OperationError("Operation execution failed at step 3")
+        assert "Operation execution failed" in str(error)
 
 
 class TestExceptionHierarchy:
@@ -129,10 +129,10 @@ class TestExceptionHierarchy:
     def test_all_exceptions_are_spine_errors(self):
         """Test that all custom exceptions inherit from SpineError."""
         exceptions = [
-            PipelineNotFoundError,
+            OperationNotFoundError,
             BadParamsError,
             ValidationError,
-            PipelineError,
+            OperationError,
         ]
         
         for exc_class in exceptions:
@@ -143,8 +143,8 @@ class TestExceptionHierarchy:
     def test_exceptions_can_be_caught_selectively(self):
         """Test that exceptions can be caught selectively."""
         # Specific catch
-        with pytest.raises(PipelineNotFoundError):
-            raise PipelineNotFoundError("test")
+        with pytest.raises(OperationNotFoundError):
+            raise OperationNotFoundError("test")
         
         # Should not catch different exception types
         with pytest.raises(BadParamsError):

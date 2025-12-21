@@ -4,7 +4,7 @@ Usage::
 
     spine-core webhook list
     spine-core webhook register sec.daily_ingest --kind workflow
-    spine-core webhook register finra.download --kind pipeline --description "Download FINRA data"
+    spine-core webhook register finra.download --kind operation --description "Download FINRA data"
 """
 
 from __future__ import annotations
@@ -42,11 +42,11 @@ def list_webhooks() -> None:
 
 @app.command("register")
 def register(
-    name: str = typer.Argument(..., help="Workflow or pipeline name"),
-    kind: str = typer.Option("workflow", "--kind", "-k", help="Type: workflow or pipeline"),
+    name: str = typer.Argument(..., help="Workflow or operation name"),
+    kind: str = typer.Option("workflow", "--kind", "-k", help="Type: workflow or operation"),
     description: str = typer.Option("", "--description", "-d", help="Human-readable description"),
 ) -> None:
-    """Register a workflow or pipeline as a webhook target."""
+    """Register a workflow or operation as a webhook target."""
     from spine.ops.webhooks import register_webhook
 
     register_webhook(name, kind=kind, description=description)

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS _migrations (
 
 CREATE TABLE IF NOT EXISTS core_executions (
     id VARCHAR(255) PRIMARY KEY,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     params JSON DEFAULT (JSON_OBJECT()),
     lane VARCHAR(50) NOT NULL DEFAULT 'normal',
     trigger_source VARCHAR(100) NOT NULL DEFAULT 'api',
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS core_executions (
     retry_count INTEGER DEFAULT 0,
     idempotency_key VARCHAR(255),
     INDEX idx_core_executions_status (status),
-    INDEX idx_core_executions_pipeline (pipeline),
+    INDEX idx_core_executions_workflow (workflow),
     INDEX idx_core_executions_created_at (created_at),
     CONSTRAINT fk_exec_parent FOREIGN KEY (parent_execution_id) REFERENCES core_executions(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS core_quality (
 CREATE TABLE IF NOT EXISTS core_anomalies (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     domain VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255),
+    workflow VARCHAR(255),
     partition_key TEXT,
     stage VARCHAR(255),
     severity VARCHAR(50) NOT NULL,
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS core_anomalies (
 CREATE TABLE IF NOT EXISTS core_work_items (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     domain VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     partition_key TEXT NOT NULL,
     params_json JSON,
     desired_at DATETIME NOT NULL,
@@ -133,11 +133,11 @@ CREATE TABLE IF NOT EXISTS core_work_items (
     created_at DATETIME NOT NULL DEFAULT NOW(),
     updated_at DATETIME NOT NULL DEFAULT NOW(),
     completed_at DATETIME,
-    UNIQUE KEY uq_work_items (domain, pipeline, partition_key(255)),
+    UNIQUE KEY uq_work_items (domain, workflow, partition_key(255)),
     INDEX idx_core_work_items_state (state),
     INDEX idx_core_work_items_desired_at (desired_at),
     INDEX idx_core_work_items_next_attempt (state, next_attempt_at),
-    INDEX idx_core_work_items_domain_pipeline (domain, pipeline),
+    INDEX idx_core_work_items_domain_workflow (domain, workflow),
     INDEX idx_core_work_items_partition (domain, partition_key(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS core_execution_events (
 CREATE TABLE IF NOT EXISTS core_dead_letters (
     id VARCHAR(255) PRIMARY KEY,
     execution_id VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     params JSON DEFAULT (JSON_OBJECT()),
     error TEXT NOT NULL,
     retry_count INTEGER DEFAULT 0,
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS core_dead_letters (
     resolved_at DATETIME,
     resolved_by VARCHAR(255),
     INDEX idx_core_dead_letters_resolved (resolved_at),
-    INDEX idx_core_dead_letters_pipeline (pipeline)
+    INDEX idx_core_dead_letters_workflow (workflow)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS core_concurrency_locks (
 CREATE TABLE IF NOT EXISTS core_schedules (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    target_type VARCHAR(50) NOT NULL DEFAULT 'pipeline',
+    target_type VARCHAR(50) NOT NULL DEFAULT 'operation',
     target_name VARCHAR(255) NOT NULL,
     params JSON,
     schedule_type VARCHAR(50) NOT NULL DEFAULT 'cron',
@@ -242,14 +242,14 @@ CREATE TABLE IF NOT EXISTS core_schedule_locks (
 CREATE TABLE IF NOT EXISTS core_calc_dependencies (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     calc_domain VARCHAR(255) NOT NULL,
-    calc_pipeline VARCHAR(255) NOT NULL,
+    calc_operation VARCHAR(255) NOT NULL,
     calc_table VARCHAR(255),
     depends_on_domain VARCHAR(255) NOT NULL,
     depends_on_table VARCHAR(255) NOT NULL,
     dependency_type VARCHAR(50) NOT NULL,
     description TEXT,
     created_at DATETIME NOT NULL DEFAULT NOW(),
-    INDEX idx_core_calc_dependencies_calc (calc_domain, calc_pipeline),
+    INDEX idx_core_calc_dependencies_calc (calc_domain, calc_operation),
     INDEX idx_core_calc_dependencies_upstream (depends_on_domain, depends_on_table)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS core_calc_dependencies (
 CREATE TABLE IF NOT EXISTS core_expected_schedules (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     domain VARCHAR(255) NOT NULL,
-    pipeline VARCHAR(255) NOT NULL,
+    workflow VARCHAR(255) NOT NULL,
     schedule_type VARCHAR(50) NOT NULL,
     cron_expression VARCHAR(100),
     partition_template TEXT NOT NULL,
@@ -268,7 +268,7 @@ CREATE TABLE IF NOT EXISTS core_expected_schedules (
     is_active TINYINT DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT NOW(),
     updated_at DATETIME NOT NULL DEFAULT NOW(),
-    INDEX idx_core_expected_schedules_domain (domain, pipeline),
+    INDEX idx_core_expected_schedules_domain (domain, workflow),
     INDEX idx_core_expected_schedules_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

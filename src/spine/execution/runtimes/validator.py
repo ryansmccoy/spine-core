@@ -55,6 +55,18 @@ Example:
     >>> errors = validator.validate(spec, caps)
     >>> errors
     ['Spec requires GPU but runtime does not support it']
+
+Manifesto:
+    Catching spec-vs-adapter mismatches before submission
+    prevents wasted compute and confusing runtime errors.
+    The validator checks capabilities, resource limits, and
+    image availability up front.
+
+Tags:
+    spine-core, execution, runtimes, validator, pre-flight, safety
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

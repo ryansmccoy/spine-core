@@ -1,53 +1,52 @@
 """
-Backfill planning primitives for gap-filling pipelines.
+Backfill planning primitives for gap-filling operations.
 
 Provides a structured plan for re-processing a range of partitions
 after detecting gaps, corrections, or data-quality issues.  Supports
 checkpoint-based resume so that multi-hour backfills can survive
 crashes without restarting from scratch.
 
-Why This Matters — Financial Pipelines:
-    Financial data has strict completeness requirements.  If an SEC
-    EDGAR crawl misses Q3 filings for 200 companies, you can't just
-    shrug — downstream models, compliance reports, and client queries
-    depend on having every filing.  Backfill plans capture *what* is
-    missing (partition_keys), *why* (GAP, CORRECTION, etc.), and
-    *how far* the recovery has progressed — so that a backfill that
-    takes 6 hours and hits a rate limit at hour 4 can resume from
-    the checkpoint instead of starting over.
+Manifesto:
+    Financial data has strict completeness requirements. If an SEC EDGAR
+    crawl misses Q3 filings for 200 companies, downstream models,
+    compliance reports, and client queries break. Backfill plans capture
+    *what* is missing, *why*, and *how far* recovery has progressed:
 
-    Common financial triggers:
-    - **GAP**: WatermarkStore.list_gaps() detected missing partitions.
-    - **CORRECTION**: A CorrectionRecord arrived, triggering re-fetch.
-    - **SCHEMA_CHANGE**: A new field was added to the filing parser.
-    - **QUALITY_FAILURE**: Downstream quality check flagged bad data.
+    - **Structured recovery:** BackfillPlan captures partition_keys, reason, progress
+    - **Crash safety:** Checkpoint-based resume for multi-hour backfills
+    - **Audit trail:** Reason enum (GAP, CORRECTION, SCHEMA_CHANGE, QUALITY_FAILURE)
+    - **Progress visibility:** completed_keys, failed_keys, progress_pct
 
-Why This Matters — General Pipelines:
-    Any batch or micro-batch workload that processes partitioned data
-    (date ranges, entity groups, shard keys) benefits from structured
-    backfill tracking.  Without it, operators resort to ad-hoc scripts
-    with no visibility into progress, no crash safety, and no audit
-    trail of what was re-processed and why.
+Architecture:
+    ::
 
-Key Concepts:
-    BackfillPlan: Specification of *what* to backfill (domain, source,
-        partition_keys, reason) plus mutable tracking of *how far*
-        we've progressed (completed_keys, failed_keys, checkpoint).
+        ┌───────────────────────────────────────────────────────────┐
+        │                  Backfill Lifecycle                        │
+        └───────────────────────────────────────────────────────────┘
 
-    BackfillStatus: Lifecycle enum — PLANNED → RUNNING → COMPLETED
-        (or FAILED / CANCELLED).
+        WatermarkStore.list_gaps()
+              │
+              ▼
+        BackfillPlan.create(domain, source, partition_keys, reason)
+              │  status: PLANNED
+              ▼
+        plan.start()         → status: RUNNING
+              │
+              ├── plan.mark_partition_done("AAPL")   progress: 33%
+              ├── plan.mark_partition_done("MSFT")   progress: 66%
+              └── plan.mark_partition_done("GOOG")   progress: 100%
+                    │
+                    ▼
+        status: COMPLETED (or FAILED if errors)
 
-    BackfillReason: Why we're backfilling (GAP, CORRECTION,
-        QUALITY_FAILURE, SCHEMA_CHANGE, MANUAL).
+Features:
+    - **BackfillPlan:** Specification + mutable progress tracking
+    - **BackfillStatus:** PLANNED → RUNNING → COMPLETED / FAILED / CANCELLED
+    - **BackfillReason:** GAP, CORRECTION, QUALITY_FAILURE, SCHEMA_CHANGE, MANUAL
+    - **Checkpoint resume:** Crash at hour 4 → resume from last checkpoint
+    - **Progress tracking:** completed_keys, failed_keys, progress_pct
 
-Related Modules:
-    - :mod:`spine.core.watermarks` — gap detection that triggers backfills
-    - :mod:`spine.core.temporal_envelope` — ensures backfilled records
-      carry correct temporal context (ingest_time reflects re-ingest)
-    - :mod:`spine.core.finance.corrections` — correction events that
-      may trigger CORRECTION-reason backfills
-
-Example:
+Examples:
     >>> from spine.core.backfill import BackfillPlan, BackfillReason
     >>> plan = BackfillPlan.create(
     ...     domain="equity",
@@ -61,11 +60,39 @@ Example:
     >>> plan.progress_pct
     33.33
 
-STDLIB ONLY — no Pydantic.
+Performance:
+    - Plan creation: O(1), lightweight dataclass
+    - mark_partition_done(): O(1) set operation
+    - progress_pct: O(1) computation from set sizes
+
+Guardrails:
+    ❌ DON'T: Run backfills without a BackfillPlan (no audit trail)
+    ✅ DO: Always create a plan with reason for compliance tracking
+
+    ❌ DON'T: Restart from scratch after a crash
+    ✅ DO: Use checkpoint-based resume via completed_keys
+
+    ❌ DON'T: Backfill without checking watermarks first
+    ✅ DO: Use WatermarkStore.list_gaps() to drive backfill decisions
+
+Context:
+    Problem: Multi-hour backfills crash without progress tracking, and
+        ad-hoc re-processing scripts have no audit trail or visibility.
+    Solution: Structured backfill plans with lifecycle states, reason
+        tracking, and checkpoint-based resume.
+    Alternatives Considered: Airflow backfill (external dependency),
+        manual scripts (no audit), database flags (no progress tracking).
 
 Tags:
-    backfill, gap-fill, resume, checkpoint, pipeline, spine-core,
+    backfill, gap-fill, resume, checkpoint, operation, spine-core,
     crash-recovery, partition-tracking, audit-trail
+
+Doc-Types:
+    - API Reference
+    - Operation Patterns Guide
+    - Data Engineering Best Practices
+
+STDLIB ONLY — no Pydantic.
 """
 
 from __future__ import annotations

@@ -5,7 +5,7 @@ This module provides a standardized logging configuration using structlog
 that can be imported by any spine package (capture-spine, data-spine, etc.)
 
 Manifesto:
-    Observability is critical for financial data pipelines. This module
+    Observability is critical for financial data operations. This module
     provides structured logging that:
 
     - **Standardizes:** Same log format across all spines
@@ -87,7 +87,7 @@ Guardrails:
 
 Context:
     - Domain: Observability, logging, monitoring
-    - Used By: All Spine services and pipelines
+    - Used By: All Spine services and operations
     - Integrates With: Elasticsearch, Kibana, log aggregation
     - Dependencies: structlog (optional, fallback to stdlib)
 

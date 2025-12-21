@@ -1,16 +1,25 @@
 """
 Factory functions that create component instances from settings.
 
-Each factory uses lazy imports so that optional heavy dependencies
-(``sqlalchemy``, ``redis``, ``celery``, …) are only loaded when the
-corresponding backend is actually selected.
+Manifesto:
+    Each factory uses lazy imports so that optional heavy dependencies
+    (``sqlalchemy``, ``redis``, ``celery``, …) are only loaded when the
+    corresponding backend is actually selected.  This keeps
+    ``import spine.core`` fast and dependency-free.
 
-Example::
+Features:
+    - ``create_database_engine()`` — SQLAlchemy engine from settings
+    - ``create_scheduler_backend()`` — Thread / APScheduler / Celery
+    - ``create_cache_client()`` — InMemory / Redis cache
+    - ``create_worker_executor()`` — Thread / Process / Celery executor
+    - ``create_event_bus()`` — InMemory / Redis event bus
 
-    from spine.core.config import get_settings, create_database_engine
+Tags:
+    spine-core, configuration, factory-pattern, lazy-imports,
+    sqlalchemy, redis, celery
 
-    settings = get_settings()
-    engine = create_database_engine(settings)
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

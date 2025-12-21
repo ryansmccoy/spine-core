@@ -1,7 +1,18 @@
 """Source tracking table models (05_sources.sql).
 
+Manifesto:
+    Data source registry, fetch history, caching, and DB connection
+    config need typed dataclass representations for the ops layer
+    and API to work with structured objects.
+
 Models for data source tracking: source registry, fetch history,
 caching, and database connection configuration.
+
+Tags:
+    spine-core, models, sources, dataclasses, schema-mapping
+
+Doc-Types:
+    api-reference, data-model
 """
 
 from __future__ import annotations
@@ -22,7 +33,7 @@ class Source:
     source_type: str = ""  # file, http, database, s3, sftp
     config_json: str = ""  # JSON type-specific configuration
     domain: str | None = None
-    enabled: int = 1
+    enabled: bool = True
     created_at: str = ""
     updated_at: str = ""
     created_by: str | None = None
@@ -108,7 +119,7 @@ class DatabaseConnectionConfig:
     pool_size: int = 5
     max_overflow: int = 10
     pool_timeout: int = 30
-    enabled: int = 1
+    enabled: bool = True
     last_connected_at: str | None = None
     last_error: str | None = None
     last_error_at: str | None = None

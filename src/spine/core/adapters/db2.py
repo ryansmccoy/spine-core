@@ -1,5 +1,10 @@
 """IBM DB2 database adapter.
 
+Manifesto:
+    Enterprise and mainframe environments run DB2.  This adapter wraps
+    ``ibm_db_dbi`` with the ``DatabaseAdapter`` interface so spine
+    operations run identically on DB2 as on SQLite or PostgreSQL.
+
 Uses ``ibm_db_dbi`` — the DB-API 2.0 interface from the ``ibm-db``
 package.  DB2 uses **qmark** (``?``) placeholder style natively.
 
@@ -11,6 +16,12 @@ Install the driver::
 This adapter is import-guarded: if ``ibm_db`` is not installed a clear
 :class:`~spine.core.errors.ConfigError` is raised at ``connect()`` time
 rather than at import time.
+
+Tags:
+    spine-core, database, db2, enterprise, import-guarded, mainframe
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

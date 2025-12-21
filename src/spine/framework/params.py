@@ -1,4 +1,16 @@
-"""Parameter validation framework for pipelines."""
+"""Parameter validation framework for operations.
+
+Manifesto:
+    Operations must validate inputs before executing.  This module
+    provides declarative parameter schemas so validation is
+    consistent and self-documenting.
+
+Tags:
+    spine-core, framework, params, validation, schema
+
+Doc-Types:
+    api-reference
+"""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -10,7 +22,7 @@ from typing import Any
 
 @dataclass
 class ParamDef:
-    """Definition of a pipeline parameter."""
+    """Definition of a operation parameter."""
 
     name: str
     type: type
@@ -74,8 +86,8 @@ class ValidationResult:
         return ". ".join(messages) if messages else "Validation passed"
 
 
-class PipelineSpec:
-    """Pipeline parameter specification."""
+class OperationSpec:
+    """Operation parameter specification."""
 
     def __init__(
         self,
@@ -138,7 +150,7 @@ class PipelineSpec:
         return ValidationResult(valid=valid, missing_params=missing_params, invalid_params=invalid_params)
 
     def get_help_text(self) -> str:
-        """Generate help text for this pipeline."""
+        """Generate help text for this operation."""
         lines = []
 
         if self.description:

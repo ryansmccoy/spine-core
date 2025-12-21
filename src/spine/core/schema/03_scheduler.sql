@@ -2,7 +2,7 @@
 -- SPINE CORE - SCHEDULER TABLES
 -- =============================================================================
 -- Owner: spine-core package
--- Description: Tables for cron-based pipeline scheduling.
+-- Description: Tables for cron-based operation scheduling.
 --              Stores schedule definitions and execution history.
 --
 -- Tier Usage:
@@ -22,15 +22,15 @@
 -- SCHEDULES (Schedule Definitions)
 -- =============================================================================
 
--- Stores cron-based schedule definitions for pipelines and workflows
+-- Stores cron-based schedule definitions for operations and workflows
 CREATE TABLE IF NOT EXISTS core_schedules (
     -- Identity
     id TEXT PRIMARY KEY,                    -- ULID
     name TEXT NOT NULL UNIQUE,              -- e.g., "finra.weekly_refresh"
     
     -- Target
-    target_type TEXT NOT NULL DEFAULT 'pipeline',  -- pipeline, workflow
-    target_name TEXT NOT NULL,              -- Pipeline or workflow name
+    target_type TEXT NOT NULL DEFAULT 'operation',  -- operation, workflow
+    target_name TEXT NOT NULL,              -- Operation or workflow name
     params TEXT,                            -- JSON: Default parameters
     
     -- Schedule specification
@@ -73,7 +73,7 @@ CREATE INDEX IF NOT EXISTS idx_schedules_name ON core_schedules(name);
 -- =============================================================================
 
 -- Tracks each scheduled execution attempt
--- Links schedules to their workflow/pipeline runs
+-- Links schedules to their workflow/operation runs
 CREATE TABLE IF NOT EXISTS core_schedule_runs (
     -- Identity
     id TEXT PRIMARY KEY,                    -- ULID
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS core_schedule_runs (
     
     -- Execution linkage
     run_id TEXT,                            -- FK to core_workflow_runs
-    execution_id TEXT,                      -- FK to core_executions (if pipeline)
+    execution_id TEXT,                      -- FK to core_executions (if operation)
     
     -- Results
     error TEXT,                             -- Error message if failed

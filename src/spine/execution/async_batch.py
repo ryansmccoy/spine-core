@@ -1,8 +1,7 @@
 """Async Batch Executor — asyncio fan-out for parallel I/O-bound work.
 
-WHY
-───
-Many spine pipelines need to fan-out hundreds of I/O calls (SEC EDGAR
+Manifesto:
+Many spine operations need to fan-out hundreds of I/O calls (SEC EDGAR
 downloads, LLM API calls, DB queries) and collect results.  Using
 ``asyncio.gather`` with a semaphore gives true concurrency without
 the thread-pool overhead of :class:`~spine.execution.batch.BatchExecutor`.
@@ -33,6 +32,12 @@ Example::
     batch.add("dl_2", download_filing, {"url": url2})
     result = await batch.run_all()
     print(result.succeeded, result.failed)  # 2 0
+
+Tags:
+    spine-core, execution, async-batch, asyncio, gather, concurrency
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

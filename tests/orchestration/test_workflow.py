@@ -11,18 +11,18 @@ from spine.orchestration import (
     WorkflowRunner,
     WorkflowStatus,
 )
-from spine.core.errors import PipelineError
+from spine.core.errors import OperationError
 
 
 class TestStep:
     """Test Step creation."""
 
-    def test_create_pipeline_step(self):
-        """Create pipeline step."""
-        step = Step.pipeline("ingest", "finra.ingest")
+    def test_create_operation_step(self):
+        """Create operation step."""
+        step = Step.operation("ingest", "finra.ingest")
         assert step.name == "ingest"
-        assert step.step_type == StepType.PIPELINE
-        assert step.pipeline_name == "finra.ingest"
+        assert step.step_type == StepType.OPERATION
+        assert step.operation_name == "finra.ingest"
 
     def test_create_lambda_step(self):
         """Create lambda step."""
@@ -50,7 +50,7 @@ class TestWorkflow:
         workflow = Workflow(
             name="test.workflow",
             steps=[
-                Step.pipeline("step1", "pipeline1"),
+                Step.operation("step1", "operation1"),
             ],
         )
         assert workflow.name == "test.workflow"
@@ -61,9 +61,9 @@ class TestWorkflow:
         workflow = Workflow(
             name="test.workflow",
             steps=[
-                Step.pipeline("ingest", "ingest_pipeline"),
+                Step.operation("ingest", "ingest_operation"),
                 Step.lambda_("validate", lambda ctx, cfg: StepResult.ok()),
-                Step.pipeline("process", "process_pipeline"),
+                Step.operation("process", "process_operation"),
             ],
         )
         assert len(workflow.steps) == 3
@@ -77,8 +77,8 @@ class TestWorkflow:
             Workflow(
                 name="test.workflow",
                 steps=[
-                    Step.pipeline("step1", "pipeline1"),
-                    Step.pipeline("step1", "pipeline2"),  # Duplicate
+                    Step.operation("step1", "operation1"),
+                    Step.operation("step1", "operation2"),  # Duplicate
                 ],
             )
 
@@ -87,7 +87,7 @@ class TestWorkflow:
         workflow = Workflow(
             name="finra.weekly",
             domain="finra.otc_transparency",
-            steps=[Step.pipeline("ingest", "finra.ingest")],
+            steps=[Step.operation("ingest", "finra.ingest")],
         )
         assert workflow.domain == "finra.otc_transparency"
 
@@ -95,7 +95,7 @@ class TestWorkflow:
         """Create workflow with default parameters."""
         workflow = Workflow(
             name="test.workflow",
-            steps=[Step.pipeline("step1", "pipeline1")],
+            steps=[Step.operation("step1", "operation1")],
             defaults={"date": "2026-01-12", "env": "prod"},
         )
         assert workflow.defaults["date"] == "2026-01-12"

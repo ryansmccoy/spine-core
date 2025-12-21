@@ -1,13 +1,13 @@
 # spine-core
 
-**Platform primitives for temporal data pipelines in Python.**
+**Platform primitives for temporal data operations in Python.**
 
 [![CI](https://github.com/ryansmccoy/spine-core/actions/workflows/ci.yml/badge.svg)](https://github.com/ryansmccoy/spine-core/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ryansmccoy/spine-core/graph/badge.svg)](https://codecov.io/gh/ryansmccoy/spine-core)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-spine-core provides the foundational building blocks for reliable data pipelines: a `Result` monad for explicit error handling, retry strategies, circuit breakers, rate limiters, workflow orchestration, and a quality-gate framework — all with zero heavy dependencies.
+spine-core provides the foundational building blocks for reliable data operations: a `Result` monad for explicit error handling, retry strategies, circuit breakers, rate limiters, workflow orchestration, and a quality-gate framework — all with zero heavy dependencies.
 
 ## Install
 
@@ -103,7 +103,7 @@ result = runner.run(wf)
 | **`spine.core.timestamps`** | `generate_ulid`, `utc_now`, ISO-8601 helpers |
 | **`spine.execution`** | `Dispatcher`, `Executor`, `WorkSpec`, `RetryStrategy`, `CircuitBreaker`, `RateLimiter`, `BatchBuilder`, `ConcurrencyGuard` |
 | **`spine.orchestration`** | `Workflow`, `Step`, `WorkflowRunner`, `TrackedWorkflowRunner`, YAML workflow loading |
-| **`spine.framework`** | Pipeline ABC, `@register_pipeline`, source connectors, alert routing |
+| **`spine.framework`** | Operation ABC, `@register_operation`, source connectors, alert routing |
 | **`spine.observability`** | Structured JSON logging, `LogContext`, context propagation |
 
 ## Project Structure
@@ -113,7 +113,7 @@ src/spine/
 ├── core/           # Primitives: Result, errors, temporal, quality, manifest
 ├── execution/      # Dispatcher, executors, retry, circuit breaker, rate limiter
 ├── orchestration/  # Workflow engine, steps, runners, YAML loader
-├── framework/      # Pipeline framework, sources, alerts, registry
+├── framework/      # Operation framework, sources, alerts, registry
 └── observability/  # Structured logging, context propagation
 ```
 
@@ -127,10 +127,10 @@ examples/
 ├── 02_execution/     # Dispatcher, executors, retry
 ├── 03_resilience/    # Circuit breaker, rate limiter, concurrency
 ├── 04_orchestration/ # Workflows, steps, YAML loading
-├── 05_infrastructure/# Full pipeline demos
+├── 05_infrastructure/# Full operation demos
 ├── 06_observability/ # Logging, context propagation
 ├── 07_real_world/    # SEC filing, feed ingestion, market data
-└── 08_framework/     # Pipeline framework, registry
+└── 08_framework/     # Operation framework, registry
 ```
 
 Run any example:

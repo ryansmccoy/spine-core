@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS core_alerts (
     message TEXT NOT NULL,                  -- Detailed message
     
     -- Source
-    source TEXT NOT NULL,                   -- Pipeline/workflow that triggered
+    source TEXT NOT NULL,                   -- Operation/workflow that triggered
     domain TEXT,                            -- Domain context
     execution_id TEXT,                      -- FK to execution (if applicable)
     run_id TEXT,                            -- FK to workflow run (if applicable)

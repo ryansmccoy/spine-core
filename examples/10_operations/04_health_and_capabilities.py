@@ -16,7 +16,7 @@ ARCHITECTURE
     startup probe    ──▶  /health        ──▶  capabilities_check()
 
     Health returns:  {status, connected, backend, latency_ms, table_count}
-    Capabilities:    {pipelines, workflows, schedulers, alerting, sources}
+    Capabilities:    {operations, workflows, schedulers, alerting, sources}
 
 HEALTH STATUS VALUES
 ────────────────────
@@ -39,22 +39,31 @@ See Also:
     12_deploy/ — Docker deployment with health probes
 """
 
-import sqlite3
+import sys
+from pathlib import Path
 
-from spine.core.schema import create_core_tables
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
+
 from spine.ops.context import OperationContext
-from spine.ops.sqlite_conn import SqliteConnection
 from spine.ops.database import initialize_database
 from spine.ops.health import get_capabilities, get_health
 from spine.ops.result import OperationResult
+from spine.ops.sqlite_conn import SqliteConnection  # For unhealthy state test
 
 
 def main():
     print("=" * 60)
     print("Operations Layer — Health & Capabilities")
     print("=" * 60)
+    
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection(init_schema=False)  # We'll use initialize_database
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
 
-    conn = SqliteConnection(":memory:")
     ctx = OperationContext(conn=conn, caller="example")
     initialize_database(ctx)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Watermark Store — Cursor-based progress tracking for incremental pipelines.
+"""Watermark Store — Cursor-based progress tracking for incremental operations.
 
 Demonstrates spine-core's watermark primitives:
 1. Creating watermarks for domain/source/partition triples
@@ -10,10 +10,10 @@ Demonstrates spine-core's watermark primitives:
 
 Real-World Context:
     An EDGAR crawl processes 10-K, 10-Q, 8-K, and 20-F filing types.
-    After ingesting 50,000 filings, the pipeline crashes.  Without
+    After ingesting 50,000 filings, the operation crashes.  Without
     watermarks, you'd re-crawl everything from scratch — wasting hours
     and burning API rate limits.  With watermarks, each filing type has
-    a high-water mark (e.g. "2025-09-30T00:00:00Z") and the pipeline
+    a high-water mark (e.g. "2025-09-30T00:00:00Z") and the operation
     resumes exactly where it left off.
 
     Gap detection finds filing types with no watermark at all — "we
@@ -23,15 +23,20 @@ Real-World Context:
 Run: python examples/01_core/08_watermark_tracking.py
 """
 
-import sqlite3
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 from spine.core.watermarks import Watermark, WatermarkGap, WatermarkStore
 
 
 def main():
     print("=" * 60)
-    print("Watermark Store — Incremental Pipeline Cursors")
+    print("Watermark Store — Incremental Operation Cursors")
     print("=" * 60)
 
     # ── 1. In-memory store ──────────────────────────────────────
@@ -104,20 +109,11 @@ def main():
 
     # ── 7. SQLite-backed store ──────────────────────────────────
     print("\n--- 7. SQLite-backed store ---")
-    conn = sqlite3.connect(":memory:")
-    conn.execute("""
-        CREATE TABLE core_watermarks (
-            domain TEXT NOT NULL,
-            source TEXT NOT NULL,
-            partition_key TEXT NOT NULL,
-            high_water TEXT NOT NULL,
-            low_water TEXT,
-            metadata_json TEXT,
-            updated_at TEXT NOT NULL,
-            UNIQUE (domain, source, partition_key)
-        )
-    """)
-    conn.commit()
+    # Load .env and get connection (in-memory or persistent based on config)
+    load_env()
+    conn, info = get_demo_connection()
+    # core_watermarks table is created automatically by get_demo_connection()
+    print(f"  Backend: {'persistent' if info.persistent else 'in-memory'}")
     db_store = WatermarkStore(conn=conn)
     db_store.advance("filings", "edgar", "10-K", "2025-12-31T00:00:00Z")
     result = db_store.get("filings", "edgar", "10-K")

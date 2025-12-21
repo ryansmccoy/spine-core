@@ -1,5 +1,11 @@
 """APScheduler-based scheduler backend.
 
+Manifesto:
+    For deployments needing database-backed job persistence, misfire
+    policies, or advanced APScheduler features, this backend wraps
+    APScheduler 3.x ``BackgroundScheduler`` behind the ``SchedulerBackend``
+    protocol.
+
 Wraps APScheduler 3.x ``BackgroundScheduler`` to provide the
 ``SchedulerBackend`` protocol for production deployments that need
 richer job-store features (database-backed job persistence, misfire
@@ -9,11 +15,11 @@ Requires the ``[apscheduler]`` extra::
 
     pip install spine-core[apscheduler]
 
-.. note::
+Tags:
+    spine-core, scheduling, apscheduler, import-guarded, optional
 
-    For most use cases the zero-dependency ``ThreadSchedulerBackend``
-    is sufficient.  Use this backend when you need APScheduler-specific
-    capabilities like job stores or advanced misfire policies.
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

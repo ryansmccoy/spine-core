@@ -25,7 +25,7 @@ class TestEvent:
     def test_with_payload(self):
         event = Event(
             event_type="run.completed",
-            source="pipeline",
+            source="operation",
             payload={"run_id": "r1", "status": "success"},
         )
         assert event.payload["run_id"] == "r1"

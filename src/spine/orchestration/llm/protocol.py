@@ -1,7 +1,6 @@
 """LLM Provider Protocol — unified interface for language model backends.
 
-WHY
-───
+Manifesto:
 Workflows that include LLM steps need a backend-agnostic interface.
 This module defines the ``LLMProvider`` protocol, message types, and
 response models so any backend (OpenAI, Bedrock, Ollama, mock) can
@@ -34,6 +33,12 @@ Example::
 
         def models(self):
             return ["anthropic.claude-v2", "amazon.titan-text"]
+
+Tags:
+    spine-core, orchestration, llm, protocol, provider-interface, messages
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

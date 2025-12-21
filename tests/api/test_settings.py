@@ -16,7 +16,7 @@ class TestSpineCoreAPISettings:
         assert s.port == 12000
         assert s.api_prefix == "/api/v1"
         assert s.debug is False
-        assert s.cors_origins == ["*"]
+        assert s.cors_origins == ["http://localhost:3000", "http://localhost:5173", "http://localhost:12000"]
         assert s.rate_limit_enabled is False
         assert s.api_key is None
 

@@ -38,7 +38,7 @@ from spine.orchestration import (
     FailurePolicy,
     clear_workflow_registry,
 )
-from spine.framework.registry import clear_registry as clear_pipeline_registry
+from spine.framework.registry import clear_registry as clear_operation_registry
 
 
 # =============================================================================
@@ -91,19 +91,19 @@ def clean_workflow_registry_fixture() -> Generator[None, None, None]:
 
 
 @pytest.fixture
-def clean_pipeline_registry_fixture() -> Generator[None, None, None]:
+def clean_operation_registry_fixture() -> Generator[None, None, None]:
     """
-    Clear pipeline registry before and after test.
+    Clear operation registry before and after test.
     
-    Not auto-applied because most tests don't modify the pipeline registry.
+    Not auto-applied because most tests don't modify the operation registry.
     Use explicitly when needed:
     
-        def test_something(clean_pipeline_registry_fixture):
+        def test_something(clean_operation_registry_fixture):
             ...
     """
-    clear_pipeline_registry()
+    clear_operation_registry()
     yield
-    clear_pipeline_registry()
+    clear_operation_registry()
 
 
 # =============================================================================
@@ -124,9 +124,9 @@ def simple_linear_workflow() -> Workflow:
         description="Simple linear workflow for testing",
         version=1,
         steps=[
-            Step.pipeline("step_a", "pipeline.a"),
-            Step.pipeline("step_b", "pipeline.b", depends_on=["step_a"]),
-            Step.pipeline("step_c", "pipeline.c", depends_on=["step_b"]),
+            Step.operation("step_a", "operation.a"),
+            Step.operation("step_b", "operation.b", depends_on=["step_a"]),
+            Step.operation("step_c", "operation.c", depends_on=["step_b"]),
         ],
     )
 
@@ -149,10 +149,10 @@ def diamond_dependency_workflow() -> Workflow:
         description="Diamond dependency pattern",
         version=1,
         steps=[
-            Step.pipeline("step_a", "pipeline.a"),
-            Step.pipeline("step_b", "pipeline.b", depends_on=["step_a"]),
-            Step.pipeline("step_c", "pipeline.c", depends_on=["step_a"]),
-            Step.pipeline("step_d", "pipeline.d", depends_on=["step_b", "step_c"]),
+            Step.operation("step_a", "operation.a"),
+            Step.operation("step_b", "operation.b", depends_on=["step_a"]),
+            Step.operation("step_c", "operation.c", depends_on=["step_a"]),
+            Step.operation("step_d", "operation.d", depends_on=["step_b", "step_c"]),
         ],
     )
 
@@ -170,9 +170,9 @@ def parallel_independent_workflow() -> Workflow:
         description="Independent parallel steps",
         version=1,
         steps=[
-            Step.pipeline("step_a", "pipeline.a"),
-            Step.pipeline("step_b", "pipeline.b"),
-            Step.pipeline("step_c", "pipeline.c"),
+            Step.operation("step_a", "operation.a"),
+            Step.operation("step_b", "operation.b"),
+            Step.operation("step_c", "operation.c"),
         ],
         execution_policy=WorkflowExecutionPolicy(
             mode=ExecutionMode.PARALLEL, max_concurrency=3,
@@ -198,10 +198,10 @@ def workflow_with_defaults() -> Workflow:
             "week_ending": "2026-01-03",
         },
         steps=[
-            Step.pipeline("ingest", "pipeline.ingest"),
-            Step.pipeline(
+            Step.operation("ingest", "operation.ingest"),
+            Step.operation(
                 "normalize",
-                "pipeline.normalize",
+                "operation.normalize",
                 depends_on=["ingest"],
             ),
         ],
@@ -222,18 +222,18 @@ def complex_workflow() -> Workflow:
         version=1,
         defaults={"tier": "NMS_TIER_1"},
         steps=[
-            Step.pipeline("ingest", "finra.otc_transparency.ingest_week"),
-            Step.pipeline(
+            Step.operation("ingest", "finra.otc_transparency.ingest_week"),
+            Step.operation(
                 "normalize",
                 "finra.otc_transparency.normalize_week",
                 depends_on=["ingest"],
             ),
-            Step.pipeline(
+            Step.operation(
                 "aggregate",
                 "finra.otc_transparency.aggregate_week",
                 depends_on=["normalize"],
             ),
-            Step.pipeline(
+            Step.operation(
                 "rolling",
                 "finra.otc_transparency.compute_rolling",
                 depends_on=["aggregate"],
@@ -331,12 +331,12 @@ def make_step():
     """
     def _make_step(
         name: str,
-        pipeline_name: str,
+        operation_name: str,
         depends_on: list[str] | None = None,
     ) -> Step:
-        return Step.pipeline(
+        return Step.operation(
             name=name,
-            pipeline_name=pipeline_name,
+            operation_name=operation_name,
             depends_on=depends_on or [],
         )
     

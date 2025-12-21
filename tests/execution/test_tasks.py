@@ -15,7 +15,7 @@ class TestCeleryTasksModule:
         """Module should import without error even without Celery."""
         from spine.execution import tasks
         assert hasattr(tasks, "execute_task")
-        assert hasattr(tasks, "execute_pipeline")
+        assert hasattr(tasks, "execute_operation")
         assert hasattr(tasks, "execute_workflow")
         assert hasattr(tasks, "execute_step")
 

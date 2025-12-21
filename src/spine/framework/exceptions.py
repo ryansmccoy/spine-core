@@ -6,16 +6,16 @@ The canonical error hierarchy lives in spine.core.errors.
 
 from spine.core.errors import (
     BadParamsError,
-    PipelineError,
-    PipelineNotFoundError,
+    OperationError,
+    OperationNotFoundError,
     SpineError,
     ValidationError,
 )
 
 __all__ = [
     "SpineError",
-    "PipelineNotFoundError",
+    "OperationNotFoundError",
     "BadParamsError",
     "ValidationError",
-    "PipelineError",
+    "OperationError",
 ]

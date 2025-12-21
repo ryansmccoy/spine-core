@@ -29,7 +29,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS core_executions (
             id TEXT PRIMARY KEY,
-            pipeline TEXT,
+            workflow TEXT,
             params TEXT DEFAULT '{}',
             status TEXT DEFAULT 'pending',
             lane TEXT DEFAULT 'default',
@@ -53,15 +53,15 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     """)
 
 
-def _insert_pending(conn, pipeline, params=None, run_id=None):
+def _insert_pending(conn, workflow, params=None, run_id=None):
     from datetime import UTC, datetime
 
     rid = run_id or str(uuid.uuid4())
     now = datetime.now(UTC).isoformat()
     conn.execute(
-        "INSERT INTO core_executions (id, pipeline, params, status, created_at, lane) "
+        "INSERT INTO core_executions (id, workflow, params, status, created_at, lane) "
         "VALUES (?, ?, ?, 'pending', ?, 'default')",
-        (rid, pipeline, json.dumps(params or {}), now),
+        (rid, workflow, json.dumps(params or {}), now),
     )
     conn.commit()
     return rid
@@ -99,7 +99,7 @@ def registry():
     reg.register("task", "add", lambda p: {"result": p.get("a", 0) + p.get("b", 0)})
     reg.register("task", "fail", lambda _: (_ for _ in ()).throw(RuntimeError("test failure")))
     reg.register("task", "sleep", lambda p: (time.sleep(float(p.get("seconds", 0.1))), {"slept": True})[1])
-    reg.register("pipeline", "etl_stub", lambda p: {"pipeline": "etl_stub", "records": p.get("records", 100)})
+    reg.register("operation", "etl_stub", lambda p: {"operation": "etl_stub", "records": p.get("records", 100)})
     return reg
 
 
@@ -152,9 +152,9 @@ class TestEndToEndWithWorker:
         result = json.loads(row["result"])
         assert result["result"] == 42
 
-    def test_pipeline_executes(self, db, worker):
-        """Submit pipeline:etl_stub → completes with records count."""
-        run_id = _insert_pending(db, "pipeline:etl_stub", {"records": 500})
+    def test_operation_executes(self, db, worker):
+        """Submit operation:etl_stub → completes with records count."""
+        run_id = _insert_pending(db, "operation:etl_stub", {"records": 500})
 
         worker._poll()
         worker._pool.shutdown(wait=True)

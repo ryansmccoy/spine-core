@@ -1,23 +1,23 @@
 """
 Centralized settings for spine-core.
 
+Manifesto:
+    One validated, cached settings object replaces the ad-hoc per-module
+    settings classes that each parsed the same environment variables
+    differently.  ``SpineCoreSettings`` cooperates with the env-file
+    loader and TOML profiles to resolve values in a single place.
+
 :class:`SpineCoreSettings` replaces the ad-hoc per-module settings
 classes with a single, validated, cached source of truth.  It
 cooperates with the :mod:`~spine.core.config.loader` (env-file
 cascade) and :mod:`~spine.core.config.profiles` (TOML profiles) to
 resolve values.
 
-Quick start::
+Tags:
+    spine-core, configuration, settings, pydantic, caching, validation
 
-    from spine.core.config import get_settings
-
-    settings = get_settings()
-    print(settings.database_backend)   # DatabaseBackend.SQLITE
-    print(settings.infer_tier())       # "minimal"
-
-Requires the ``pydantic-settings`` optional extra::
-
-    pip install spine-core[settings]
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -109,7 +109,7 @@ class SpineCoreSettings(BaseSettings):
     api_workers: int = Field(default=1)
 
     # ── CORS ─────────────────────────────────────────────────────
-    cors_origins: list[str] = Field(default=["*"])
+    cors_origins: list[str] = Field(default=["http://localhost:3000", "http://localhost:5173", "http://localhost:12000"])
 
     # ── Rate limiting ────────────────────────────────────────────
     rate_limit_enabled: bool = Field(default=False)

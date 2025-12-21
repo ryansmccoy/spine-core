@@ -2,66 +2,67 @@
 
 Inspired by Dagster's software-defined assets, this module provides primitives
 for tracking *what data exists* (not just *what code ran*).  While spine-core's
-execution subsystem tracks pipeline runs and their status, assets track the
-**data artifacts** those pipelines produce.
+execution subsystem tracks operation runs and their status, assets track the
+**data artifacts** those operations produce.
 
-Why This Matters:
+Manifesto:
     spine-core processes SEC filings, financial data, and portfolio metrics.
-    Without asset tracking, you can answer "did the pipeline run?" but not
+    Without asset tracking, you can answer "did the operation run?" but not
     "is the 10-K data for AAPL fresh?" or "what produced this filing record?"
-    Asset tracking makes data a first-class citizen alongside executions.
 
-Architecture Decisions:
-    - **stdlib-only**: No external dependencies.  Frozen dataclasses with
-      ``__slots__`` for immutability and memory efficiency.
-    - **Composable keys**: ``AssetKey`` uses a tuple of strings for
-      hierarchical naming (``("sec", "filings", "10-K")``), enabling
-      namespace-based queries.
-    - **Separation of concerns**: ``AssetMaterialization`` records *production*
-      of data, ``AssetObservation`` records *observation* without production.
-      This mirrors Dagster's distinction and supports freshness monitoring.
-    - **Partition-aware**: Assets can be partitioned (by CIK, date, sector).
-      Partitions enable incremental materialization and staleness checks.
+    - **Data as first-class citizen:** Track artifacts alongside executions
+    - **Composable keys:** Hierarchical naming (("sec", "filings", "10-K"))
+    - **Materialization vs Observation:** Production vs freshness monitoring
+    - **Partition-aware:** Incremental materialization by CIK, date, sector
 
-Related Modules:
-    - :mod:`spine.core.temporal_envelope` — Wraps data with temporal semantics
-      (event_time, ingest_time).  Assets track *existence*; envelopes track
-      *time context*.
-    - :mod:`spine.core.watermarks` — Watermarks track *progress cursors*;
-      assets track *data artifacts*.  A pipeline advances a watermark AND
-      records an asset materialization.
-    - :mod:`spine.execution.models` — ``Execution`` tracks pipeline runs.
-      ``AssetMaterialization.execution_id`` links data to the run that
-      produced it.
-    - :mod:`spine.core.quality` — Quality checks validate data;
-      ``AssetObservation`` records the result of those checks.
+Architecture:
+    ::
 
-Best Practices:
-    1. Use hierarchical keys: ``AssetKey("sec", "filings", form_type)``
-       not ``AssetKey("sec_filings_10k")``.
-    2. Always set ``partition`` for partitioned data (CIK, date, etc.).
-    3. Record materializations *after* successful writes, not before.
-    4. Use observations for freshness monitoring without re-materializing.
-    5. Store ``execution_id`` to link assets to their producing pipeline.
+        AssetKey("sec", "filings", "10-K")
+              │
+              ├── AssetMaterialization (data was produced)
+              │     execution_id → links to operation run
+              │     partition → "CIK:0001318605"
+              │     metadata → {"count": 42}
+              │
+              └── AssetObservation (data was checked)
+                    metadata → {"row_count": 42, "freshness_lag_hours": 2.5}
 
-Tags:
-    domain: core, data-tracking, lineage
-    layer: domain-primitives
-    pattern: value-object, event-sourcing
-    stdlib-only: true
+Features:
+    - **AssetKey:** Hierarchical tuple-based naming for namespace queries
+    - **AssetMaterialization:** Records data production with execution lineage
+    - **AssetObservation:** Records freshness checks without re-materializing
+    - **Partition support:** Incremental materialization and staleness checks
+    - **Frozen dataclasses:** Immutable, memory-efficient value objects
 
-Example:
+Examples:
     >>> key = AssetKey("sec", "filings", "10-K")
     >>> mat = AssetMaterialization(
     ...     asset_key=key,
     ...     partition="CIK:0001318605",
     ...     metadata={"count": 42, "latest_date": "2025-01-15"},
     ... )
-    >>> obs = AssetObservation(
-    ...     asset_key=key,
-    ...     partition="CIK:0001318605",
-    ...     metadata={"row_count": 42, "freshness_lag_hours": 2.5},
-    ... )
+
+Guardrails:
+    ❌ DON'T: Use flat string keys ("sec_filings_10k")
+    ✅ DO: Use hierarchical keys: AssetKey("sec", "filings", "10-K")
+
+    ❌ DON'T: Record materializations before successful writes
+    ✅ DO: Record materializations AFTER data is committed
+
+    ❌ DON'T: Skip execution_id — it breaks lineage tracking
+    ✅ DO: Always include execution_id from ExecutionContext
+
+Tags:
+    assets, data-tracking, lineage, materialization, observation,
+    spine-core, dagster-inspired, partition-aware
+
+Doc-Types:
+    - API Reference
+    - Data Lineage Guide
+    - Asset Tracking Documentation
+
+STDLIB ONLY — no Pydantic.
 """
 
 from __future__ import annotations
@@ -241,7 +242,7 @@ class MaterializationStatus(str, Enum):
 class AssetMaterialization:
     """Immutable record that a data asset was produced.
 
-    A materialization is created *after* a pipeline successfully writes data.
+    A materialization is created *after* a operation successfully writes data.
     It answers the question: "When and how was this data created?"
 
     Architecture Decision:
@@ -251,7 +252,7 @@ class AssetMaterialization:
 
     Related Modules:
         - :class:`AssetKey` — What was materialized
-        - :class:`~spine.execution.models.Execution` — What pipeline run
+        - :class:`~spine.execution.models.Execution` — What operation run
           produced it (linked via ``execution_id``)
         - :class:`~spine.core.temporal_envelope.TemporalEnvelope` — Time
           context for the data itself
@@ -406,7 +407,7 @@ class AssetDefinition:
         >>> defn = AssetDefinition(
         ...     key=AssetKey("sec", "filings", "10-K"),
         ...     description="SEC 10-K annual filings",
-        ...     producing_pipeline="ingest_filings",
+        ...     producing_operation="ingest_filings",
         ...     freshness_policy=FreshnessPolicy(max_lag_seconds=86400),
         ...     group="sec_data",
         ... )
@@ -418,8 +419,8 @@ class AssetDefinition:
     description: str = ""
     """Human-readable description of what this asset contains."""
 
-    producing_pipeline: str | None = None
-    """Name of the pipeline/workflow that materializes this asset."""
+    producing_operation: str | None = None
+    """Name of the operation/workflow that materializes this asset."""
 
     freshness_policy: FreshnessPolicy | None = None
     """How fresh this asset should be (``None`` = no staleness checks)."""
@@ -444,7 +445,7 @@ class AssetRegistry:
 
     Architecture Decision:
         The registry is deliberately in-memory with no DB dependency.
-        Asset *definitions* are code-level declarations (like pipeline
+        Asset *definitions* are code-level declarations (like operation
         registrations).  Asset *materializations* are runtime events
         stored in the execution ledger or a dedicated table.
 
@@ -453,7 +454,7 @@ class AssetRegistry:
         >>> registry.register(AssetDefinition(
         ...     key=AssetKey("sec", "filings", "10-K"),
         ...     description="SEC 10-K annual filings",
-        ...     producing_pipeline="ingest_filings",
+        ...     producing_operation="ingest_filings",
         ... ))
         >>> registry.get(AssetKey("sec", "filings", "10-K")).description
         'SEC 10-K annual filings'
@@ -499,9 +500,9 @@ class AssetRegistry:
         prefix = AssetKey(namespace)
         return [d for d in self._assets.values() if prefix.is_prefix_of(d.key)]
 
-    def by_pipeline(self, pipeline_name: str) -> list[AssetDefinition]:
-        """Return definitions produced by a specific pipeline."""
-        return [d for d in self._assets.values() if d.producing_pipeline == pipeline_name]
+    def by_operation(self, operation_name: str) -> list[AssetDefinition]:
+        """Return definitions produced by a specific operation."""
+        return [d for d in self._assets.values() if d.producing_operation == operation_name]
 
     def dependents_of(self, key: AssetKey) -> list[AssetDefinition]:
         """Return definitions that depend on the given asset."""
@@ -542,7 +543,7 @@ def reset_asset_registry() -> None:
 def register_asset(
     *path: str,
     description: str = "",
-    producing_pipeline: str | None = None,
+    producing_operation: str | None = None,
     freshness_policy: FreshnessPolicy | None = None,
     group: str = "default",
     tags: dict[str, str] | None = None,
@@ -553,7 +554,7 @@ def register_asset(
     Args:
         *path: AssetKey path components.
         description: Human-readable description.
-        producing_pipeline: Pipeline that produces this asset.
+        producing_operation: Operation that produces this asset.
         freshness_policy: Staleness thresholds.
         group: Logical group name.
         tags: Metadata tags.
@@ -566,14 +567,14 @@ def register_asset(
         >>> defn = register_asset(
         ...     "sec", "filings", "10-K",
         ...     description="SEC 10-K annual filings",
-        ...     producing_pipeline="ingest_filings",
+        ...     producing_operation="ingest_filings",
         ...     freshness_policy=FreshnessPolicy(max_lag_seconds=86400),
         ... )
     """
     defn = AssetDefinition(
         key=AssetKey(*path),
         description=description,
-        producing_pipeline=producing_pipeline,
+        producing_operation=producing_operation,
         freshness_policy=freshness_policy,
         group=group,
         tags=tags or {},

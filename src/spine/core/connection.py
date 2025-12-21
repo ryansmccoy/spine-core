@@ -54,6 +54,49 @@ This dual return lets callers make decisions based on what backend
 they got (e.g. skip table_counts for PostgreSQL, show file path
 for SQLite).
 
+Manifesto:
+    Every module that needs a database connection should use
+    ``create_connection()`` rather than importing backend-specific
+    classes directly. This ensures:
+
+    - **Single entry point:** One function for all backends
+    - **URL-driven:** Backend selected by URL scheme, not code changes
+    - **Extensible:** New backends added to _BACKEND_REGISTRY
+    - **Schema init:** Optional create_tables() on connection
+
+Architecture:
+    ::
+
+        create_connection(url) → (conn, ConnectionInfo)
+              │
+              ├── "memory" / None     → sqlite3 :memory:
+              ├── "sqlite:///..."     → sqlite3 file
+              ├── "./path.db"         → sqlite3 file
+              └── "postgresql://..."  → psycopg2 connection
+
+Features:
+    - **Multi-backend:** SQLite (memory/file) and PostgreSQL
+    - **URL normalization:** Handles sqlite:///, postgres://, postgresql://
+    - **Schema initialization:** Optional init_schema=True
+    - **ConnectionInfo:** Backend metadata (backend, persistent, url)
+    - **Registry-based:** _BACKEND_REGISTRY for future backends
+
+Guardrails:
+    ❌ DON'T: Import sqlite3 or psycopg2 directly in domain code
+    ✅ DO: Use create_connection() for all database access
+
+    ❌ DON'T: Hardcode backend-specific SQL in domain code
+    ✅ DO: Use dialect abstraction from spine.core.dialect
+
+Tags:
+    connection, database, factory, sqlite, postgresql, spine-core,
+    backend-agnostic, url-routing
+
+Doc-Types:
+    - API Reference
+    - Infrastructure Guide
+    - Database Configuration
+
 Tier: Basic (spine-core)
 """
 

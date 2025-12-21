@@ -305,8 +305,8 @@ def load_config(env: str) -> Result[dict]:
 # ============================================================================
 
 
-def process_pipeline(record: dict, config: dict) -> Result[dict]:
-    """Multi-step pipeline with error chaining.
+def process_operation(record: dict, config: dict) -> Result[dict]:
+    """Multi-step operation with error chaining.
 
     Demonstrates:
     - Using Result[T].flat_map() for chaining operations
@@ -325,7 +325,7 @@ def process_pipeline(record: dict, config: dict) -> Result[dict]:
                 # Chain the error to add context
                 return Err(
                     TransientError(
-                        "Pipeline enrichment failed",
+                        "Operation enrichment failed",
                         retryable=error.retryable,
                         retry_after=error.retry_after,
                         cause=error,  # Preserve root cause
@@ -350,7 +350,7 @@ def route_error_to_team(error):
     """
     if error.category in (ErrorCategory.NETWORK, ErrorCategory.DATABASE):
         return "ops-team"
-    elif error.category in (ErrorCategory.VALIDATION, ErrorCategory.PIPELINE):
+    elif error.category in (ErrorCategory.VALIDATION, ErrorCategory.operation):
         return "app-team"
     elif error.category == ErrorCategory.CONFIG:
         return "platform-team"
@@ -408,20 +408,20 @@ def main():
                 print(f"    Retryable: {error.retryable}")
 
     # Example 4: Error chaining
-    print("\n4. Error Chaining in Pipelines")
+    print("\n4. Error Chaining in Operations")
     print("-" * 70)
 
     record = {"ticker": "GOOG", "price": 2800.0}
     config_result = load_config("dev")
 
     if isinstance(config_result, Ok):
-        pipeline_result = process_pipeline(record, config_result.value)
+        operation_result = process_operation(record, config_result.value)
 
-        match pipeline_result:
+        match operation_result:
             case Ok(enriched):
-                print(f"  ✓ Pipeline success: {enriched['ticker']}")
+                print(f"  ✓ Operation success: {enriched['ticker']}")
             case Err(error):
-                print(f"  ✗ Pipeline failed: {error}")
+                print(f"  ✗ Operation failed: {error}")
                 if error.cause:
                     print(f"    Root cause: {error.cause}")
 

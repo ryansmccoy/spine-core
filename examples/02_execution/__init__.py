@@ -23,13 +23,13 @@ LIFECYCLE — how execution progresses
 ASYNC & INTEGRATION — concurrent execution patterns
 ─────────────────────────────────────────────────────
     07 — Async patterns (coordination strategies)
-    08 — FastAPI integration (REST APIs for pipelines)
+    08 — FastAPI integration (REST APIs for operations)
     09 — Execution ledger (persistent audit trail)
 
 ANALYTICS & BATCH — querying and bulk execution
 ─────────────────────────────────────────────────
     10 — Execution repository (analytics queries)
-    11 — Batch execution (coordinated multi-pipeline runs)
+    11 — Batch execution (coordinated multi-operation runs)
     12 — Health checks (system health monitoring)
 
 TRACKING — automatic execution recording

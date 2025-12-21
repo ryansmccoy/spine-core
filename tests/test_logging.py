@@ -54,10 +54,10 @@ class TestContextManagement:
         clear_context()
 
     def test_set_context_returns_context(self):
-        ctx = set_context(execution_id="test-123", workflow="test.pipeline")
+        ctx = set_context(execution_id="test-123", workflow="test.operation")
 
         assert ctx.execution_id == "test-123"
-        assert ctx.workflow == "test.pipeline"
+        assert ctx.workflow == "test.operation"
 
     def test_get_context_returns_current(self):
         set_context(execution_id="test-123")
@@ -74,11 +74,11 @@ class TestContextManagement:
 
     def test_bind_context_merges(self):
         set_context(execution_id="test-123")
-        bind_context(workflow="test.pipeline")
+        bind_context(workflow="test.operation")
         ctx = get_context()
 
         assert ctx.execution_id == "test-123"
-        assert ctx.workflow == "test.pipeline"
+        assert ctx.workflow == "test.operation"
 
 
 class TestLogStep:

@@ -45,19 +45,19 @@ def sample_condition(ctx) -> bool:
 class TestStepToDict:
     """Test Step.to_dict() for all step types."""
 
-    def test_pipeline_step_to_dict(self):
-        """Pipeline step serializes correctly."""
-        step = Step.pipeline("ingest", "finra.ingest", params={"batch_size": 100})
+    def test_operation_step_to_dict(self):
+        """Operation step serializes correctly."""
+        step = Step.operation("ingest", "finra.ingest", params={"batch_size": 100})
         d = step.to_dict()
 
         assert d["name"] == "ingest"
-        assert d["type"] == "pipeline"
-        assert d["pipeline"] == "finra.ingest"
+        assert d["type"] == "operation"
+        assert d["operation"] == "finra.ingest"
         assert d["config"] == {"batch_size": 100}
 
-    def test_pipeline_step_with_depends_on(self):
-        """Pipeline step serializes depends_on."""
-        step = Step.pipeline("process", "proc_pipeline", depends_on=["fetch", "validate"])
+    def test_operation_step_with_depends_on(self):
+        """Operation step serializes depends_on."""
+        step = Step.operation("process", "proc_operation", depends_on=["fetch", "validate"])
         d = step.to_dict()
 
         assert d["depends_on"] == ["fetch", "validate"]
@@ -127,7 +127,7 @@ class TestStepToDict:
         """Step with CONTINUE error policy serializes it."""
         from spine.orchestration.step_types import ErrorPolicy
 
-        step = Step.pipeline("risky_step", "risky.pipeline")
+        step = Step.operation("risky_step", "risky.operation")
         step.on_error = ErrorPolicy.CONTINUE
         d = step.to_dict()
 
@@ -146,7 +146,7 @@ class TestWorkflowToDict:
         """Minimal workflow serializes correctly."""
         workflow = Workflow(
             name="test.workflow",
-            steps=[Step.pipeline("step1", "pipeline1")],
+            steps=[Step.operation("step1", "operation1")],
         )
         d = workflow.to_dict()
 
@@ -160,8 +160,8 @@ class TestWorkflowToDict:
         workflow = Workflow(
             name="etl.daily",
             steps=[
-                Step.pipeline("fetch", "fetcher"),
-                Step.pipeline("transform", "transformer", depends_on=["fetch"]),
+                Step.operation("fetch", "fetcher"),
+                Step.operation("transform", "transformer", depends_on=["fetch"]),
             ],
             domain="etl.sec",
             description="Daily SEC ETL workflow",
@@ -192,7 +192,7 @@ class TestWorkflowToDict:
         """Workflow with default execution_policy doesn't include it."""
         workflow = Workflow(
             name="simple",
-            steps=[Step.pipeline("step1", "p1")],
+            steps=[Step.operation("step1", "p1")],
         )
         d = workflow.to_dict()
 
@@ -202,13 +202,13 @@ class TestWorkflowToDict:
 class TestWorkflowFromDict:
     """Test Workflow.from_dict()."""
 
-    def test_round_trip_pipeline_workflow(self):
-        """Pipeline-only workflow round-trips through dict."""
+    def test_round_trip_operation_workflow(self):
+        """Operation-only workflow round-trips through dict."""
         original = Workflow(
             name="etl.workflow",
             steps=[
-                Step.pipeline("fetch", "fetcher"),
-                Step.pipeline("process", "processor", depends_on=["fetch"]),
+                Step.operation("fetch", "fetcher"),
+                Step.operation("process", "processor", depends_on=["fetch"]),
             ],
             domain="etl",
             version=2,
@@ -257,8 +257,8 @@ class TestWorkflowFromDict:
                     "then_step": "step_a",
                     "else_step": "step_b",
                 },
-                {"name": "step_a", "type": "pipeline", "pipeline": "pa"},
-                {"name": "step_b", "type": "pipeline", "pipeline": "pb"},
+                {"name": "step_a", "type": "operation", "operation": "pa"},
+                {"name": "step_b", "type": "operation", "operation": "pb"},
             ],
         }
         workflow = Workflow.from_dict(d)
@@ -307,7 +307,7 @@ class TestWorkflowFromDict:
         d = {
             "name": "test.workflow",
             "version": 1,
-            "steps": [{"name": "s1", "type": "pipeline", "pipeline": "p1"}],
+            "steps": [{"name": "s1", "type": "operation", "operation": "p1"}],
             "execution_policy": {
                 "mode": "parallel",
                 "max_concurrency": 12,
@@ -364,7 +364,7 @@ class TestWorkflowToYaml:
         """to_yaml produces parseable YAML."""
         workflow = Workflow(
             name="test.workflow",
-            steps=[Step.pipeline("step1", "pipeline1")],
+            steps=[Step.operation("step1", "operation1")],
         )
         yaml_str = workflow.to_yaml()
 
@@ -381,7 +381,7 @@ class TestWorkflowToYaml:
             version=5,
             description="Daily finance ETL",
             tags=["production", "etl"],
-            steps=[Step.pipeline("run", "main_pipeline")],
+            steps=[Step.operation("run", "main_operation")],
         )
         yaml_str = workflow.to_yaml()
         data = yaml.safe_load(yaml_str)
@@ -398,8 +398,8 @@ class TestWorkflowToYaml:
         workflow = Workflow(
             name="test",
             steps=[
-                Step.pipeline("a", "pa"),
-                Step.pipeline("b", "pb", depends_on=["a"]),
+                Step.operation("a", "pa"),
+                Step.operation("b", "pb", depends_on=["a"]),
             ],
             defaults={"env": "dev"},
         )
@@ -415,7 +415,7 @@ class TestWorkflowToYaml:
         """to_yaml includes non-default policy."""
         workflow = Workflow(
             name="parallel",
-            steps=[Step.pipeline("s1", "p1")],
+            steps=[Step.operation("s1", "p1")],
             execution_policy=WorkflowExecutionPolicy(
                 mode=ExecutionMode.PARALLEL,
                 max_concurrency=16,
@@ -434,8 +434,8 @@ class TestWorkflowToYaml:
             name="roundtrip",
             domain="test",
             steps=[
-                Step.pipeline("fetch", "fetcher"),
-                Step.pipeline("process", "processor", depends_on=["fetch"]),
+                Step.operation("fetch", "fetcher"),
+                Step.operation("process", "processor", depends_on=["fetch"]),
             ],
         )
         yaml_str = original.to_yaml()
@@ -463,7 +463,7 @@ class TestWorkflowSpecFromWorkflow:
         workflow = Workflow(
             name="spec.test",
             domain="testing",
-            steps=[Step.pipeline("s1", "p1")],
+            steps=[Step.operation("s1", "p1")],
         )
         spec = WorkflowSpec.from_workflow(workflow)
 
@@ -476,7 +476,7 @@ class TestWorkflowSpecFromWorkflow:
         """from_workflow preserves execution policy."""
         workflow = Workflow(
             name="policy.test",
-            steps=[Step.pipeline("s1", "p1")],
+            steps=[Step.operation("s1", "p1")],
             execution_policy=WorkflowExecutionPolicy(
                 mode=ExecutionMode.PARALLEL,
                 max_concurrency=10,
@@ -497,8 +497,8 @@ class TestWorkflowSpecFromWorkflow:
             version=3,
             description="Round trip test",
             steps=[
-                Step.pipeline("a", "pa", params={"x": 1}),
-                Step.pipeline("b", "pb", depends_on=["a"]),
+                Step.operation("a", "pa", params={"x": 1}),
+                Step.operation("b", "pb", depends_on=["a"]),
             ],
             defaults={"key": "value"},
             tags=["test", "roundtrip"],
@@ -516,12 +516,12 @@ class TestWorkflowSpecFromWorkflow:
         assert restored.defaults == {"key": "value"}
         assert restored.tags == ["test", "roundtrip"]
 
-    def test_from_workflow_with_non_pipeline_steps(self):
-        """Non-pipeline steps serialize properly in WorkflowSpec."""
+    def test_from_workflow_with_non_operation_steps(self):
+        """Non-operation steps serialize properly in WorkflowSpec."""
         workflow = Workflow(
             name="mixed",
             steps=[
-                Step.pipeline("p1", "pipeline1"),
+                Step.operation("p1", "operation1"),
                 Step.lambda_("l1", lambda ctx, cfg: StepResult.ok()),
             ],
         )
@@ -529,7 +529,7 @@ class TestWorkflowSpecFromWorkflow:
 
         # Lambda is preserved as type="lambda"
         assert spec.spec.steps[1].type == "lambda"
-        assert spec.spec.steps[1].pipeline is None
+        assert spec.spec.steps[1].operation is None
 
 
 # =============================================================================

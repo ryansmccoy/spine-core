@@ -11,7 +11,7 @@ class TestWorkflowConstruction:
     """Test Workflow creation and validation."""
 
     def test_basic_workflow(self):
-        wf = Workflow(name="test", steps=[Step.pipeline("s1", "p1")])
+        wf = Workflow(name="test", steps=[Step.operation("s1", "p1")])
         assert wf.name == "test"
         assert len(wf.steps) == 1
 
@@ -28,8 +28,8 @@ class TestWorkflowConstruction:
             Workflow(
                 name="bad",
                 steps=[
-                    Step.pipeline("dup", "p1"),
-                    Step.pipeline("dup", "p2"),
+                    Step.operation("dup", "p1"),
+                    Step.operation("dup", "p2"),
                 ],
             )
 
@@ -47,7 +47,7 @@ class TestWorkflowConstruction:
             Workflow(
                 name="bad",
                 steps=[
-                    Step.pipeline("ok_step", "p1"),
+                    Step.operation("ok_step", "p1"),
                     Step.choice(
                         "pick",
                         condition=lambda ctx: True,
@@ -61,8 +61,8 @@ class TestWorkflowConstruction:
         wf = Workflow(
             name="ok",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2"),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2"),
                 Step.choice("pick", condition=lambda ctx: True, then_step="a", else_step="b"),
             ],
         )
@@ -78,9 +78,9 @@ class TestWorkflowAccessors:
             name="test.wf",
             domain="test",
             steps=[
-                Step.pipeline("ingest", "my.ingest"),
+                Step.operation("ingest", "my.ingest"),
                 Step.lambda_("validate", lambda ctx, cfg: None),
-                Step.pipeline("load", "my.load"),
+                Step.operation("load", "my.load"),
             ],
         )
 
@@ -106,15 +106,15 @@ class TestWorkflowTierAnalysis:
     """Test tier analysis methods."""
 
     def test_basic_tier(self):
-        wf = Workflow(name="t", steps=[Step.pipeline("s", "p")])
+        wf = Workflow(name="t", steps=[Step.operation("s", "p")])
         assert wf.required_tier() == "basic"
 
     def test_intermediate_tier(self):
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
-                Step.pipeline("b", "p2"),
+                Step.operation("a", "p1"),
+                Step.operation("b", "p2"),
                 Step.choice("c", condition=lambda ctx: True, then_step="a", else_step="b"),
             ],
         )
@@ -124,7 +124,7 @@ class TestWorkflowTierAnalysis:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p"),
+                Step.operation("a", "p"),
                 Step.wait("w", duration_seconds=5),
             ],
         )
@@ -134,15 +134,15 @@ class TestWorkflowTierAnalysis:
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p"),
-                Step.pipeline("b", "q"),
+                Step.operation("a", "p"),
+                Step.operation("b", "q"),
                 Step.choice("c", condition=lambda ctx: True, then_step="a"),
             ],
         )
         assert wf.has_choice_steps()
 
     def test_has_no_choice_steps(self):
-        wf = Workflow(name="t", steps=[Step.pipeline("a", "p")])
+        wf = Workflow(name="t", steps=[Step.operation("a", "p")])
         assert not wf.has_choice_steps()
 
     def test_has_lambda_steps(self):
@@ -150,34 +150,34 @@ class TestWorkflowTierAnalysis:
         assert wf.has_lambda_steps()
 
     def test_has_no_lambda_steps(self):
-        wf = Workflow(name="t", steps=[Step.pipeline("a", "p")])
+        wf = Workflow(name="t", steps=[Step.operation("a", "p")])
         assert not wf.has_lambda_steps()
 
-    def test_has_pipeline_steps(self):
-        wf = Workflow(name="t", steps=[Step.pipeline("a", "p")])
-        assert wf.has_pipeline_steps()
+    def test_has_operation_steps(self):
+        wf = Workflow(name="t", steps=[Step.operation("a", "p")])
+        assert wf.has_operation_steps()
 
-    def test_has_no_pipeline_steps(self):
+    def test_has_no_operation_steps(self):
         wf = Workflow(name="t", steps=[Step.lambda_("a", lambda c, cfg: None)])
-        assert not wf.has_pipeline_steps()
+        assert not wf.has_operation_steps()
 
-    def test_pipeline_names(self):
+    def test_operation_names(self):
         wf = Workflow(
             name="t",
             steps=[
-                Step.pipeline("a", "p1"),
+                Step.operation("a", "p1"),
                 Step.lambda_("b", lambda c, cfg: None),
-                Step.pipeline("c", "p2"),
+                Step.operation("c", "p2"),
             ],
         )
-        assert wf.pipeline_names() == ["p1", "p2"]
+        assert wf.operation_names() == ["p1", "p2"]
 
 
 class TestWorkflowSerialization:
     """Test to_dict/from_dict round-trip."""
 
     def test_to_dict_minimal(self):
-        wf = Workflow(name="t", steps=[Step.pipeline("s", "p")])
+        wf = Workflow(name="t", steps=[Step.operation("s", "p")])
         d = wf.to_dict()
         assert d["name"] == "t"
         assert d["version"] == 1
@@ -187,7 +187,7 @@ class TestWorkflowSerialization:
     def test_to_dict_full(self):
         wf = Workflow(
             name="full",
-            steps=[Step.pipeline("s", "p")],
+            steps=[Step.operation("s", "p")],
             domain="test.domain",
             description="A test workflow",
             version=2,
@@ -200,7 +200,7 @@ class TestWorkflowSerialization:
         assert d["defaults"] == {"key": "value"}
         assert d["tags"] == ["tag1", "tag2"]
 
-    def test_from_dict_pipeline(self):
+    def test_from_dict_operation(self):
         data = {
             "name": "loaded",
             "domain": "test",
@@ -209,7 +209,7 @@ class TestWorkflowSerialization:
             "defaults": {"k": "v"},
             "tags": ["t1"],
             "steps": [
-                {"name": "s1", "type": "pipeline", "pipeline": "my.pipeline", "config": {"x": 1}},
+                {"name": "s1", "type": "operation", "operation": "my.operation", "config": {"x": 1}},
             ],
         }
         wf = Workflow.from_dict(data)
@@ -220,14 +220,14 @@ class TestWorkflowSerialization:
         assert wf.defaults == {"k": "v"}
         assert wf.tags == ["t1"]
         assert len(wf.steps) == 1
-        assert wf.steps[0].pipeline_name == "my.pipeline"
+        assert wf.steps[0].operation_name == "my.operation"
 
     def test_from_dict_choice_supported(self):
         data = {
             "name": "choice_ok",
             "steps": [
-                {"name": "a", "type": "pipeline", "pipeline": "pa"},
-                {"name": "b", "type": "pipeline", "pipeline": "pb"},
+                {"name": "a", "type": "operation", "operation": "pa"},
+                {"name": "b", "type": "operation", "operation": "pb"},
                 {"name": "c", "type": "choice", "then_step": "a", "else_step": "b"},
             ],
         }

@@ -6,7 +6,7 @@ QualityRunner executes checks and records results to core_quality table, enablin
 quality gates, audit trails, and compliance reporting.
 
 Manifesto:
-    Data quality is critical for financial pipelines. Bad data leads to bad
+    Data quality is critical for financial operations. Bad data leads to bad
     decisions. The quality framework provides:
 
     - **Declarative checks:** Define what to check, not how to check it
@@ -71,6 +71,30 @@ Examples:
     >>> results = runner.run_all({"shares": venue_shares}, partition_key={...})
     >>> runner.has_failures()
     False
+
+Performance:
+    - run_all(): O(n) where n = number of checks, each check is independent
+    - Single INSERT per check result to core_quality table
+    - No batch optimization yet — consider for 100+ checks per run
+
+Guardrails:
+    ❌ DON'T: Use quality checks for data transformation (they only observe)
+    ✅ DO: Keep checks pure — read data and return QualityResult
+
+    ❌ DON'T: Make all checks blocking by default
+    ✅ DO: Use has_failures() for explicit quality gates at operation boundaries
+
+    ❌ DON'T: Delete quality results (they form a compliance audit trail)
+    ✅ DO: Use retention policies for cleanup of old results
+
+Context:
+    Problem: Financial data operations need systematic validation with audit
+        trails for compliance. Ad-hoc validation is inconsistent and unauditable.
+    Solution: Declarative quality checks with a composable runner that records
+        all results to core_quality — enabling quality gates, trend analysis,
+        and compliance reporting.
+    Alternatives Considered: Great Expectations (heavy dependency), dbt tests
+        (SQL-only), custom assertions (no audit trail).
 
 Tags:
     quality, validation, data-quality, audit-trail, quality-gate,
@@ -332,7 +356,7 @@ class QualityRunner:
         - **Each check:** Depends on check function + 1 INSERT
 
     Guardrails:
-        ❌ DON'T: Ignore has_failures() for critical pipelines
+        ❌ DON'T: Ignore has_failures() for critical operations
         ✅ DO: Check has_failures() and decide how to handle
 
         ❌ DON'T: Run heavy computations in check_fn

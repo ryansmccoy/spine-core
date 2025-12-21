@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from spine.core.errors import ErrorCategory
 
@@ -42,7 +42,7 @@ class OperationError:
 
 
 @dataclass
-class OperationResult(Generic[T]):
+class OperationResult[T]:
     """Envelope returned by every operation function.
 
     Factory methods :meth:`ok` and :meth:`fail` should be used instead of

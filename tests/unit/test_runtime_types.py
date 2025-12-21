@@ -48,7 +48,7 @@ class TestContainerJobSpec:
         spec = ContainerJobSpec(
             name="finra-otc-ingest",
             image="spine-worker:latest",
-            command=["python", "-m", "spine.pipelines.finra_otc"],
+            command=["python", "-m", "spine.operations.finra_otc"],
             env={"LOG_LEVEL": "debug", "DB_HOST": "localhost"},
             resources=ResourceRequirements(cpu="2.0", memory="4Gi", gpu=1),
             volumes=[VolumeMount(name="data", mount_path="/data", host_path="/mnt/data")],
@@ -182,7 +182,7 @@ class TestDeterministicNaming:
         assert name == "spine-a1b2c3d4-finra-otc-ingest"
 
     def test_slugifies_special_chars(self):
-        name = job_external_name("abcd1234-xxxx", "My Pipeline!!!")
+        name = job_external_name("abcd1234-xxxx", "My Operation!!!")
         assert "!" not in name
         assert name.startswith("spine-abcd1234-")
 

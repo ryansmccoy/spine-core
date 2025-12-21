@@ -1,5 +1,10 @@
 """Oracle database adapter.
 
+Manifesto:
+    Financial institutions and large enterprises often mandate Oracle.
+    This adapter wraps ``oracledb`` (python-oracledb) with the
+    ``DatabaseAdapter`` interface for seamless backend portability.
+
 Uses ``oracledb`` (python-oracledb) — the modern Oracle DB driver that
 supersedes ``cx_Oracle``.  Oracle uses **numeric** (``:1``, ``:2``)
 placeholder style.
@@ -12,6 +17,12 @@ Install the driver::
 This adapter is import-guarded: if ``oracledb`` is not installed a
 clear :class:`~spine.core.errors.ConfigError` is raised at
 ``connect()`` time.
+
+Tags:
+    spine-core, database, oracle, enterprise, import-guarded, financial
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

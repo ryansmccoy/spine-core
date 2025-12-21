@@ -25,16 +25,22 @@ Tier: Basic (spine-core only)
 
 from __future__ import annotations
 
+import sys
 import time
 import uuid
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
 
-from spine.core.connection import create_connection
+# Add examples directory to path for _db import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from _db import get_demo_connection, load_env
 
 # ── Database setup ──────────────────────────────────────────────────────
 
-conn, info = create_connection(init_schema=True)
+load_env()
+conn, info = get_demo_connection()
 
 # ExecutionLedger and ConcurrencyGuard require a raw sqlite3.Connection
 # (they call cursor()), while SqliteConnection only exposes execute().
@@ -51,7 +57,7 @@ print(f"  Backend: {info.backend}")
 # ═════════════════════════════════════════════════════════════════════
 #
 # ExecutionLedger records workflow executions in core_executions table.
-# Each execution has: id, pipeline (API field), params, status, timestamps.
+# Each execution has: id, operation (API field), params, status, timestamps.
 # Record events as progress markers within a run.
 
 from spine.execution.ledger import ExecutionLedger

@@ -391,7 +391,7 @@ Enables reconciler orphan scans across cloud providers.
 ### Orchestration Bridge
 
 `ContainerRunnable` implements the runnable interface so `WorkflowRunner` can
-dispatch pipeline steps to containers without workflow authors changing anything.
+dispatch operation steps to containers without workflow authors changing anything.
 
 ```mermaid
 flowchart LR
@@ -531,7 +531,7 @@ graph TB
 erDiagram
     core_executions {
         text id PK
-        text pipeline
+        text operation
         text status
         text runtime "NEW — docker, k8s, ecs..."
         text external_ref "NEW — container ID, pod name, ARN"

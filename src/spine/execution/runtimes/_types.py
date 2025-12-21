@@ -68,6 +68,17 @@ See Also:
     execution.executors.protocol.Executor — In-process async protocol
     execution.models.ExecutionStatus — Canonical status enum
     execution.models.EventType — Canonical event type enum
+
+Manifesto:
+    Shared type definitions live here so adapters and the engine
+    import from one place.  This prevents circular imports and
+    gives a single source of truth for runtime-layer contracts.
+
+Tags:
+    spine-core, execution, runtimes, types, protocol, dataclass
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -76,11 +87,11 @@ import hashlib
 import json
 import re
 import uuid
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, AsyncIterator, Literal, Protocol, runtime_checkable
-
+from typing import Any, Literal, Protocol, runtime_checkable
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -333,7 +344,7 @@ class ContainerJobSpec:
         >>> spec = ContainerJobSpec(
         ...     name="finra-otc-ingest",
         ...     image="spine-worker:latest",
-        ...     command=["python", "-m", "spine.pipelines.finra_otc"],
+        ...     command=["python", "-m", "spine.operations.finra_otc"],
         ...     resources=ResourceRequirements(cpu="1.0", memory="2Gi"),
         ...     timeout_seconds=1800,
         ... )
@@ -613,8 +624,8 @@ def job_external_name(execution_id: str, work_name: str) -> str:
     Example:
         >>> job_external_name("a1b2c3d4-5678-...", "finra-otc-ingest")
         'spine-a1b2c3d4-finra-otc-ingest'
-        >>> job_external_name("abc", "My Long Pipeline Name!!!")
-        'spine-abc-----m-my-long-pipeline-name---'
+        >>> job_external_name("abc", "My Long Operation Name!!!")
+        'spine-abc-----m-my-long-operation-name---'
     """
     prefix = execution_id[:8]
     slug = _SLUG_PATTERN.sub("-", work_name.lower())[:40]

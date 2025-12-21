@@ -7,21 +7,31 @@ Creates PEP 441-compliant zip archives that embed:
 3. A ``__main__.py`` entry point that loads and runs the workflow
 
 The resulting ``.pyz`` can be executed with ``python workflow.pyz``
-on any machine that has ``spine-core`` installed (pipeline steps
+on any machine that has ``spine-core`` installed (operation steps
 resolve at runtime via the registry).
 
 Limitations:
 - Inline lambdas / closures cannot be extracted → warning emitted
-- Pipeline steps require the target pipelines installed at runtime
+- Operation steps require the target operations installed at runtime
 - Choice step conditions are functions → same limitation as lambdas
 - Dependencies (numpy, pandas, etc.) are NOT bundled (unlike shiv)
+
+Manifesto:
+    The packager implements the physical archive format.  It uses
+    Python's zipapp so the result is a standard .pyz that runs
+    with ``python my_operation.pyz`` — no special tooling needed.
+
+Tags:
+    spine-core, execution, packaging, zipapp, serialization
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 import inspect
 import json
-import os
 import shutil
 import tempfile
 import textwrap
@@ -32,7 +42,6 @@ from pathlib import Path
 from typing import Any
 
 from spine.core.logging import get_logger
-
 from spine.orchestration.step_types import Step, StepType
 from spine.orchestration.workflow import Workflow
 
@@ -464,8 +473,8 @@ class WorkflowPackager:
         -------
         (can_package, reason)
         """
-        if step.step_type == StepType.PIPELINE:
-            return True, "pipeline steps are resolved by name at runtime"
+        if step.step_type == StepType.OPERATION:
+            return True, "operation steps are resolved by name at runtime"
 
         if step.step_type == StepType.WAIT:
             return True, "wait steps are fully serializable"

@@ -4,6 +4,16 @@ Workflow router — list, inspect, and trigger workflows.
 GET  /workflows
 GET  /workflows/{name}
 POST /workflows/{name}/run
+
+Manifesto:
+    Workflows are the primary unit of work.  These endpoints let
+    dashboards list, inspect, and trigger any registered workflow.
+
+Tags:
+    spine-core, api, workflows, trigger, inspect, list
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
@@ -53,7 +63,7 @@ def list_workflows(ctx: OpContext):
         Response:
         {
             "data": [
-                {"name": "daily_etl", "step_count": 5, "description": "Daily ETL pipeline"},
+                {"name": "daily_etl", "step_count": 5, "description": "Daily ETL operation"},
                 {"name": "report_gen", "step_count": 3, "description": "Generate reports"}
             ],
             "page": {"total": 2, "limit": 50, "offset": 0, "has_more": false}
@@ -102,7 +112,7 @@ def get_workflow(ctx: OpContext, name: str = Path(..., description="Workflow nam
         {
             "data": {
                 "name": "daily_etl",
-                "description": "Daily ETL pipeline",
+                "description": "Daily ETL operation",
                 "steps": [
                     {"name": "extract", "description": "Extract from sources"},
                     {"name": "transform", "description": "Apply transformations"},
@@ -127,10 +137,10 @@ def get_workflow(ctx: OpContext, name: str = Path(..., description="Workflow nam
         steps.append(WorkflowStepSchema(
             name=s.get("name", ""),
             description=s.get("description", ""),
-            pipeline=s.get("pipeline", ""),
+            operation=s.get("operation", ""),
             depends_on=s.get("depends_on", []),
             params=s.get("params", {}),
-            metadata={k: v for k, v in s.items() if k not in ("name", "description", "pipeline", "depends_on", "params")},
+            metadata={k: v for k, v in s.items() if k not in ("name", "description", "operation", "depends_on", "params")},
         ))
 
     # Map policy from metadata

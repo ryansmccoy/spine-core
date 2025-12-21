@@ -1,6 +1,12 @@
 """
 Environment-file discovery and loading.
 
+Manifesto:
+    Configuration cascading must be predictable and debuggable.  This
+    module implements a strict load order with no hidden magic: earlier
+    values are overridden by later files, and real environment variables
+    always win.
+
 Implements the cascading load order::
 
     .env.base  →  .env.{tier}  →  .env.local  →  .env  →  real env vars
@@ -8,6 +14,12 @@ Implements the cascading load order::
 All parsing is pure-Python (no ``python-dotenv`` dependency).
 Earlier values are overridden by later files, and real environment
 variables always win.
+
+Tags:
+    spine-core, configuration, env-files, cascading, pure-python, loader
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations

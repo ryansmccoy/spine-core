@@ -1,6 +1,6 @@
 """Resilience patterns — Retry, circuit breaker, rate limiting, dead-letter queue.
 
-Resilience primitives protect pipelines from transient failures,
+Resilience primitives protect operations from transient failures,
 service outages, and resource exhaustion.  Each pattern is standalone
 and composable — stack them for defence-in-depth.
 

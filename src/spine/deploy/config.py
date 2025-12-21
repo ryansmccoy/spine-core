@@ -4,13 +4,13 @@ Provides Pydantic v2 configuration models for all deployment and testbed
 operations. Every field supports override via environment variables,
 making these models suitable for both programmatic and CI/CD usage.
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     When running nightly database compatibility checks across PostgreSQL,
     MySQL, and TimescaleDB, configuration must be externally injectable.
     CI systems set ``SPINE_TESTBED_BACKENDS=postgresql,mysql`` and
     ``SPINE_TESTBED_PARALLEL=true`` without touching code.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     Pydantic-based config with ``from_env()`` classmethod gives you
     twelve-factor app configuration: defaults in code, overrides from
     env vars, and keyword overrides on top. The ``model_validator`` auto-

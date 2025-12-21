@@ -5,7 +5,7 @@ services. Each ``BackendSpec`` carries everything needed to start,
 health-check, and connect to a database container. Each ``ServiceSpec``
 describes a deployable Spine service (API, worker, infra).
 
-Why This Matters — Financial Data Pipelines:
+Why This Matters — Financial Data Operations:
     Spine's schema must work identically across PostgreSQL (production),
     MySQL (partner integration), SQLite (local dev), and TimescaleDB
     (time-series analytics). Having each backend specified as a frozen
@@ -13,7 +13,7 @@ Why This Matters — Financial Data Pipelines:
     startup timeouts eliminates hand-crafted docker-compose files for
     every permutation.
 
-Why This Matters — General Pipelines:
+Why This Matters — General Operations:
     The registry pattern ("add a spec, everything works") means adding a
     new database backend is a single dataclass instantiation — the testbed
     runner, compose generator, and CLI automatically pick it up.

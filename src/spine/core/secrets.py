@@ -90,11 +90,14 @@ Examples:
     ... ])
 
 Guardrails:
-    - Secrets should NEVER be logged (use SecretValue wrapper)
-    - Use environment variables for simple deployments
-    - Use file-based secrets for Docker/Kubernetes
-    - Vault/AWS for production secrets management
-    - Always provide fallback for development environments
+    ❌ DON'T: Log secrets (use SecretValue wrapper for repr safety)
+    ✅ DO: Use masked repr: ``SecretValue('***')``
+
+    ❌ DON'T: Hardcode secrets in source code
+    ✅ DO: Use environment variables or file-based secrets
+
+    ❌ DON'T: Skip fallback for development environments
+    ✅ DO: Provide sensible defaults or .env file support
 
 Performance:
     - Environment lookup: O(1)
@@ -103,6 +106,11 @@ Performance:
 
 Tags:
     secrets, credentials, security, configuration, spine-core
+
+Doc-Types:
+    - API Reference
+    - Security Guide
+    - Deployment Documentation
 """
 
 from __future__ import annotations

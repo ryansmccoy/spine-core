@@ -38,7 +38,7 @@ Key Concepts:
       before/after context, result, timing, and error info.
     - **Context snapshots**: Each step stores a full context snapshot,
       enabling ``step_back()`` to precisely restore state.
-    - **Dry-run mode**: When no ``Runnable`` is provided, pipeline
+    - **Dry-run mode**: When no ``Runnable`` is provided, operation
       steps return stub results — perfect for design-time exploration.
 
 See Also:
@@ -108,7 +108,7 @@ def main() -> None:
     workflow = Workflow(
         name="debug.etl",
         steps=[
-            Step.pipeline("fetch", "data.fetch_source"),
+            Step.operation("fetch", "data.fetch_source"),
             Step.lambda_("validate", validate_data),
             Step.lambda_("enrich", enrich_data, config={"source": "sec_api"}),
             Step.lambda_("report", generate_report),
@@ -117,7 +117,7 @@ def main() -> None:
         description="4-step ETL for interactive debugging",
     )
 
-    # Create playground in dry-run mode (no real pipeline executor)
+    # Create playground in dry-run mode (no real operation executor)
     pg = WorkflowPlayground()
     pg.load(workflow, params={"date": "2026-01-15", "record_count": 500})
 
@@ -135,7 +135,7 @@ def main() -> None:
     next_step = pg.peek()
     print(f"\nNext step:  {next_step.name}")
     print(f"Step type:  {next_step.step_type.value}")
-    print(f"Pipeline:   {next_step.pipeline_name}")
+    print(f"Operation:   {next_step.operation_name}")
     print(f"Still at index: {pg.current_step_index}")  # hasn't moved
 
     # ─────────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ def main() -> None:
     print("SECTION 3: Stepping Through One at a Time")
     print("=" * 72)
 
-    # Step 1: fetch (pipeline, dry-run mode → stub result)
+    # Step 1: fetch (operation, dry-run mode → stub result)
     snap1 = pg.step()
     print(f"\n--- Step 1: {snap1.step_name} ---")
     print(f"  Type:     {snap1.step_type.value}")

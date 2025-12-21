@@ -39,7 +39,7 @@ class TestCreateExecution:
     def test_create_stores_all_fields(self, ledger, conn):
         """All execution fields are persisted."""
         execution = Execution.create(
-            workflow="test.pipeline",
+            workflow="test.operation",
             params={"key": "value"},
             lane="priority",
             trigger_source=TriggerSource.CLI,
@@ -54,13 +54,13 @@ class TestCreateExecution:
         row = cursor.fetchone()
         
         assert row is not None
-        assert row["workflow"] == "test.pipeline"
+        assert row["workflow"] == "test.operation"
         assert "key" in row["params"]  # params (JSON)
         assert row["status"] == "pending"
 
     def test_create_records_created_event(self, ledger, conn):
         """Creating execution records a CREATED event."""
-        execution = Execution.create(workflow="test.pipeline")
+        execution = Execution.create(workflow="test.operation")
         ledger.create_execution(execution)
         
         cursor = conn.cursor()
@@ -78,7 +78,7 @@ class TestGetExecution:
 
     def test_get_existing(self, ledger):
         """Get returns existing execution."""
-        execution = Execution.create(workflow="test.pipeline")
+        execution = Execution.create(workflow="test.operation")
         ledger.create_execution(execution)
         
         retrieved = ledger.get_execution(execution.id)
@@ -98,7 +98,7 @@ class TestUpdateStatus:
 
     def test_update_to_running_sets_started_at(self, ledger):
         """Updating to RUNNING sets started_at timestamp."""
-        execution = Execution.create(workflow="test.pipeline")
+        execution = Execution.create(workflow="test.operation")
         ledger.create_execution(execution)
         
         ledger.update_status(execution.id, ExecutionStatus.RUNNING)
@@ -109,7 +109,7 @@ class TestUpdateStatus:
 
     def test_update_to_completed_sets_completed_at(self, ledger):
         """Updating to COMPLETED sets completed_at timestamp."""
-        execution = Execution.create(workflow="test.pipeline")
+        execution = Execution.create(workflow="test.operation")
         ledger.create_execution(execution)
         ledger.update_status(execution.id, ExecutionStatus.RUNNING)
         
@@ -126,7 +126,7 @@ class TestUpdateStatus:
 
     def test_update_to_failed_sets_error(self, ledger):
         """Updating to FAILED sets error message."""
-        execution = Execution.create(workflow="test.pipeline")
+        execution = Execution.create(workflow="test.operation")
         ledger.create_execution(execution)
         
         ledger.update_status(
@@ -146,7 +146,7 @@ class TestIdempotencyKey:
     def test_find_by_idempotency_key(self, ledger):
         """Can find execution by idempotency key."""
         execution = Execution.create(
-            workflow="test.pipeline",
+            workflow="test.operation",
             idempotency_key="unique-key-123",
         )
         ledger.create_execution(execution)
@@ -168,7 +168,7 @@ class TestListExecutions:
     def test_list_with_limit(self, ledger):
         """Limit parameter controls result count."""
         for i in range(10):
-            ledger.create_execution(Execution.create(workflow="test.pipeline"))
+            ledger.create_execution(Execution.create(workflow="test.operation"))
         
         results = ledger.list_executions(limit=5)
         assert len(results) == 5

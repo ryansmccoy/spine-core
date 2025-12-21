@@ -1,13 +1,13 @@
 """Webhook trigger endpoints for spine-core.
 
 Provides HTTP POST endpoints that trigger registered workflows or
-pipelines.  External systems (GitHub, Slack, monitoring tools, cron
+operations.  External systems (GitHub, Slack, monitoring tools, cron
 services) can call these endpoints to kick off spine execution.
 
 Endpoints
 ---------
 ``GET  /webhooks``                  — list registered webhook targets
-``POST /webhooks/trigger/{name}``   — trigger a workflow or pipeline
+``POST /webhooks/trigger/{name}``   — trigger a workflow or operation
 
 Setup::
 
@@ -16,20 +16,30 @@ Setup::
 
     # Register targets at startup
     register_webhook("sec.daily_ingest", kind="workflow")
-    register_webhook("finra.otc_download", kind="pipeline")
+    register_webhook("finra.otc_download", kind="operation")
 
     # Include in FastAPI app
     app.include_router(webhook_router, prefix="/api/v1", tags=["webhooks"])
+
+Manifesto:
+    External systems must be able to trigger spine operations
+    via simple HTTP POST without custom client libraries.
+
+Tags:
+    spine-core, api, webhooks, triggers, external-integration
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from spine.core.logging import get_logger
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from spine.core.logging import get_logger
 from spine.ops.webhooks import (
     WebhookTarget,
     clear_webhooks,  # noqa: F401 — re-exported for backward compat
@@ -66,10 +76,10 @@ async def list_webhooks() -> list[WebhookTarget]:
 
 @router.post("/trigger/{name}", response_model=WebhookResponse)
 async def trigger_webhook(name: str, request: Request) -> WebhookResponse:
-    """Trigger a registered workflow or pipeline via webhook.
+    """Trigger a registered workflow or operation via webhook.
 
     The JSON request body (if any) is passed as ``params`` to the
-    workflow / pipeline.
+    workflow / operation.
 
     Args:
         name: Registered target name.
@@ -98,23 +108,22 @@ async def trigger_webhook(name: str, request: Request) -> WebhookResponse:
     except Exception:
         body = {}
 
-    # Resolve the EventDispatcher from app state
-    from spine.execution.dispatcher import EventDispatcher
-    from spine.execution.spec import pipeline_spec, workflow_spec
+    # Resolve the EventDispatcher from app state (import via ops layer)
+    from spine.ops.webhooks import dispatch_webhook
 
-    dispatcher: EventDispatcher | None = getattr(request.app.state, "dispatcher", None)
+    dispatcher = getattr(request.app.state, "dispatcher", None)
     if not dispatcher:
         raise HTTPException(
             status_code=503,
             detail="EventDispatcher not configured on app.state.dispatcher",
         )
 
-    if target.kind == "workflow":
-        spec = workflow_spec(name, params=body, trigger_source="webhook")
-    else:
-        spec = pipeline_spec(name, params=body, trigger_source="webhook")
-
-    run_id = await dispatcher.submit(spec)
+    run_id = await dispatch_webhook(
+        dispatcher=dispatcher,
+        name=name,
+        kind=target.kind,
+        params=body,
+    )
 
     logger.info("webhook.triggered", name=name, kind=target.kind, run_id=run_id)
 

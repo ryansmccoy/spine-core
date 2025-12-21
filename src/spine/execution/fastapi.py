@@ -1,10 +1,9 @@
 """FastAPI Router — unified ``/runs`` REST API.
 
-WHY
-───
-All work types (tasks, pipelines, workflows, steps) share the same
+Manifesto:
+All work types (tasks, operations, workflows, steps) share the same
 lifecycle.  A single ``/runs`` endpoint avoids endpoint sprawl and
-keeps the API surface small.  No separate ``/tasks``, ``/pipelines``,
+keeps the API surface small.  No separate ``/tasks``, ``/operations``,
 ``/executions`` routes.
 
 ARCHITECTURE
@@ -26,6 +25,12 @@ Related modules:
     dispatcher.py — EventDispatcher (business logic)
     spec.py       — WorkSpec (request body model)
     runs.py       — RunRecord (response model)
+
+Tags:
+    spine-core, execution, fastapi, REST, submission, async
+
+Doc-Types:
+    api-reference
 """
 
 from datetime import datetime
@@ -52,7 +57,7 @@ if FASTAPI_AVAILABLE:
     class WorkSpecRequest(BaseModel):
         """Request body for submitting work."""
 
-        kind: Literal["task", "pipeline", "workflow", "step"]
+        kind: Literal["task", "operation", "workflow", "step"]
         name: str
         params: dict[str, Any] = Field(default_factory=dict)
         idempotency_key: str | None = None
@@ -165,8 +170,8 @@ if FASTAPI_AVAILABLE:
         metadata: dict[str, Any] = Field(default_factory=dict)
         idempotency_key: str | None = None
 
-    class PipelineSubmitRequest(BaseModel):
-        """Convenience request for pipeline submission."""
+    class OperationSubmitRequest(BaseModel):
+        """Convenience request for operation submission."""
 
         name: str
         params: dict[str, Any] = Field(default_factory=dict)
@@ -182,7 +187,7 @@ def create_runs_router(
 ) -> "APIRouter":
     """Create unified runs router for all work types.
 
-    This is the ONLY FastAPI router you need. Pipeline executions,
+    This is the ONLY FastAPI router you need. Operation executions,
     task submissions, and workflow runs all go through /runs.
 
     Args:
@@ -207,7 +212,7 @@ def create_runs_router(
         GET  /runs/{run_id}     - Get run details
         POST /runs              - Submit work (canonical)
         POST /runs/task         - Submit task (convenience)
-        POST /runs/pipeline     - Submit pipeline (convenience)
+        POST /runs/operation     - Submit operation (convenience)
         POST /runs/{run_id}/cancel  - Cancel run
         POST /runs/{run_id}/retry   - Retry failed run
         GET  /runs/{run_id}/events  - Get event history
@@ -220,7 +225,7 @@ def create_runs_router(
 
     @router.get("", response_model=list[RunSummaryResponse])
     async def list_runs(
-        kind: Literal["task", "pipeline", "workflow", "step"] | None = None,
+        kind: Literal["task", "operation", "workflow", "step"] | None = None,
         status: str | None = None,
         name: str | None = None,
         parent_run_id: str | None = None,
@@ -231,9 +236,9 @@ def create_runs_router(
 
         Examples:
         - GET /runs - all runs
-        - GET /runs?kind=pipeline - only pipeline executions
+        - GET /runs?kind=operation - only operation executions
         - GET /runs?status=failed - only failed runs
-        - GET /runs?name=ingest_otc&kind=pipeline - specific pipeline
+        - GET /runs?name=ingest_otc&kind=operation - specific operation
         - GET /runs?parent_run_id=abc-123 - workflow steps
         """
         # Convert status string to enum if provided
@@ -307,9 +312,9 @@ def create_runs_router(
         run = await dispatcher.get_run(run_id)
         return RunResponse.from_record(run)
 
-    @router.post("/pipeline", response_model=RunResponse)
-    async def submit_pipeline(request: PipelineSubmitRequest):
-        """Convenience: submit a pipeline execution.
+    @router.post("/operation", response_model=RunResponse)
+    async def submit_operation(request: OperationSubmitRequest):
+        """Convenience: submit a operation execution.
 
         Body:
         ```json
@@ -320,7 +325,7 @@ def create_runs_router(
         }
         ```
         """
-        run_id = await dispatcher.submit_pipeline(
+        run_id = await dispatcher.submit_operation(
             request.name,
             request.params,
             lane=request.lane,

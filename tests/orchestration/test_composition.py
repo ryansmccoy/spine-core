@@ -91,8 +91,8 @@ class TestParallel:
     def test_parallel_creates_dag_workflow(self):
         wf = parallel(
             "test.parallel",
-            Step.pipeline("a", "pipe.a"),
-            Step.pipeline("b", "pipe.b"),
+            Step.operation("a", "pipe.a"),
+            Step.operation("b", "pipe.b"),
         )
         assert wf.execution_policy.mode == ExecutionMode.PARALLEL
         assert len(wf.steps) == 2
@@ -100,8 +100,8 @@ class TestParallel:
     def test_parallel_with_merge_fn(self):
         wf = parallel(
             "test.merge",
-            Step.pipeline("a", "pipe.a"),
-            Step.pipeline("b", "pipe.b"),
+            Step.operation("a", "pipe.a"),
+            Step.operation("b", "pipe.b"),
             merge_fn=_ok_handler,
         )
         # 2 parallel + 1 merge = 3 steps
@@ -113,8 +113,8 @@ class TestParallel:
     def test_parallel_max_concurrency(self):
         wf = parallel(
             "test.conc",
-            Step.pipeline("a", "pipe.a"),
-            Step.pipeline("b", "pipe.b"),
+            Step.operation("a", "pipe.a"),
+            Step.operation("b", "pipe.b"),
             max_concurrency=8,
         )
         assert wf.execution_policy.max_concurrency == 8
@@ -122,15 +122,15 @@ class TestParallel:
     def test_parallel_on_failure(self):
         wf = parallel(
             "test.fail",
-            Step.pipeline("a", "pipe.a"),
-            Step.pipeline("b", "pipe.b"),
+            Step.operation("a", "pipe.a"),
+            Step.operation("b", "pipe.b"),
             on_failure=FailurePolicy.CONTINUE,
         )
         assert wf.execution_policy.on_failure == FailurePolicy.CONTINUE
 
     def test_parallel_too_few_steps_raises(self):
         with pytest.raises(ValueError, match="at least two steps"):
-            parallel("test.one", Step.pipeline("a", "pipe.a"))
+            parallel("test.one", Step.operation("a", "pipe.a"))
 
 
 # ── conditional() ────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ class TestConditional:
         wf = conditional(
             "test.cond",
             condition=_always_true,
-            then_steps=[Step.pipeline("do_it", "pipe.do")],
+            then_steps=[Step.operation("do_it", "pipe.do")],
         )
         # 1 choice + 1 then step
         assert len(wf.steps) == 2
@@ -153,8 +153,8 @@ class TestConditional:
         wf = conditional(
             "test.if_else",
             condition=_always_false,
-            then_steps=[Step.pipeline("yes", "pipe.yes")],
-            else_steps=[Step.pipeline("no", "pipe.no")],
+            then_steps=[Step.operation("yes", "pipe.yes")],
+            else_steps=[Step.operation("no", "pipe.no")],
         )
         # 1 choice + 1 then + 1 else
         assert len(wf.steps) == 3
@@ -170,7 +170,7 @@ class TestConditional:
         wf = conditional(
             "test.named",
             condition=_always_true,
-            then_steps=[Step.pipeline("proceed", "pipe.proceed")],
+            then_steps=[Step.operation("proceed", "pipe.proceed")],
         )
         assert wf.steps[0].name == "__condition__"
 
@@ -182,7 +182,7 @@ class TestRetry:
     """Tests for the retry() composition operator."""
 
     def test_retry_creates_multiple_attempt_steps(self):
-        step = Step.pipeline("fetch", "data.fetch")
+        step = Step.operation("fetch", "data.fetch")
         wf = retry("test.retry", step, max_attempts=3)
         assert len(wf.steps) == 3
         assert wf.steps[0].name == "fetch_attempt_1"
@@ -190,7 +190,7 @@ class TestRetry:
         assert wf.steps[2].name == "fetch_attempt_3"
 
     def test_retry_error_policy_continue_except_last(self):
-        step = Step.pipeline("fetch", "data.fetch")
+        step = Step.operation("fetch", "data.fetch")
         wf = retry("test.retry", step, max_attempts=3)
         assert wf.steps[0].on_error == ErrorPolicy.CONTINUE
         assert wf.steps[1].on_error == ErrorPolicy.CONTINUE
@@ -203,14 +203,14 @@ class TestRetry:
         assert wf.steps[0].name == "compute"  # no suffix for single
 
     def test_retry_preserves_step_type(self):
-        step = Step.pipeline("fetch", "data.fetch")
+        step = Step.operation("fetch", "data.fetch")
         wf = retry("test.retry", step, max_attempts=2)
         for s in wf.steps:
-            assert s.step_type == StepType.PIPELINE
-            assert s.pipeline_name == "data.fetch"
+            assert s.step_type == StepType.OPERATION
+            assert s.operation_name == "data.fetch"
 
     def test_retry_adds_attempt_to_config(self):
-        step = Step.pipeline("fetch", "data.fetch")
+        step = Step.operation("fetch", "data.fetch")
         wf = retry("test.retry", step, max_attempts=2)
         assert wf.steps[0].config["__attempt__"] == 1
         assert wf.steps[1].config["__attempt__"] == 2

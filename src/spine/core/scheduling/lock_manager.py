@@ -1,43 +1,30 @@
 """Distributed lock manager for scheduler.
 
+Manifesto:
+    Multiple scheduler instances must never execute the same schedule
+    simultaneously.  The lock manager provides atomic acquire/release
+    with TTL-based auto-expiry so crashed instances don't cause permanent
+    deadlocks.  INSERT-or-fail semantics give O(1) conflict detection.
+
 This module provides atomic lock acquire/release for schedules, enabling
 safe distributed scheduler deployments.
 
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  LOCK MANAGER ARCHITECTURE                                                    │
-│                                                                               │
-│  Purpose: Prevent multiple scheduler instances from executing the same       │
-│           schedule simultaneously.                                            │
-│                                                                               │
-│  ┌────────────────────────────────────────────────────────────────────┐      │
-│  │                       Distributed Lock Flow                        │      │
-│  │                                                                    │      │
-│  │   Instance A                              Instance B               │      │
-│  │       │                                       │                    │      │
-│  │       │  acquire_lock("sched-1")              │                    │      │
-│  │       ├────────────────────────────►          │                    │      │
-│  │       │                                       │                    │      │
-│  │       │  ◄─── SUCCESS (row inserted) ───      │                    │      │
-│  │       │                                       │                    │      │
-│  │       │  execute schedule                     │                    │      │
-│  │       ├─────────────────────►                 │                    │      │
-│  │       │                                       │  acquire_lock      │      │
-│  │       │                        ───────────────┤  ("sched-1")       │      │
-│  │       │                        │  CONFLICT    │                    │      │
-│  │       │                        ◄──────────────┤                    │      │
-│  │       │                                       │  ◄─ FAILED (skip)  │      │
-│  │       │  release_lock("sched-1")              │                    │      │
-│  │       ├────────────────────────────►          │                    │      │
-│  │       │                                       │                    │      │
-│  └────────────────────────────────────────────────────────────────────┘      │
-│                                                                               │
-│  Lock Types:                                                                  │
-│  1. Schedule Lock: Prevents double-execution of a specific schedule         │
-│  2. Concurrency Lock: General-purpose resource locking (pipelines, etc)     │
-│                                                                               │
-│  TTL (Time-To-Live): Locks auto-expire after ttl_seconds to prevent         │
-│  deadlocks from crashed instances.                                           │
-└──────────────────────────────────────────────────────────────────────────────┘
+Tags:
+    spine-core, scheduling, distributed-locks, TTL, concurrency, safety
+
+Doc-Types:
+    api-reference, architecture-diagram
+
+
+    Lock Manager Architecture::
+
+        Distributed Lock Flow: Instance A acquires lock, Instance B
+        gets CONFLICT and skips. Locks auto-expire via TTL.
+
+        Lock Types:
+            1. Schedule Lock - Prevents double-execution
+            2. Concurrency Lock - General-purpose resource locking
+        TTL: Locks auto-expire after ttl_seconds to prevent deadlocks.
 """
 
 from __future__ import annotations
@@ -256,7 +243,7 @@ class LockManager:
         Uses a synthetic "schedule_id" based on resource type/name.
 
         Args:
-            resource_type: Type of resource (e.g., "pipeline", "workflow")
+            resource_type: Type of resource (e.g., "operation", "workflow")
             resource_name: Name of resource
             ttl_seconds: Lock expiry
 

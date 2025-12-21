@@ -56,7 +56,7 @@ Expected Output:
 
 import json
 
-from spine.execution.runnable import PipelineRunResult
+from spine.execution.runnable import OperationRunResult
 from spine.orchestration.step_types import Step
 from spine.orchestration.step_result import StepResult
 from spine.orchestration.workflow import Workflow
@@ -73,8 +73,8 @@ from spine.orchestration.recorder import (
 class _NoOpRunnable:
     """Minimal Runnable for recording demo."""
 
-    def submit_pipeline_sync(self, pipeline_name, params=None, **kw):
-        return PipelineRunResult(status="completed")
+    def submit_operation_sync(self, operation_name, params=None, **kw):
+        return OperationRunResult(status="completed")
 
 
 def _success_handler(ctx, config):
@@ -96,7 +96,7 @@ def main() -> None:
     print(f"{'='*60}")
 
     workflow = Workflow(
-        name="etl_pipeline",
+        name="etl_operation",
         steps=[
             Step.lambda_("extract", _success_handler),
             Step.lambda_("transform", _success_handler),
@@ -170,7 +170,7 @@ def main() -> None:
     print(f"{'='*60}")
 
     altered_workflow = Workflow(
-        name="etl_pipeline",
+        name="etl_operation",
         steps=[
             Step.lambda_("extract", _altered_handler),
             Step.lambda_("transform", _success_handler),

@@ -68,15 +68,26 @@ Usage:
 See Also:
     _types.py — Protocol and type definitions
     docker.py — Docker adapter (MVP-1)
+
+Manifesto:
+    All runtime adapters inherit from ``BaseRuntimeAdapter``
+    which enforces the protocol and provides sensible defaults
+    for health checks, logging, and graceful shutdown.
+
+Tags:
+    spine-core, execution, runtimes, base, abstract, adapter-ABC
+
+Doc-Types:
+    api-reference
 """
 
 from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any, AsyncIterator
+from datetime import datetime
 
 from spine.execution.runtimes._types import (
     ContainerJobSpec,
