@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0] - 2026-02-19
+
+
+## [0.4.0] - 2026-02-19
+
+
 All notable changes to spine-core will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
