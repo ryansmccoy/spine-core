@@ -1,0 +1,1624 @@
+# Market Spine Architecture
+
+> **Status:** Living Document  
+> **Last Updated:** 2026-01-02  
+> **Audience:** Engineers building or reviewing Market Spine code
+
+---
+
+## 1. Purpose & Scope
+
+Market Spine is an **analytics pipeline system** for market computations and signals. It provides:
+
+- **Event-sourced orchestration** with a control-plane / execution-plane split
+- **Backend-agnostic execution** that scales from local development to distributed production
+- **Append-only execution ledger** as the single source of truth for all pipeline runs
+
+The project includes an end-to-end demo domain: **OTC Transparency** (ingest → store raw → normalize → compute metrics → serve via API). This domain validates the architecture and serves as a template for additional domains.
+
+**Scaling philosophy:** Market Spine must scale from a minimal local MVP (single-process, SQLite-optional) to a production-grade distributed system (Celery/Prefect/Dagster backends, horizontal workers) **without architectural rewrites**. The abstraction boundaries defined here are load-bearing.
+
+---
+
+## 2. Architecture at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              CONTROL PLANE                                   │
+│  ┌─────────┐    ┌────────────┐    ┌─────────────────────────────────────┐   │
+│  │   API   │───▶│ Dispatcher │───▶│         Execution Ledger            │   │
+│  │   CLI   │    │            │    │  ┌───────────┐  ┌─────────────────┐ │   │
+│  └─────────┘    └─────┬──────┘    │  │executions │  │execution_events │ │   │
+│                       │           │  └───────────┘  └─────────────────┘ │   │
+│                       │           │  ┌─────────────┐                    │   │
+│                       │           │  │dead_letters │                    │   │
+│                       ▼           │  └─────────────┘                    │   │
+│              ┌─────────────────┐  └─────────────────────────────────────┘   │
+│              │OrchestratorBackend│                                          │
+│              │    Protocol     │◀──────────────────────────────────────────┐│
+│              └────────┬────────┘                                           ││
+│                       │                                                    ││
+└───────────────────────┼────────────────────────────────────────────────────┘│
+                        │                                                     │
+┌───────────────────────┼─────────────────────────────────────────────────────┘
+│                       ▼                                                      
+│              EXECUTION PLANE                                                 
+│  ┌─────────────────────────────────────────────────────────────────────┐    
+│  │                      run_pipeline(execution_id)                      │    
+│  │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       │    
+│  │  │  Stage 1 │───▶│  Stage 2 │───▶│  Stage 3 │───▶│  Stage N │       │    
+│  │  │ (ingest) │    │(normalize)│   │ (compute)│    │  (serve) │       │    
+│  │  └──────────┘    └──────────┘    └──────────┘    └──────────┘       │    
+│  └──────────────────────────────────────────────────────────────────────┘    
+│                       │                                                      
+│                       ▼ (events)                                             
+│              ┌─────────────────┐                                             
+│              │ Event Emitter   │──────────────────────────────────────────▶ │
+│              │ (writes ledger) │                                             
+│              └─────────────────┘                                             
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Control Plane:** Accepts requests, validates pipelines, creates execution records, and delegates to a backend. Never executes pipeline logic directly. The execution ledger (PostgreSQL tables) is the authoritative state store.
+
+**Execution Plane:** Workers poll or receive tasks from the backend, execute `run_pipeline(execution_id)`, emit granular events back to the ledger, and handle failures. All pipeline code runs here.
+
+---
+
+## 3. Core Concepts & Invariants
+
+These rules **must never be violated**. CI guardrails enforce them.
+
+### INV-1: Single Canonical Entrypoint
+
+```python
+# The ONLY way to trigger pipeline execution
+dispatcher.submit(
+    pipeline="ingest_otc",
+    params={"symbol": "XYZ", "date": "2026-01-01"},
+    lane="normal",              # or "backfill"
+    trigger_source="api",       # or "cli", "scheduler", "retry"
+    logical_key="XYZ:2026-01-01"  # concurrency key
+)
+```
+
+**Violation:** Calling `run_pipeline()` directly, invoking Celery tasks without dispatcher, creating execution records manually.
+
+### INV-2: API/CLI Are Enqueue-Only
+
+Request handlers return immediately after `dispatcher.submit()`. They **never** execute pipeline logic, wait for completion, or block on results.
+
+```python
+# ✅ Correct
+@router.post("/pipelines/{id}/trigger")
+async def trigger(id: str, params: TriggerRequest):
+    execution = await dispatcher.submit(id, params.dict())
+    return {"execution_id": execution.id, "status": "pending"}
+
+# ❌ Forbidden
+@router.post("/pipelines/{id}/run")
+async def run_sync(id: str):
+    result = await run_pipeline(id)  # NEVER DO THIS
+    return result
+```
+
+### INV-3: Execution Ledger Is Source of Truth
+
+All execution state lives in the ledger tables. Never derive state from:
+- Queue depth or message broker internals
+- In-memory caches
+- Backend-specific storage (Celery result backend, Dagster event log)
+
+### INV-4: Backend Agnosticism
+
+Core orchestration code (`dispatcher`, `run_pipeline`, event emission) must not import or reference:
+- `celery`
+- `prefect`
+- `dagster`
+- `airflow`
+- `temporalio`
+
+Backend-specific code lives **only** in `orchestrator/backends/{name}.py`.
+
+### INV-5: Exactly One Processing Entrypoint
+
+All backends ultimately invoke:
+
+```python
+run_pipeline(execution_id: str) -> PipelineResult
+```
+
+This is the **only** function that executes pipeline logic. It:
+1. Loads execution from ledger
+2. Resolves pipeline definition
+3. Executes stages sequentially
+4. Emits events to ledger
+5. Handles failures and DLQ
+
+### INV-6: Concurrency Via Logical Key
+
+Concurrent execution of the same `logical_key` is prevented at the dispatcher level. Default key format: `{symbol}:{date}`.
+
+### INV-7: New Execution on Retry
+
+Retrying a failed or dead-lettered execution creates a **new** execution record with a fresh `execution_id`. The original execution remains immutable. Linked via `parent_execution_id`.
+
+---
+
+## 4. Data Model
+
+### 4.1 Execution Ledger Tables
+
+#### `executions`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `TEXT PK` | ULID, globally unique execution identifier |
+| `pipeline` | `TEXT NOT NULL` | Registered pipeline name |
+| `params` | `JSONB` | Serialized pipeline parameters |
+| `lane` | `TEXT NOT NULL` | Execution lane: `normal`, `backfill` |
+| `status` | `TEXT NOT NULL` | See status enum below |
+| `trigger_source` | `TEXT NOT NULL` | `api`, `cli`, `scheduler`, `retry` |
+| `logical_key` | `TEXT` | Concurrency key (nullable for unrestricted) |
+| `backend` | `TEXT NOT NULL` | Backend that owns this execution: `local`, `celery`, etc. |
+| `backend_run_id` | `TEXT` | Backend's native identifier (if applicable) |
+| `parent_execution_id` | `TEXT FK` | Links retries to original execution |
+| `created_at` | `TIMESTAMPTZ` | When execution was submitted |
+| `started_at` | `TIMESTAMPTZ` | When `run_pipeline` began |
+| `completed_at` | `TIMESTAMPTZ` | When execution reached terminal state |
+| `error` | `TEXT` | Error message (if failed) |
+| `result` | `JSONB` | Output summary (if completed) |
+
+**Status Enum:**
+```
+pending → queued → running → completed
+                          ↘ failed → dead_lettered
+                          ↘ cancelling → cancelled
+```
+
+- `pending`: Created, not yet submitted to backend
+- `queued`: Submitted to backend, awaiting worker pickup
+- `running`: Worker is executing `run_pipeline`
+- `completed`: Terminal success
+- `failed`: Terminal failure (may be retried)
+- `dead_lettered`: Exhausted retries, moved to DLQ
+- `cancelling`: Cancel requested, waiting for acknowledgment
+- `cancelled`: Successfully cancelled
+
+#### `execution_events`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `TEXT PK` | ULID event identifier |
+| `execution_id` | `TEXT FK` | Parent execution |
+| `event_type` | `TEXT NOT NULL` | See event types below |
+| `stage` | `TEXT` | Stage name (for stage-level events) |
+| `timestamp` | `TIMESTAMPTZ` | When event occurred |
+| `payload` | `JSONB` | Event-specific data |
+| `idempotency_key` | `TEXT UNIQUE` | Deduplication key |
+
+**Event Types:**
+
+| Level | Event Type | Description |
+|-------|------------|-------------|
+| Execution | `created` | Execution record created |
+| Execution | `queued` | Submitted to backend |
+| Execution | `started` | Worker began processing |
+| Execution | `completed` | Successful completion |
+| Execution | `failed` | Execution failed |
+| Execution | `dead_lettered` | Moved to DLQ |
+| Execution | `cancelled` | Cancellation confirmed |
+| Stage | `stage_started` | Stage began |
+| Stage | `stage_completed` | Stage succeeded |
+| Stage | `stage_failed` | Stage failed |
+
+#### `dead_letters`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `TEXT PK` | ULID |
+| `execution_id` | `TEXT FK UNIQUE` | The dead-lettered execution |
+| `reason` | `TEXT NOT NULL` | Why it was dead-lettered |
+| `retry_count` | `INT NOT NULL` | How many attempts were made |
+| `created_at` | `TIMESTAMPTZ` | When it entered DLQ |
+| `resolved_at` | `TIMESTAMPTZ` | When/if manually resolved |
+| `resolved_by` | `TEXT` | Who resolved it |
+| `resolution` | `TEXT` | `retried`, `discarded`, `fixed` |
+
+### 4.2 OTC Domain Tables
+
+#### `otc_raw_trades` (append-only)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `BIGSERIAL PK` | Surrogate key |
+| `capture_id` | `TEXT NOT NULL` | Links to data capture batch |
+| `ingested_at` | `TIMESTAMPTZ` | When row was inserted |
+| `symbol` | `TEXT NOT NULL` | Security identifier |
+| `trade_date` | `DATE NOT NULL` | Trade execution date |
+| `venue` | `TEXT NOT NULL` | `ATS_A`, `ATS_B`, etc. |
+| `price` | `NUMERIC(18,8)` | Trade price |
+| `quantity` | `BIGINT` | Share quantity |
+| `raw_payload` | `JSONB` | Original source record |
+
+#### `otc_normalized_trades`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `BIGSERIAL PK` | Surrogate key |
+| `raw_trade_id` | `BIGINT FK` | Source raw record |
+| `capture_id` | `TEXT NOT NULL` | Lineage |
+| `symbol` | `TEXT NOT NULL` | Normalized symbol |
+| `trade_date` | `DATE NOT NULL` | |
+| `venue_code` | `TEXT NOT NULL` | Standardized venue |
+| `price` | `NUMERIC(18,8)` | Validated price |
+| `quantity` | `BIGINT` | Validated quantity |
+| `notional` | `NUMERIC(18,2)` | `price * quantity` |
+| `normalized_at` | `TIMESTAMPTZ` | Processing timestamp |
+
+#### `otc_daily_metrics`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `BIGSERIAL PK` | |
+| `symbol` | `TEXT NOT NULL` | |
+| `trade_date` | `DATE NOT NULL` | |
+| `execution_id` | `TEXT NOT NULL` | Which execution computed this |
+| `total_volume` | `BIGINT` | Sum of quantities |
+| `total_notional` | `NUMERIC(18,2)` | Sum of notional |
+| `trade_count` | `INT` | Number of trades |
+| `vwap` | `NUMERIC(18,8)` | Volume-weighted avg price |
+| `venue_breakdown` | `JSONB` | Per-venue stats |
+| `computed_at` | `TIMESTAMPTZ` | |
+
+**Unique constraint:** `(symbol, trade_date, execution_id)` — allows recomputation without overwrites.
+
+---
+
+## 5. Execution Flow
+
+### 5.1 Sequence Diagram
+
+```
+┌─────┐     ┌────────────┐     ┌────────┐     ┌─────────┐     ┌────────────┐
+│ API │     │ Dispatcher │     │ Ledger │     │ Backend │     │   Worker   │
+└──┬──┘     └─────┬──────┘     └───┬────┘     └────┬────┘     └─────┬──────┘
+   │              │                │               │                │
+   │ POST /trigger│                │               │                │
+   │─────────────▶│                │               │                │
+   │              │                │               │                │
+   │              │ validate pipeline              │                │
+   │              │ check logical_key lock         │                │
+   │              │                │               │                │
+   │              │ INSERT execution (pending)     │                │
+   │              │───────────────▶│               │                │
+   │              │                │               │                │
+   │              │ emit(created)  │               │                │
+   │              │───────────────▶│               │                │
+   │              │                │               │                │
+   │              │ backend.submit(execution_id)   │                │
+   │              │───────────────────────────────▶│                │
+   │              │                │               │                │
+   │              │ UPDATE status=queued           │                │
+   │              │───────────────▶│               │                │
+   │              │                │               │                │
+   │◀─────────────│ return execution_id            │                │
+   │ 202 Accepted │                │               │                │
+   │              │                │               │ poll/receive   │
+   │              │                │               │───────────────▶│
+   │              │                │               │                │
+   │              │                │               │ run_pipeline(id)
+   │              │                │               │                │
+   │              │                │ UPDATE status=running          │
+   │              │                │◀───────────────────────────────│
+   │              │                │               │                │
+   │              │                │ emit(started) │                │
+   │              │                │◀───────────────────────────────│
+   │              │                │               │                │
+   │              │                │ [execute stages]               │
+   │              │                │ emit(stage_started)            │
+   │              │                │ emit(stage_completed)          │
+   │              │                │◀───────────────────────────────│
+   │              │                │               │                │
+   │              │                │ UPDATE status=completed        │
+   │              │                │◀───────────────────────────────│
+   │              │                │               │                │
+   │              │                │ emit(completed)                │
+   │              │                │◀───────────────────────────────│
+   │              │                │               │                │
+```
+
+### 5.2 Detailed Flow
+
+1. **API receives request** → Validates input, calls `dispatcher.submit()`
+2. **Dispatcher validates**:
+   - Pipeline exists in registry
+   - Parameters match schema
+   - `logical_key` not currently running (or enqueue if allowed)
+3. **Dispatcher creates execution** → `INSERT INTO executions` with `status=pending`
+4. **Dispatcher emits `created` event**
+5. **Dispatcher calls `backend.submit(execution_id)`**
+6. **Backend enqueues** → Updates `status=queued`, sets `backend_run_id` if applicable
+7. **Worker picks up** → Backend-specific mechanism
+8. **Worker calls `run_pipeline(execution_id)`**
+9. **run_pipeline**:
+   - Loads execution from ledger
+   - Resolves pipeline from registry
+   - Updates `status=running`, emits `started`
+   - Executes each stage, emitting `stage_started`/`stage_completed`
+   - On success: `status=completed`, emits `completed`
+   - On failure: `status=failed`, emits `failed`, evaluates retry policy
+10. **If max retries exceeded** → `status=dead_lettered`, `INSERT INTO dead_letters`
+
+---
+
+## 6. Backend Abstraction
+
+### 6.1 OrchestratorBackend Protocol
+
+```python
+class OrchestratorBackend(Protocol):
+    """Backend adapter for execution delegation."""
+    
+    name: str  # "local", "celery", "prefect", etc.
+    
+    async def submit(self, execution_id: str) -> SubmitResult:
+        """
+        Enqueue execution for processing.
+        Returns backend_run_id if applicable.
+        """
+        ...
+    
+    async def cancel(self, execution_id: str, backend_run_id: str | None) -> CancelResult:
+        """
+        Request cancellation. Best-effort for running executions.
+        """
+        ...
+    
+    async def status(self, execution_id: str, backend_run_id: str | None) -> BackendStatus:
+        """
+        Query backend for execution status.
+        Used for reconciliation, not as source of truth.
+        """
+        ...
+    
+    async def health(self) -> HealthResult:
+        """
+        Backend health check.
+        """
+        ...
+    
+    async def queue_depths(self) -> dict[str, int]:
+        """
+        Current queue depths by lane.
+        Informational only — not used for state derivation.
+        """
+        ...
+```
+
+### 6.2 Required: LocalBackend
+
+The `LocalBackend` is **required** and must work out of the box:
+
+- **Mechanism:** Background thread polls `executions` table for `status=queued`
+- **Claiming:** Uses `SELECT ... FOR UPDATE SKIP LOCKED` to prevent duplicate processing
+- **Configuration:** `poll_interval` (default 1s), `max_concurrent` (default 4)
+- **Use case:** Development, testing, single-node deployments
+
+```python
+# Example usage
+backend = LocalBackend(poll_interval=1.0, max_concurrent=4)
+await backend.start()  # Begins polling
+```
+
+### 6.3 Optional: CeleryBackend
+
+Provided as a reference adapter:
+
+- Maps lanes to Celery queues (`normal` → `pipelines.normal`, `backfill` → `pipelines.backfill`)
+- Uses `celery_app.send_task()` for submission
+- Stores Celery task ID as `backend_run_id`
+- Implements `cancel()` via `revoke()`
+
+### 6.4 Conceptual Mappings for Other Backends
+
+| Backend | Submit | Cancel | Queue/Lane |
+|---------|--------|--------|------------|
+| **Prefect** | `run_deployment()` | `cancel_flow_run()` | Work pools |
+| **Dagster** | `submit_job()` | `terminate_run()` | Op partitioning |
+| **Airflow** | `trigger_dag()` | `delete_dag_run()` | Pools |
+| **Temporal** | `start_workflow()` | `cancel_workflow()` | Task queues |
+
+Adapters translate our `lane` concept to the backend's native routing.
+
+---
+
+## 7. Pipelines & Stages
+
+### 7.1 Pipeline Registration
+
+Pipelines are registered at module load time:
+
+```python
+from market_spine.pipelines import Pipeline, Stage, registry
+
+ingest_otc = Pipeline(
+    name="ingest_otc",
+    description="Fetch and store raw OTC trade data",
+    stages=[
+        Stage(name="fetch", fn=fetch_otc_data),
+        Stage(name="validate", fn=validate_trades),
+        Stage(name="store", fn=store_raw_trades),
+    ],
+    params_schema=IngestOtcParams,
+    default_lane="normal",
+)
+
+registry.register(ingest_otc)
+```
+
+**Discovery:** The registry scans `market_spine.pipelines.*` for `Pipeline` instances.
+
+### 7.2 Stage Model
+
+```python
+@dataclass
+class Stage:
+    name: str                          # Unique within pipeline
+    fn: Callable[[StageContext], StageResult]
+    timeout: timedelta = timedelta(minutes=30)
+    retries: int = 0                   # Stage-level retries
+    idempotent: bool = True            # Assertion, not enforcement
+```
+
+**StageContext provides:**
+- `execution_id`, `pipeline`, `params`
+- `emit(event_type, payload)` — write to ledger
+- `get_artifact(key)` / `set_artifact(key, value)` — cross-stage data
+- `db` — database connection
+
+**Idempotency expectation:** Stages marked `idempotent=True` must produce identical results if re-executed with the same inputs. The framework may re-run stages on partial failures.
+
+### 7.3 OTC Pipelines
+
+| Pipeline | Stages | Lane | Description |
+|----------|--------|------|-------------|
+| `ingest_otc` | fetch → validate → store | normal | Fetch from source, store raw |
+| `normalize_otc` | load_raw → normalize → store_normalized | normal | Transform raw → normalized |
+| `compute_daily_metrics` | load_normalized → aggregate → store_metrics | normal | Calculate VWAP, volume, etc. |
+| `backfill_range` | generate_dates → fan_out_ingest → fan_out_normalize → fan_out_compute | backfill | Process date range |
+
+---
+
+## 8. Concurrency & Idempotency
+
+### 8.1 Logical Key Strategy
+
+Default format: `{symbol}:{date}`
+
+Examples:
+- `XYZ:2026-01-01` — one execution per symbol per day
+- `*:2026-01-01` — one execution per day (all symbols)
+- `null` — no concurrency restriction
+
+**Enforcement:**
+```sql
+-- On submit, check for active execution with same logical_key
+SELECT id FROM executions 
+WHERE logical_key = $1 
+  AND status IN ('pending', 'queued', 'running')
+FOR UPDATE SKIP LOCKED;
+
+-- If found: reject or enqueue (configurable)
+-- If not found: proceed with submission
+```
+
+### 8.2 Guarantees
+
+| Guarantee | Scope | Mechanism |
+|-----------|-------|-----------|
+| At-most-once processing per logical_key | Dispatcher | Row-level lock on submit |
+| Exactly-once event emission | Worker | `idempotency_key` unique constraint |
+| Idempotent stage re-execution | Stage | Developer responsibility (asserted) |
+
+**Not guaranteed:**
+- Exactly-once delivery (network failures may cause redelivery)
+- Ordering across logical keys
+
+---
+
+## 9. Failure Handling & DLQ
+
+### 9.1 Retry Flow
+
+```
+Execution fails
+      │
+      ▼
+┌─────────────────┐
+│ retry_count <   │──Yes──▶ Create new execution
+│ max_retries?    │         (parent_execution_id = current)
+└────────┬────────┘         status = pending
+         │ No               trigger_source = "retry"
+         ▼
+┌─────────────────┐
+│ Move to DLQ     │
+│ status =        │
+│ dead_lettered   │
+└─────────────────┘
+```
+
+### 9.2 Retry Policy
+
+```python
+@dataclass
+class RetryPolicy:
+    max_retries: int = 3
+    backoff: Literal["fixed", "exponential"] = "exponential"
+    base_delay: timedelta = timedelta(seconds=30)
+    max_delay: timedelta = timedelta(hours=1)
+```
+
+### 9.3 Manual DLQ Resolution
+
+```bash
+# List dead-lettered executions
+spine dlq list
+
+# Retry from DLQ (creates new execution)
+spine dlq retry <execution_id>
+
+# Discard (mark as resolved without retry)
+spine dlq discard <execution_id> --reason "invalid data, won't succeed"
+```
+
+**Important:** `dlq retry` creates a **new** execution. The original remains in `dead_lettered` status with `resolution=retried`.
+
+---
+
+## 10. Observability & Operations
+
+### 10.1 Health Metrics (Ledger-Derived)
+
+All metrics are computed from the execution ledger, never from broker internals.
+
+| Metric | Query | Alert Threshold |
+|--------|-------|-----------------|
+| `pending_executions` | `COUNT(*) WHERE status = 'pending'` | > 100 |
+| `running_executions` | `COUNT(*) WHERE status = 'running'` | > 50 |
+| `failed_last_hour` | `COUNT(*) WHERE status = 'failed' AND completed_at > now() - '1h'` | > 10 |
+| `dlq_unresolved` | `COUNT(*) FROM dead_letters WHERE resolved_at IS NULL` | > 0 |
+| `avg_execution_time_ms` | `AVG(completed_at - started_at)` | > 60000 |
+| `oldest_pending_age_s` | `MAX(now() - created_at) WHERE status = 'pending'` | > 300 |
+
+### 10.2 Doctor CLI
+
+```bash
+# Run all health checks
+spine doctor
+
+# Example output:
+✓ Database connection: OK
+✓ Migrations: Up to date (v012)
+✓ Backend health: local backend running
+✓ Pending executions: 3 (OK)
+✓ DLQ: 0 unresolved (OK)
+✗ Failed executions: 15 in last hour (HIGH)
+  → Top failures: ingest_otc (12), normalize_otc (3)
+✓ Stale executions: 0 running > 1h (OK)
+```
+
+### 10.3 Structured Logging
+
+All log entries include:
+- `execution_id`
+- `pipeline`
+- `stage` (when applicable)
+- `trace_id` (propagated from request)
+
+---
+
+## 11. Testing Strategy
+
+### 11.1 Unit Tests
+
+**Scope:** Individual functions, stages, utilities  
+**Database:** None or SQLite in-memory  
+**Backend:** Mock  
+
+**What they validate:**
+- Stage logic correctness
+- Parameter validation
+- Error handling paths
+- Idempotency assertions
+
+```python
+def test_normalize_trade_handles_missing_venue():
+    raw = {"symbol": "XYZ", "price": 100}  # missing venue
+    with pytest.raises(ValidationError):
+        normalize_trade(raw)
+```
+
+### 11.2 Integration Tests
+
+**Scope:** Full execution flow  
+**Database:** PostgreSQL (testcontainers or dedicated test DB)  
+**Backend:** `LocalBackend` with fast polling
+
+**What they validate:**
+- Dispatcher → Backend → Worker flow
+- Event emission and status transitions
+- Concurrency enforcement
+- DLQ behavior
+
+```python
+async def test_duplicate_logical_key_rejected():
+    # Submit first execution
+    exec1 = await dispatcher.submit("ingest_otc", params, logical_key="XYZ:2026-01-01")
+    
+    # Submit second with same key while first is running
+    with pytest.raises(ConcurrencyConflict):
+        await dispatcher.submit("ingest_otc", params, logical_key="XYZ:2026-01-01")
+```
+
+### 11.3 Architecture Tests
+
+**Scope:** Import and structure validation  
+**Database:** None
+
+**What they validate:**
+- No forbidden imports (Celery in core code)
+- All pipelines registered
+- Guardrail compliance
+
+```python
+def test_core_does_not_import_celery():
+    from market_spine.pipelines import runner
+    assert "celery" not in sys.modules
+```
+
+---
+
+## 12. Project-Specific Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Python version | 3.12 | Pattern matching, performance |
+| Database access | Raw SQL + psycopg v3 + repo pattern | Explicit queries, no ORM overhead |
+| Migrations | Sequential SQL files (`001_core_executions.sql`) | Simple, reviewable, no magic |
+| ID format | ULID | Sortable, no coordination required |
+| Cancellation | Best-effort | Pending cancels immediately; running transitions to `cancelling` |
+| Event granularity | Full (execution + stage events) | Complete auditability |
+| Lanes | `normal`, `backfill` | Minimum viable; add more as needed |
+| Sample data | ~500 trades, 10 symbols, 2 weeks | Sufficient for demo without overwhelming |
+
+---
+
+## 13. Fill In Your Org-Specific Details
+
+Before production deployment, complete these items:
+
+### Data Sources
+- [ ] Define production data source endpoints
+- [ ] Document authentication mechanism for data sources
+- [ ] Specify rate limits and backoff strategies
+- [ ] Define data freshness SLAs
+
+### Retention & Storage
+- [ ] Set retention policy for `otc_raw_trades` (e.g., 7 years)
+- [ ] Set retention policy for `execution_events` (e.g., 90 days)
+- [ ] Configure TimescaleDB compression policies
+- [ ] Define backup and recovery procedures
+
+### Compute & Dependencies
+- [ ] List approved compute libraries (pandas, polars, numpy versions)
+- [ ] Define memory limits per worker
+- [ ] Specify GPU requirements (if any)
+
+### Deployment Environment
+- [ ] Target cloud provider (AWS/GCP/Azure/on-prem)
+- [ ] Kubernetes namespace and resource quotas
+- [ ] Container registry location
+- [ ] Secrets management solution (Vault, AWS Secrets Manager, etc.)
+
+### Security & Auth
+- [ ] API authentication method (JWT, API keys, OAuth)
+- [ ] Authorization model (RBAC, ABAC)
+- [ ] Network policies and ingress configuration
+- [ ] Audit logging requirements
+
+### Operations
+- [ ] Alerting thresholds (PagerDuty, Slack, etc.)
+- [ ] On-call rotation
+- [ ] Runbook locations
+- [ ] Incident response process
+
+### Compliance
+- [ ] Data classification (PII, financial data handling)
+- [ ] Regulatory requirements (SOX, GDPR, etc.)
+- [ ] Audit trail retention requirements
+
+---
+
+## 14. Database Design (PostgreSQL + TimescaleDB)
+
+### 14.1 Why TimescaleDB
+
+Market data is inherently time-series: trades, quotes, metrics all keyed by timestamp. TimescaleDB provides:
+
+- **Hypertables:** Automatic partitioning by time (chunks)
+- **Compression:** 90%+ compression on historical data
+- **Continuous aggregates:** Materialized views that auto-refresh
+- **Retention policies:** Automated data lifecycle management
+
+### 14.2 Schema Organization
+
+```
+market_spine (database)
+├── public (schema)
+│   ├── executions              # Execution ledger
+│   ├── execution_events        # Event log
+│   └── dead_letters            # DLQ
+├── otc (schema)
+│   ├── raw_trades              # Hypertable
+│   ├── normalized_trades       # Hypertable
+│   └── daily_metrics           # Regular table (aggregated)
+└── _timescaledb_internal       # TimescaleDB internals
+```
+
+### 14.3 Hypertable Configuration
+
+```sql
+-- Create hypertable for raw trades (partition by ingested_at)
+SELECT create_hypertable(
+    'otc.raw_trades',
+    'ingested_at',
+    chunk_time_interval => INTERVAL '1 day',
+    if_not_exists => TRUE
+);
+
+-- Create hypertable for normalized trades (partition by trade_date)
+SELECT create_hypertable(
+    'otc.normalized_trades',
+    'trade_date',
+    chunk_time_interval => INTERVAL '1 week',
+    if_not_exists => TRUE
+);
+
+-- Add compression policy (compress chunks older than 7 days)
+ALTER TABLE otc.raw_trades SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'symbol',
+    timescaledb.compress_orderby = 'ingested_at DESC'
+);
+
+SELECT add_compression_policy('otc.raw_trades', INTERVAL '7 days');
+```
+
+### 14.4 Retention Policies
+
+```sql
+-- Drop raw trade chunks older than 2 years
+SELECT add_retention_policy('otc.raw_trades', INTERVAL '2 years');
+
+-- Keep execution events for 90 days
+SELECT add_retention_policy('public.execution_events', INTERVAL '90 days');
+
+-- Keep executions forever (or move to archive)
+-- No retention policy on executions table
+```
+
+### 14.5 Indexing Strategy
+
+```sql
+-- Execution ledger indexes
+CREATE INDEX idx_executions_status ON executions(status) WHERE status IN ('pending', 'queued', 'running');
+CREATE INDEX idx_executions_logical_key ON executions(logical_key) WHERE logical_key IS NOT NULL;
+CREATE INDEX idx_executions_pipeline_created ON executions(pipeline, created_at DESC);
+
+-- OTC indexes (TimescaleDB auto-creates time index)
+CREATE INDEX idx_raw_trades_symbol_date ON otc.raw_trades(symbol, trade_date);
+CREATE INDEX idx_normalized_trades_symbol ON otc.normalized_trades(symbol, trade_date);
+
+-- Execution events (for replay queries)
+CREATE INDEX idx_execution_events_exec_id ON execution_events(execution_id, timestamp);
+```
+
+### 14.6 Connection Pooling
+
+```yaml
+# PgBouncer configuration
+[databases]
+market_spine = host=timescaledb port=5432 dbname=market_spine
+
+[pgbouncer]
+pool_mode = transaction          # Required for TimescaleDB
+max_client_conn = 1000
+default_pool_size = 25
+reserve_pool_size = 5
+```
+
+**Connection string pattern:**
+```
+postgresql://user:pass@pgbouncer:6432/market_spine?application_name=spine-api
+```
+
+### 14.7 As-Of Queries (Reproducibility)
+
+All market data tables support point-in-time queries via `ingested_at`:
+
+```sql
+-- Get raw trades as they existed at a specific time
+SELECT * FROM otc.raw_trades
+WHERE symbol = 'XYZ'
+  AND trade_date = '2026-01-01'
+  AND ingested_at <= '2026-01-02 10:00:00'::timestamptz
+ORDER BY ingested_at DESC;
+
+-- Get latest version of each trade
+SELECT DISTINCT ON (symbol, trade_date, venue, price, quantity)
+    *
+FROM otc.raw_trades
+WHERE trade_date = '2026-01-01'
+ORDER BY symbol, trade_date, venue, price, quantity, ingested_at DESC;
+```
+
+---
+
+## 15. Container Architecture (Docker)
+
+### 15.1 Image Hierarchy
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                    python:3.12-slim                         │
+│                    (base image)                             │
+└──────────────────────────┬─────────────────────────────────┘
+                           │
+┌──────────────────────────▼─────────────────────────────────┐
+│                 market-spine-base                           │
+│  - System dependencies (libpq, build tools)                 │
+│  - Python dependencies (requirements.txt)                   │
+│  - Non-root user: spine (UID 1000)                         │
+└──────────────────────────┬─────────────────────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+        ▼                  ▼                  ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│ spine-api     │  │ spine-worker  │  │ spine-beat    │
+│ - FastAPI     │  │ - Celery      │  │ - Scheduler   │
+│ - Uvicorn     │  │ - LocalBackend│  │ - Cron jobs   │
+│ PORT 8000     │  │ (no ports)    │  │ (no ports)    │
+└───────────────┘  └───────────────┘  └───────────────┘
+```
+
+### 15.2 Dockerfile (API)
+
+```dockerfile
+# syntax=docker/dockerfile:1.4
+FROM python:3.12-slim AS base
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd --create-home --uid 1000 spine
+WORKDIR /app
+
+# Install Python dependencies
+COPY --chown=spine:spine requirements.lock ./
+RUN pip install --no-cache-dir -r requirements.lock
+
+# Copy application
+COPY --chown=spine:spine src/ ./src/
+COPY --chown=spine:spine alembic.ini ./
+
+USER spine
+
+# API target
+FROM base AS api
+EXPOSE 8000
+CMD ["uvicorn", "market_spine.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Worker target
+FROM base AS worker
+CMD ["python", "-m", "market_spine.worker"]
+
+# Beat target
+FROM base AS beat
+CMD ["celery", "-A", "market_spine.celery_app", "beat", "--loglevel=info"]
+```
+
+### 15.3 Docker Compose (Development)
+
+```yaml
+version: "3.9"
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_USER: spine
+      POSTGRES_PASSWORD: spine_dev
+      POSTGRES_DB: market_spine
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spine -d market_spine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: spine
+      RABBITMQ_DEFAULT_PASS: spine_dev
+
+  api:
+    build:
+      context: .
+      target: api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://spine:spine_dev@timescaledb:5432/market_spine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: amqp://spine:spine_dev@rabbitmq:5672//
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      DATABASE_URL: postgresql://spine:spine_dev@timescaledb:5432/market_spine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: amqp://spine:spine_dev@rabbitmq:5672//
+    depends_on:
+      - api
+
+  frontend:
+    build:
+      context: ./trading-desktop
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./trading-desktop/src:/app/src
+
+volumes:
+  timescale_data:
+```
+
+### 15.4 Build & Push
+
+```bash
+# Build all targets
+docker build --target api -t ghcr.io/org/market-spine-api:latest .
+docker build --target worker -t ghcr.io/org/market-spine-worker:latest .
+docker build --target beat -t ghcr.io/org/market-spine-beat:latest .
+
+# Push to registry
+docker push ghcr.io/org/market-spine-api:latest
+docker push ghcr.io/org/market-spine-worker:latest
+docker push ghcr.io/org/market-spine-beat:latest
+```
+
+---
+
+## 16. Kubernetes Deployment
+
+### 16.1 Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Kubernetes Cluster                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │                      Namespace: market-spine                             ││
+│  │                                                                          ││
+│  │  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐                    ││
+│  │  │   Ingress   │──▶│   API Svc   │──▶│  API Pods   │                    ││
+│  │  │ (nginx/alb) │   │ ClusterIP   │   │  (2 repl)   │                    ││
+│  │  └─────────────┘   └─────────────┘   └─────────────┘                    ││
+│  │         │                                   │                            ││
+│  │         │          ┌─────────────┐          │                            ││
+│  │         └─────────▶│Frontend Svc │          ▼                            ││
+│  │                    │  ClusterIP  │   ┌─────────────┐                    ││
+│  │                    └──────┬──────┘   │ TimescaleDB │                    ││
+│  │                           │          │ StatefulSet │                    ││
+│  │                    ┌──────▼──────┐   └─────────────┘                    ││
+│  │                    │Frontend Pod │          ▲                            ││
+│  │                    │  (nginx)    │          │                            ││
+│  │                    └─────────────┘          │                            ││
+│  │                                             │                            ││
+│  │  ┌─────────────┐   ┌─────────────┐   ┌──────┴──────┐                    ││
+│  │  │ Worker Pods │──▶│  Redis Svc  │──▶│ Redis Pod   │                    ││
+│  │  │ (Deployment)│   │  ClusterIP  │   │ (Sentinel)  │                    ││
+│  │  └─────────────┘   └─────────────┘   └─────────────┘                    ││
+│  │         │                                                                ││
+│  │         ▼                                                                ││
+│  │  ┌─────────────┐   ┌─────────────┐                                      ││
+│  │  │ RabbitMQ Svc│──▶│RabbitMQ Pod │                                      ││
+│  │  │  ClusterIP  │   │(StatefulSet)│                                      ││
+│  │  └─────────────┘   └─────────────┘                                      ││
+│  │                                                                          ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 16.2 Namespace & Resource Quotas
+
+```yaml
+# namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: market-spine
+  labels:
+    app.kubernetes.io/name: market-spine
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: spine-quota
+  namespace: market-spine
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: 16Gi
+    limits.cpu: "16"
+    limits.memory: 32Gi
+    persistentvolumeclaims: "10"
+```
+
+### 16.3 API Deployment
+
+```yaml
+# api-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-spine-api
+  namespace: market-spine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: market-spine-api
+  template:
+    metadata:
+      labels:
+        app: market-spine-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/org/market-spine-api:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: spine-secrets
+            - configMapRef:
+                name: spine-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: market-spine-api
+  namespace: market-spine
+spec:
+  selector:
+    app: market-spine-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+```
+
+### 16.4 Worker Deployment
+
+```yaml
+# worker-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-spine-worker
+  namespace: market-spine
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: market-spine-worker
+  template:
+    metadata:
+      labels:
+        app: market-spine-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/org/market-spine-worker:latest
+          envFrom:
+            - secretRef:
+                name: spine-secrets
+            - configMapRef:
+                name: spine-config
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import market_spine; print('ok')"]
+            initialDelaySeconds: 30
+            periodSeconds: 60
+      terminationGracePeriodSeconds: 300  # Allow long-running tasks to complete
+```
+
+### 16.5 TimescaleDB StatefulSet
+
+```yaml
+# timescaledb-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: timescaledb
+  namespace: market-spine
+spec:
+  serviceName: timescaledb
+  replicas: 1  # Single node; use HA for production
+  selector:
+    matchLabels:
+      app: timescaledb
+  template:
+    metadata:
+      labels:
+        app: timescaledb
+    spec:
+      containers:
+        - name: timescaledb
+          image: timescale/timescaledb:latest-pg15
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: timescaledb-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 4Gi
+            limits:
+              cpu: 4000m
+              memory: 8Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+```
+
+### 16.6 Ingress Configuration
+
+```yaml
+# ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: market-spine-ingress
+  namespace: market-spine
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  tls:
+    - hosts:
+        - spine.example.com
+      secretName: spine-tls
+  rules:
+    - host: spine.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: market-spine-api
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: market-spine-frontend
+                port:
+                  number: 8080
+```
+
+### 16.7 ConfigMap & Secrets
+
+```yaml
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spine-config
+  namespace: market-spine
+data:
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO
+  BACKEND_TYPE: celery
+  CELERY_WORKER_CONCURRENCY: "4"
+  API_WORKERS: "4"
+---
+# secrets.yaml (use sealed-secrets or external-secrets in practice)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: spine-secrets
+  namespace: market-spine
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql://spine:xxx@timescaledb:5432/market_spine
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: amqp://spine:xxx@rabbitmq:5672//
+```
+
+### 16.8 Horizontal Pod Autoscaler
+
+```yaml
+# hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: market-spine-worker-hpa
+  namespace: market-spine
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: market-spine-worker
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: External
+      external:
+        metric:
+          name: pending_executions
+          selector:
+            matchLabels:
+              app: market-spine
+        target:
+          type: AverageValue
+          averageValue: "5"
+```
+
+---
+
+## 17. Frontend Architecture (Trading Desktop)
+
+### 17.1 Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| Framework | React 18 | Component-based UI |
+| Language | TypeScript 5.x | Type safety |
+| Build | Vite | Fast dev server, ESBuild |
+| Styling | Tailwind CSS | Utility-first CSS |
+| State | TanStack Query | Server state management |
+| Routing | React Router v6 | Client-side routing |
+| Charts | Recharts / Lightweight Charts | Data visualization |
+| Tables | TanStack Table | High-performance tables |
+
+### 17.2 Project Structure
+
+```
+trading-desktop/
+├── public/
+│   └── favicon.ico
+├── src/
+│   ├── api/                    # API client layer
+│   │   ├── client.ts           # Axios instance
+│   │   ├── executions.ts       # Execution endpoints
+│   │   ├── pipelines.ts        # Pipeline endpoints
+│   │   └── orchestratorLab.ts  # Orchestrator lab endpoints
+│   ├── components/             # Shared components
+│   │   ├── ui/                 # Base UI components
+│   │   ├── charts/             # Chart components
+│   │   └── tables/             # Table components
+│   ├── dashboard/
+│   │   ├── layouts/            # Dashboard layouts
+│   │   └── pages/              # Page components
+│   │       ├── executions/
+│   │       ├── pipelines/
+│   │       ├── orchestrator/
+│   │       └── metrics/
+│   ├── hooks/                  # Custom React hooks
+│   ├── lib/                    # Utilities
+│   ├── types/                  # TypeScript types
+│   ├── App.tsx
+│   └── main.tsx
+├── index.html
+├── package.json
+├── tailwind.config.js
+├── tsconfig.json
+└── vite.config.ts
+```
+
+### 17.3 API Client Pattern
+
+```typescript
+// src/api/client.ts
+import axios from 'axios';
+
+export const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor for auth
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// src/api/executions.ts
+export interface Execution {
+  id: string;
+  pipeline: string;
+  status: 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'dead_lettered';
+  params: Record<string, unknown>;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  error?: string;
+  external_run_id?: string;
+  external_url?: string;
+}
+
+export const executionsApi = {
+  list: (params?: { status?: string; pipeline?: string }) =>
+    apiClient.get<Execution[]>('/executions', { params }),
+  
+  get: (id: string) =>
+    apiClient.get<Execution>(`/executions/${id}`),
+  
+  trigger: (pipeline: string, params: Record<string, unknown>) =>
+    apiClient.post<{ execution_id: string }>(`/pipelines/${pipeline}/trigger`, params),
+  
+  cancel: (id: string) =>
+    apiClient.post(`/executions/${id}/cancel`),
+};
+```
+
+### 17.4 Query Hooks
+
+```typescript
+// src/hooks/useExecutions.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { executionsApi } from '../api/executions';
+
+export function useExecutions(filters?: { status?: string }) {
+  return useQuery({
+    queryKey: ['executions', filters],
+    queryFn: () => executionsApi.list(filters).then(r => r.data),
+    refetchInterval: 5000,  // Poll every 5s for live updates
+  });
+}
+
+export function useTriggerPipeline() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ pipeline, params }: { pipeline: string; params: Record<string, unknown> }) =>
+      executionsApi.trigger(pipeline, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['executions'] });
+    },
+  });
+}
+```
+
+### 17.5 Key Pages
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | DashboardHome | Overview with key metrics |
+| `/executions` | ExecutionListPage | All executions with filters |
+| `/executions/:id` | ExecutionDetailPage | Single execution with events |
+| `/pipelines` | PipelineListPage | Registered pipelines |
+| `/pipelines/:id/trigger` | TriggerPage | Manual pipeline trigger |
+| `/orchestrator` | OrchestratorLabPage | Orchestrator comparison |
+| `/orchestrator/runs` | RecentRunsPage | Recent orchestrator runs |
+| `/metrics` | MetricsPage | OTC daily metrics viewer |
+| `/dlq` | DeadLetterQueue | DLQ management |
+| `/health` | HealthPage | System health dashboard |
+
+### 17.6 Real-Time Updates
+
+```typescript
+// src/hooks/useExecutionStream.ts
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+
+export function useExecutionStream(executionId: string) {
+  const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    const eventSource = new EventSource(
+      `${import.meta.env.VITE_API_URL}/executions/${executionId}/stream`
+    );
+    
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      queryClient.setQueryData(['execution', executionId], data);
+    };
+    
+    return () => eventSource.close();
+  }, [executionId, queryClient]);
+}
+```
+
+### 17.7 Docker Build
+
+```dockerfile
+# trading-desktop/Dockerfile
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+
+COPY . .
+RUN pnpm build
+
+# Production image
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### 17.8 Environment Configuration
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
+});
+```
+
+---
+
+## Appendix A: Migration File Naming
+
+```
+migrations/
+├── 001_core_executions.sql
+├── 002_core_execution_events.sql
+├── 003_core_dead_letters.sql
+├── 010_otc_raw_trades.sql
+├── 011_otc_normalized_trades.sql
+├── 012_otc_daily_metrics.sql
+└── ...
+```
+
+**Prefixes:**
+- `001-009`: Core (execution ledger)
+- `010-099`: OTC domain
+- `100-199`: Future domains
+
+---
+
+## Appendix B: Quick Reference
+
+### Submit an execution
+```python
+execution = await dispatcher.submit(
+    pipeline="ingest_otc",
+    params={"symbol": "XYZ", "date": "2026-01-01"},
+    lane="normal",
+    trigger_source="api",
+    logical_key="XYZ:2026-01-01"
+)
+```
+
+### Check execution status
+```python
+execution = await execution_repo.get(execution_id)
+print(execution.status)  # pending, queued, running, completed, failed, dead_lettered
+```
+
+### Retry from DLQ
+```bash
+spine dlq retry 01HQXYZ123456789ABCDEFGHIJ
+```
+
+### Run health check
+```bash
+spine doctor
+```
+
+---
+
+*This document is the engineering contract for Market Spine. All code must conform to the invariants defined here. Violations require architectural review.*

@@ -1,0 +1,166 @@
+# Market Spine — Implement Base Volume Aggregations + 3 More Calc Ideas + API Exposure
+
+We want to add a small “calc family” of foundational FINRA OTC aggregations, then propose 3 additional high-value calculations (aggregation/filter/merge/multi-period), and expose outputs via the API in a consistent, institutional-grade way.
+
+## Context / Existing Guarantees
+- Determinism, replay, versioning, deprecation are already enforced by fitness tests.
+- Extensibility axes (sources, periods, calcs) should be registry-driven; avoid branching.
+- Keep `spine-core` unchanged unless absolutely necessary; prefer domain/app changes.
+- Follow existing calc lifecycle conventions (CALCS registry, versions, invariants, audit fields).
+
+---
+
+# Part 1 — Implement Base Aggregation: weekly_symbol_volume_by_tier_v1
+
+## Goal
+Create a foundational, boring-but-correct aggregation that sums weekly volume per symbol, split by tier.
+
+### Inputs
+Use FINRA OTC normalized (or appropriate “gold”) table as the source of truth:
+- If there is already an “aggregated” table, confirm whether it’s sufficient.
+- Otherwise aggregate from normalized trades.
+
+### Output grain
+`(symbol, week_ending, tier, capture_id)` (plus any required keys in our conventions)
+
+### Output columns (suggested; adjust to match existing schema conventions)
+- symbol (TEXT)
+- week_ending (DATE)
+- tier (TEXT enum)
+- total_volume (INTEGER or DECIMAL/TEXT per our policy)
+- trade_count (INTEGER)  # if available from source; otherwise omit
+- notional_total (DECIMAL/TEXT)  # only if source supports it; optional
+- calc_name (TEXT) = "weekly_symbol_volume_by_tier"
+- calc_version (TEXT) = "v1"
+- calculated_at (TIMESTAMP) audit field
+- capture_id (TEXT)
+- captured_at (TIMESTAMP)
+- source provenance fields if we already store them (optional)
+
+### Requirements
+1) Add CALCS registry entry:
+- name: weekly_symbol_volume_by_tier
+- versions: [v1]
+- current: v1
+- deprecated: []
+- business keys (natural keys) correct and enforced
+2) DB schema:
+- Add a NEW table for this calc following naming conventions (do not add derived-metric columns to existing base tables unless explicitly justified)
+- Add uniqueness constraint using capture_id (not captured_at)
+- Add indexes needed for:
+  - latest queries
+  - as-of queries
+  - week/tier/symbol filters
+- In the Change Surface Map, include a “Storage decision” note: new table vs existing table, and why.
+- Add 3 example SQL queries (latest / as-of / range filter) to the docs.
+3) Pipeline wiring:
+- Add a pipeline `compute_weekly_symbol_volume_by_tier` (or similar) that writes this table.
+- Ensure it is idempotent for same capture_id and safe for new capture_id.
+4) Invariants:
+- total_volume >= 0
+- trade_count >= 0 (if present)
+- No duplicate rows per natural key
+- Optional: if you also produce “total across tiers”, enforce consistency in Part 2
+5) Tests:
+- Unit tests for computation correctness using small fixtures
+- Fitness tests for:
+  - replay: same capture_id rerun does not duplicate
+  - new capture: new capture_id coexists
+  - determinism: stable output excluding audit fields
+  - invariants: negative volume fails loudly
+6) Docs:
+- Update docs/fitness and any relevant domain docs:
+  - how to add a calc in this style
+  - table definition and keying
+  - example query for latest/as-of
+
+---
+
+# Part 2 — Add Two Simple Derived Rollups (thin, composable)
+
+Implement these as separate calcs that read from weekly_symbol_volume_by_tier_v1:
+
+## 2A) weekly_symbol_total_volume_v1
+Grain: `(symbol, week_ending, capture_id)`
+Logic: sum total_volume across tier for each symbol/week/capture_id
+
+## 2B) weekly_tier_total_volume_v1
+Grain: `(tier, week_ending, capture_id)`
+Logic: sum total_volume across symbols for each tier/week/capture_id
+
+### Requirements for both
+- CALCS registry entries + versioning
+- Tables + uniqueness constraints + indexes
+- Invariants:
+  - totals >= 0
+  - Consistency check:
+    - sum(weekly_symbol_volume_by_tier) across tiers == weekly_symbol_total_volume
+    - sum across symbols == weekly_tier_total_volume
+- Tests proving consistency and determinism
+
+---
+
+# Part 3 — Propose 3 additional high-value calc stress tests (design + optional implementation plan)
+
+Come up with 3 more calculations that stress different capabilities. Provide for each:
+- Name + version (v1)
+- What it tests (aggregation, filtering, merging, multi-period, cross-domain)
+- Required inputs/tables
+- Output grain + schema sketch
+- Invariants
+- What changes are expected (domain only? domain+app? api?)
+
+Pick from categories like:
+1) Cross-domain merge (FINRA + exchange_calendar)
+2) Filtering/segmentation (e.g., top venues, ATS vs OTC if fields allow)
+3) Multi-period calculation (weekly -> rolling 4-week, month-to-date, quarter-to-date)
+4) Share / ratio metrics with strict invariants (percentages sum to 1, etc.)
+
+Do not overfit to data fields we don’t have—if uncertain, state assumptions and choose a calc that can be supported by the current schema.
+
+---
+
+# Part 4 — API exposure for calc outputs (institutional, consistent)
+
+We want a consistent way to expose calculation outputs via the API without adding complex frameworks.
+
+## Requirements
+1) Add API endpoints for querying calc outputs:
+- Must support selecting:
+  - calc_name
+  - version (explicit) or “current”
+  - latest vs as-of semantics (by captured_at/capture_id)
+  - filters by week_ending, tier, symbol where applicable
+- Responses should include:
+  - rows
+  - metadata: calc_name, calc_version, deprecated flag, capture_id, captured_at
+2) Parameter validation:
+- Pydantic models ONLY at API boundary
+- Commands/services use dataclasses
+
+3) Implement a thin QueryCalcCommand (or similar) in app/commands:
+- It should resolve:
+  - calc registry metadata
+  - table name
+  - version selection (current vs explicit)
+  - query mode (latest/as-of)
+4) Add tests:
+- API route tests for:
+  - current version selection
+  - explicit version selection
+  - deprecation warning surfaced in response metadata
+  - as-of queries returning correct capture
+  - invalid calc/version errors are helpful
+5) Docs:
+- Update README with example curl calls
+- Add a small API doc page under docs/ (calc query API)
+
+---
+
+# Output format
+- Provide a short “Change Surface Map” (which layers changed and why).
+- Then implement code + schema + tests.
+- Update docs accordingly.
+- Ensure all tests pass.
+
+Proceed without follow-up questions; make reasonable assumptions and document them.
