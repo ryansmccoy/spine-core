@@ -1,0 +1,140 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "market-spine-basic"
+version = "0.1.0"
+description = "Market Spine Basic - CLI analytics pipeline system"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [
+    { name = "Market Spine Team" }
+]
+dependencies = [
+    "click>=8.1.0",
+    "typer>=0.12.0",
+    "questionary>=2.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=24.0.0",
+    "rich>=13.0.0",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    # Spine packages (local path dependencies)
+    "spine-core",
+    "spine-domains",
+]
+
+[project.scripts]
+spine = "market_spine.cli:cli_main"
+
+# =============================================================================
+# UV - Dependency groups and sources
+# =============================================================================
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "httpx>=0.26.0",  # Required for FastAPI TestClient
+]
+shell = [
+    "ptpython>=3.0.0",
+]
+
+[tool.uv.sources]
+spine-core = { path = "../packages/spine-core", editable = true }
+spine-domains = { path = "../packages/spine-domains", editable = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/market_spine"]
+
+# =============================================================================
+# RUFF - Fast Python linter and formatter
+# Replaces: flake8, black, isort, pyupgrade, autoflake
+# Docs: https://docs.astral.sh/ruff/
+# =============================================================================
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "W",      # pycodestyle warnings
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "PTH",    # flake8-use-pathlib
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function call in default argument (needed for Click)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["market_spine", "spine"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# =============================================================================
+# MYPY - Static type checking
+# Docs: https://mypy.readthedocs.io/
+# =============================================================================
+[tool.mypy]
+python_version = "3.12"
+strict = false  # Gradual typing: start permissive, tighten over time
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = false  # Allow untyped for now
+check_untyped_defs = true
+ignore_missing_imports = true  # Third-party stubs may be missing
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+# =============================================================================
+# PYTEST - Testing framework
+# Docs: https://docs.pytest.org/
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# =============================================================================
+# COVERAGE - Test coverage reporting
+# Docs: https://coverage.readthedocs.io/
+# =============================================================================
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = ["*/__pycache__/*", "*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = true

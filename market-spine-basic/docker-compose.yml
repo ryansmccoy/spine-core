@@ -1,0 +1,107 @@
+# Market Spine Basic - Docker Compose Configuration
+# For local development and simple production deployments
+
+services:
+  # ==========================================================================
+  # API Server (with automatic database initialization)
+  # ==========================================================================
+  api:
+    build:
+      context: ..
+      dockerfile: market-spine-basic/Dockerfile
+    container_name: market-spine-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persistent storage for database
+      - spine-db:/app/db
+      # Mount local data directory for FINRA files
+      - ./data:/app/data:ro
+    environment:
+      - SPINE_DATABASE_PATH=/app/db/spine.db
+      - SPINE_DATA_DIR=/app/data
+      - SPINE_LOG_LEVEL=INFO
+      - SPINE_LOG_FORMAT=json
+    # Default command runs API (entrypoint handles db init)
+    restart: unless-stopped
+
+  # ==========================================================================
+  # CLI / Pipeline Runner
+  # ==========================================================================
+  cli:
+    build:
+      context: ..
+      dockerfile: market-spine-basic/Dockerfile
+    container_name: market-spine-cli
+    volumes:
+      - spine-db:/app/db
+      - ./data:/app/data:ro
+    environment:
+      - SPINE_DATABASE_PATH=/app/db/spine.db
+      - SPINE_DATA_DIR=/app/data
+      - SPINE_LOG_LEVEL=INFO
+      - SPINE_LOG_FORMAT=json
+    # Override entrypoint for CLI usage (skip db init)
+    entrypoint: ["spine"]
+    command: ["--help"]
+    restart: "no"
+    profiles:
+      - cli
+
+  # ==========================================================================
+  # Schema Builder (one-shot)
+  # ==========================================================================
+  schema-build:
+    image: python:3.12-slim
+    container_name: spine-schema-build
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    command: ["python", "scripts/build_schema.py"]
+    restart: "no"
+    profiles:
+      - schema
+
+volumes:
+  spine-db:
+    name: market-spine-basic-db
+
+
+# =============================================================================
+# Usage Examples
+# =============================================================================
+#
+# Start everything (auto-inits database, starts API):
+#   docker compose up
+#   API at http://localhost:8000
+#   Docs at http://localhost:8000/docs
+#
+# Start in background:
+#   docker compose up -d
+#   docker compose logs -f api
+#
+# Stop:
+#   docker compose down
+#
+# Build schema from modules (development):
+#   docker compose --profile schema run --rm schema-build
+#   OR on host: python scripts/build_schema.py
+#
+# Build the image:
+#   docker compose build
+#
+# Run a pipeline:
+#   docker compose run --rm --no-deps cli run finra.otc_transparency.ingest_week \
+#     -p week_ending=2025-12-26 \
+#     -p tier=NMS_TIER_1 \
+#     -p file_path=/app/data/fixtures/otc/week_2025-12-26.psv
+#
+# List pipelines:
+#   docker compose run --rm --no-deps cli list
+#
+# Check status:
+#   docker compose run --rm --no-deps cli status
+#
+# Reset database:
+#   docker compose down -v  # Removes volumes
+#   docker compose up       # Recreates and reinitializes
