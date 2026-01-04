@@ -49,7 +49,7 @@ uv run spine query symbols --tier NMS_TIER_1 --week 2025-12-26
 uv run spine pipelines list
 
 # Start API server
-uv run uvicorn market_spine.api:app --reload
+uv run uvicorn market_spine.api.app:app --host 0.0.0.0 --port 8000 --reload
 
 # Run smoke test (validates CLI + API)
 uv run python scripts/smoke_test.py

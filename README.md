@@ -108,7 +108,7 @@ Pipelines are **idempotent by partition key**. Running the same pipeline with th
 
 ```bash
 # Clone and enter the repo
-cd spine/market-spine-basic
+cd market-spine-basic
 
 # Install with uv (recommended)
 uv sync
@@ -126,7 +126,7 @@ uv run spine run run finra.otc_transparency.ingest_week \
 uv run spine query weeks --tier NMS_TIER_1
 
 # Start API server
-uv run uvicorn market_spine.api:app --reload
+uv run uvicorn market_spine.api.app:app --host 0.0.0.0 --port 8000
 ```
 
 See [market-spine-basic/README.md](market-spine-basic/README.md) for full documentation.
