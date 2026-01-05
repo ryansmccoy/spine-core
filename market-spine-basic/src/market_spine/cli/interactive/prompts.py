@@ -1,6 +1,6 @@
 """Pipeline parameter prompts."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import questionary
 from questionary import Style
@@ -22,7 +22,7 @@ custom_style = Style(
 )
 
 
-def prompt_pipeline_params(pipeline_name: str) -> Optional[Dict[str, Any]]:
+def prompt_pipeline_params(pipeline_name: str) -> dict[str, Any] | None:
     """Prompt user for pipeline parameters."""
     try:
         pipeline_cls = get_pipeline(pipeline_name)

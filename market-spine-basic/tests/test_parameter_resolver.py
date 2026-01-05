@@ -1,6 +1,5 @@
 """Tests for the ParameterResolver service."""
 
-from datetime import date, timedelta
 
 import pytest
 

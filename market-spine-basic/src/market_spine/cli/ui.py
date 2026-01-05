@@ -59,10 +59,10 @@ def render_error_panel(title: str, message: str, details: list[str] | None = Non
 def render_info_panel(title: str, message: str = None, content: dict[str, Any] = None) -> None:
     """Render informational panel."""
     lines = []
-    
+
     if message:
         lines.append(message)
-    
+
     if content:
         for key, value in content.items():
             display_key = key.replace("_", " ").title()
@@ -100,10 +100,10 @@ def render_dry_run_panel(pipeline: str, params: dict[str, Any], is_ingest: bool 
 def create_pipeline_table(pipelines: list[tuple[str, str]]) -> Table:
     """
     Create a table of pipelines.
-    
+
     Args:
         pipelines: List of (name, description) tuples
-    
+
     Returns:
         Rich Table ready for display
     """

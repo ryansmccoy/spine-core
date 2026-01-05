@@ -3,11 +3,10 @@
 import typer
 from rich.table import Table
 
-from market_spine.db import get_connection
 from market_spine.app.services.data import DataSourceConfig
+from market_spine.db import get_connection
 
 from ..console import console
-from ..ui import render_error_panel
 
 app = typer.Typer(no_args_is_help=False)
 
@@ -45,7 +44,7 @@ def doctor() -> None:
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    f"SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
                     (table,),
                 )
                 exists = cursor.fetchone() is not None

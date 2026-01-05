@@ -11,7 +11,7 @@ These tests verify:
 See docs/fitness/ for detailed documentation.
 """
 
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from sqlite3 import IntegrityError
 
@@ -67,13 +67,14 @@ class TestUniquenessConstraints:
     def test_duplicate_insert_same_capture_fails(self):
         """Same business key + capture_id should fail on second insert."""
         import uuid
+
         conn = get_connection()
-        
+
         # Use unique values to avoid collision with other tests
         test_id = uuid.uuid4().hex[:8]
         capture_id = f"cap-test-dup-{test_id}"
         symbol = f"TEST{test_id[:4]}"
-        
+
         # First insert succeeds
         conn.execute(
             f"""
@@ -83,11 +84,22 @@ class TestUniquenessConstraints:
                 captured_at, capture_id, calculated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            ("exec-1", "batch-1", "2025-12-26", "OTC", symbol,
-             1000, 10, 3, "2025-01-01T00:00:00", capture_id, "2025-01-01T00:00:00"),
+            (
+                "exec-1",
+                "batch-1",
+                "2025-12-26",
+                "OTC",
+                symbol,
+                1000,
+                10,
+                3,
+                "2025-01-01T00:00:00",
+                capture_id,
+                "2025-01-01T00:00:00",
+            ),
         )
         conn.commit()
-        
+
         # Second insert with same capture_id should fail
         with pytest.raises(IntegrityError):
             conn.execute(
@@ -98,19 +110,31 @@ class TestUniquenessConstraints:
                     captured_at, capture_id, calculated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                ("exec-2", "batch-2", "2025-12-26", "OTC", symbol,
-                 2000, 20, 5, "2025-01-01T00:00:00", capture_id, "2025-01-01T00:00:00"),
+                (
+                    "exec-2",
+                    "batch-2",
+                    "2025-12-26",
+                    "OTC",
+                    symbol,
+                    2000,
+                    20,
+                    5,
+                    "2025-01-01T00:00:00",
+                    capture_id,
+                    "2025-01-01T00:00:00",
+                ),
             )
 
     def test_different_capture_succeeds(self):
         """Same business key with different capture_id should succeed."""
         import uuid
+
         conn = get_connection()
-        
+
         # Use unique values to avoid collision with other tests
         test_id = uuid.uuid4().hex[:8]
         symbol = f"DIFF{test_id[:4]}"
-        
+
         # First insert
         conn.execute(
             f"""
@@ -120,10 +144,21 @@ class TestUniquenessConstraints:
                 captured_at, capture_id, calculated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            ("exec-1", "batch-1", "2025-12-26", "OTC", symbol,
-             1000, 10, 3, "2025-01-01T00:00:00", f"cap-diff-1-{test_id}", "2025-01-01T00:00:00"),
+            (
+                "exec-1",
+                "batch-1",
+                "2025-12-26",
+                "OTC",
+                symbol,
+                1000,
+                10,
+                3,
+                "2025-01-01T00:00:00",
+                f"cap-diff-1-{test_id}",
+                "2025-01-01T00:00:00",
+            ),
         )
-        
+
         # Second insert with different capture_id should succeed
         conn.execute(
             f"""
@@ -133,15 +168,25 @@ class TestUniquenessConstraints:
                 captured_at, capture_id, calculated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            ("exec-2", "batch-2", "2025-12-26", "OTC", symbol,
-             2000, 20, 5, "2025-01-02T00:00:00", f"cap-diff-2-{test_id}", "2025-01-02T00:00:00"),
+            (
+                "exec-2",
+                "batch-2",
+                "2025-12-26",
+                "OTC",
+                symbol,
+                2000,
+                20,
+                5,
+                "2025-01-02T00:00:00",
+                f"cap-diff-2-{test_id}",
+                "2025-01-02T00:00:00",
+            ),
         )
         conn.commit()
-        
+
         # Both should exist
         count = conn.execute(
-            f"SELECT COUNT(*) FROM {TABLES['symbol_summary']} WHERE symbol = ?",
-            (symbol,)
+            f"SELECT COUNT(*) FROM {TABLES['symbol_summary']} WHERE symbol = ?", (symbol,)
         ).fetchone()[0]
         assert count == 2
 
@@ -152,7 +197,7 @@ class TestReplayIdempotency:
     def test_replay_with_delete_insert_is_idempotent(self, fixture_path):
         """DELETE + INSERT pattern produces identical results."""
         dispatcher = Dispatcher()
-        
+
         # First run
         exec1 = dispatcher.submit(
             "finra.otc_transparency.ingest_week",
@@ -160,13 +205,12 @@ class TestReplayIdempotency:
         )
         assert exec1.status.value == "completed"
         capture1 = exec1.result.metrics.get("capture_id")
-        
+
         conn = get_connection()
         count1 = conn.execute(
-            f"SELECT COUNT(*) FROM {TABLES['raw']} WHERE capture_id = ?",
-            (capture1,)
+            f"SELECT COUNT(*) FROM {TABLES['raw']} WHERE capture_id = ?", (capture1,)
         ).fetchone()[0]
-        
+
         # Replay with same capture (force=True triggers DELETE + INSERT)
         # This will create a new capture_id, but we can verify row counts match
         exec2 = dispatcher.submit(
@@ -175,12 +219,11 @@ class TestReplayIdempotency:
         )
         assert exec2.status.value == "completed"
         capture2 = exec2.result.metrics.get("capture_id")
-        
+
         count2 = conn.execute(
-            f"SELECT COUNT(*) FROM {TABLES['raw']} WHERE capture_id = ?",
-            (capture2,)
+            f"SELECT COUNT(*) FROM {TABLES['raw']} WHERE capture_id = ?", (capture2,)
         ).fetchone()[0]
-        
+
         # Same row count (same source data)
         assert count1 == count2
 
@@ -221,7 +264,7 @@ class TestCalcVersionRegistry:
             assert "deprecated" in config
             assert "table" in config
             assert "business_keys" in config
-            
+
             # Current must be in versions
             assert config["current"] in config["versions"]
 
@@ -306,7 +349,7 @@ class TestCalcVersionRegistry:
     def test_get_calc_metadata_returns_required_fields(self):
         """get_calc_metadata returns all required fields."""
         meta = get_calc_metadata("venue_share")
-        
+
         assert "calc_name" in meta
         assert "calc_version" in meta
         assert "is_current" in meta
@@ -314,7 +357,7 @@ class TestCalcVersionRegistry:
         assert "deprecation_warning" in meta
         assert "table" in meta
         assert "business_keys" in meta
-        
+
         # Current version should be marked correctly
         assert meta["is_current"] is True
         assert meta["deprecated"] is False
@@ -355,7 +398,7 @@ class TestDeterminism:
             "id": 123,
         }
         stripped = strip_audit_fields(row)
-        
+
         assert "calculated_at" not in stripped
         assert "id" not in stripped
         assert stripped["week_ending"] == "2025-12-26"
@@ -371,7 +414,7 @@ class TestDeterminism:
             {"week_ending": "2025-12-26", "symbol": "AAPL", "calculated_at": "2025-01-02"},
             {"week_ending": "2025-12-26", "symbol": "MSFT", "calculated_at": "2025-01-02"},
         ]
-        
+
         # Different calculated_at, but deterministically equal
         assert rows_equal_deterministic(rows1, rows2)
 
@@ -379,7 +422,7 @@ class TestDeterminism:
         """rows_equal_deterministic detects actual data differences."""
         rows1 = [{"week_ending": "2025-12-26", "symbol": "AAPL"}]
         rows2 = [{"week_ending": "2025-12-26", "symbol": "MSFT"}]
-        
+
         assert not rows_equal_deterministic(rows1, rows2)
 
 
@@ -419,16 +462,16 @@ class TestVenueShareCalc:
                 total_trades=5,
             ),
         ]
-        
+
         shares = compute_venue_share_v1(venue_rows)
-        
+
         # Should have 2 venues (ETRD, SCHW)
         assert len(shares) == 2
-        
+
         # ETRD has 1500 (1000+500), SCHW has 500 => total 2000
         etrd = next(s for s in shares if s.mpid == "ETRD")
         schw = next(s for s in shares if s.mpid == "SCHW")
-        
+
         assert etrd.total_volume == 1500
         assert schw.total_volume == 500
         assert etrd.market_share_pct == 0.75  # 1500/2000
@@ -443,10 +486,10 @@ class TestVenueShareCalc:
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "MSFT", "V2", 200, 20),
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "GOOGL", "V3", 300, 30),
         ]
-        
+
         shares = compute_venue_share_v1(venue_rows)
         total_share = sum(s.market_share_pct for s in shares)
-        
+
         assert abs(total_share - 1.0) < 0.0001
 
     def test_validate_invariants_passes_for_valid(self):
@@ -455,10 +498,10 @@ class TestVenueShareCalc:
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "AAPL", "V1", 100, 10),
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "MSFT", "V2", 200, 20),
         ]
-        
+
         shares = compute_venue_share_v1(venue_rows)
         errors = validate_venue_share_invariants(shares)
-        
+
         assert errors == []
 
     def test_ranks_are_consecutive(self):
@@ -469,10 +512,10 @@ class TestVenueShareCalc:
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "C", "V3", 300, 3),
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "D", "V4", 400, 4),
         ]
-        
+
         shares = compute_venue_share_v1(venue_rows)
         ranks = sorted(s.rank for s in shares)
-        
+
         assert ranks == [1, 2, 3, 4]
 
     def test_symbol_count_correct(self):
@@ -483,12 +526,12 @@ class TestVenueShareCalc:
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "GOOGL", "V1", 300, 3),
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "AAPL", "V2", 50, 1),
         ]
-        
+
         shares = compute_venue_share_v1(venue_rows)
-        
+
         v1 = next(s for s in shares if s.mpid == "V1")
         v2 = next(s for s in shares if s.mpid == "V2")
-        
+
         assert v1.symbol_count == 3  # AAPL, MSFT, GOOGL
         assert v2.symbol_count == 1  # AAPL only
 
@@ -499,21 +542,21 @@ class TestVenueSharePipeline:
     def test_pipeline_registered(self):
         """Venue share pipeline is registered."""
         from spine.framework.registry import list_pipelines
-        
+
         pipelines = list_pipelines()
         assert "finra.otc_transparency.compute_venue_share" in pipelines
 
     def test_pipeline_runs_successfully(self, fixture_path):
         """Venue share pipeline runs end-to-end."""
         dispatcher = Dispatcher()
-        
+
         # First ingest data (week_ending is auto-detected from file)
         ingest_result = dispatcher.submit(
             "finra.otc_transparency.ingest_week",
             params={"file_path": str(fixture_path), "tier": "OTC", "force": True},
         )
         assert ingest_result.status.value == "completed"
-        
+
         # Get the week_ending from the ingest result (auto-detected from file)
         # The fixture file date derives to a specific week_ending
         conn = get_connection()
@@ -522,36 +565,36 @@ class TestVenueSharePipeline:
         ).fetchone()
         assert week_row is not None
         week_ending = week_row[0]
-        
+
         # Now normalize with the actual week_ending
         dispatcher.submit(
             "finra.otc_transparency.normalize_week",
             params={"week_ending": week_ending, "tier": "OTC", "force": True},
         )
-        
+
         # Run venue share
         result = dispatcher.submit(
             "finra.otc_transparency.compute_venue_share",
             params={"week_ending": week_ending, "tier": "OTC", "force": True},
         )
-        
+
         assert result.status.value == "completed"
         assert result.result.metrics.get("venues", 0) > 0
-        
+
         # Get the capture_id from the result to query the correct data
         capture_id = result.result.metrics.get("capture_id")
         assert capture_id is not None
-        
+
         # Verify invariant (shares sum to 1.0) for THIS capture only
         shares_sum = conn.execute(
             f"""
             SELECT SUM(CAST(market_share_pct AS REAL)) 
-            FROM {TABLES['venue_share']}
+            FROM {TABLES["venue_share"]}
             WHERE week_ending = ? AND tier = 'OTC' AND capture_id = ?
             """,
-            (week_ending, capture_id)
+            (week_ending, capture_id),
         ).fetchone()[0]
-        
+
         assert shares_sum is not None
         assert abs(shares_sum - 1.0) < 0.0001, f"Shares sum to {shares_sum}, expected 1.0"
 
@@ -564,7 +607,7 @@ class TestVenueSharePipeline:
 class TestMissingDataBehavior:
     """
     Tests that calcs fail loudly or degrade gracefully on missing/invalid data.
-    
+
     Principle: Calcs should NEVER silently produce incorrect results.
     They should either:
     1. Raise an exception with clear message
@@ -584,11 +627,11 @@ class TestMissingDataBehavior:
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "AAPL", "V1", 0, 0),
             VenueVolumeRow(date(2025, 12, 26), Tier.OTC, "MSFT", "V2", 0, 0),
         ]
-        
+
         # Should not raise - returns 0% shares
         result = compute_venue_share_v1(venue_rows)
         assert len(result) == 2
-        
+
         # All shares should be 0 (tier_volume is 0)
         for r in result:
             assert r.market_share_pct == 0.0
@@ -606,9 +649,9 @@ class TestMissingDataBehavior:
             market_share_pct=-0.5,
             rank=1,
         )
-        
+
         errors = validate_venue_share_invariants([bad_row])
-        
+
         # Should detect negative volume and share
         assert len(errors) > 0
         assert any("Negative" in e for e in errors)
@@ -617,7 +660,7 @@ class TestMissingDataBehavior:
         """Unknown calc name fails loudly with helpful message."""
         with pytest.raises(KeyError) as exc_info:
             get_current_version("nonexistent_calc_xyz")
-        
+
         # Error message should be helpful
         assert "Unknown calc" in str(exc_info.value)
         assert "nonexistent_calc_xyz" in str(exc_info.value)
@@ -626,7 +669,7 @@ class TestMissingDataBehavior:
         """Invalid version fails loudly with helpful message."""
         with pytest.raises(ValueError) as exc_info:
             get_calc_metadata("venue_share", "v999")
-        
+
         # Error message should be helpful
         assert "Unknown version" in str(exc_info.value)
         assert "v999" in str(exc_info.value)
@@ -656,9 +699,9 @@ class TestMissingDataBehavior:
                 rank=2,
             ),
         ]
-        
+
         errors = validate_venue_share_invariants(bad_rows)
-        
+
         # Should detect share sum error (0.3 + 0.2 = 0.5 != 1.0)
         assert len(errors) > 0
         assert any("Share invariant" in e for e in errors)
@@ -687,9 +730,9 @@ class TestMissingDataBehavior:
                 rank=3,  # Gap! Should be 2
             ),
         ]
-        
+
         errors = validate_venue_share_invariants(bad_rows)
-        
+
         # Should detect rank gap
         assert len(errors) > 0
         assert any("Rank invariant" in e for e in errors)

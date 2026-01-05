@@ -1,0 +1,180 @@
+/**
+ * Market-Spine API Client
+ * 
+ * Connects to the backend /api/v1/query endpoint
+ */
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+export interface QueryRequest {
+  dataset: string;
+  symbol?: string;
+  symbols?: string[];
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+}
+
+export interface QueryResponse<T> {
+  data: T[];
+  meta: {
+    dataset: string;
+    count: number;
+    symbol?: string;
+    timestamp: string;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Data Types
+// ─────────────────────────────────────────────────────────────
+
+export interface Quote {
+  symbol: string;
+  event_time: string;
+  price: number;
+  change: number | null;
+  bid: number;
+  ask: number;
+  bid_size: number;
+  ask_size: number;
+  volume: number;
+}
+
+export interface Price {
+  time: string;
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  vwap: number;
+}
+
+export interface OTCData {
+  week_start_date: string;
+  symbol: string;
+  shares: number;
+  trades: number;
+  avg_shares_6w: number;
+  avg_trades_6w: number;
+  pct_change_wow: number;
+  pct_change_6w: number;
+  volume_rank: number;
+}
+
+export interface VenueScore {
+  symbol: string;
+  venue: string;
+  fill_rate: number;
+  slippage: number;
+  latency: number;
+  volume: number;
+  score: number;
+  event_time: string;
+}
+
+export interface Liquidity {
+  time: string;
+  symbol: string;
+  spread_bps: number;
+  bid_depth: number;
+  ask_depth: number;
+  trade_count: number;
+  avg_trade_size: number;
+}
+
+export interface Symbol {
+  symbol: string;
+  name: string;
+  sector: string;
+  exchange: string;
+  is_active: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────
+// API Client
+// ─────────────────────────────────────────────────────────────
+
+class MarketSpineClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string = API_BASE) {
+    this.baseUrl = baseUrl;
+  }
+
+  async query<T>(request: QueryRequest): Promise<QueryResponse<T>> {
+    const response = await fetch(`${this.baseUrl}/api/v1/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // Convenience methods
+  async getSymbols(): Promise<Symbol[]> {
+    const res = await this.query<Symbol>({ dataset: 'symbols', limit: 100 });
+    return res.data;
+  }
+
+  async getPrices(symbol: string, days: number = 30): Promise<Price[]> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    const res = await this.query<Price>({
+      dataset: 'prices',
+      symbol,
+      start_date: startDate.toISOString().split('T')[0],
+      limit: days * 2,
+    });
+    return res.data;
+  }
+
+  async getOTCData(symbol: string, limit: number = 12): Promise<OTCData[]> {
+    const res = await this.query<OTCData>({
+      dataset: 'otc_transparency',
+      symbol,
+      limit,
+    });
+    return res.data;
+  }
+
+  async getOTCTopVolume(limit: number = 15): Promise<OTCData[]> {
+    const res = await this.query<OTCData>({
+      dataset: 'otc_top_volume',
+      limit,
+    });
+    return res.data;
+  }
+
+  async getVenues(symbol: string): Promise<VenueScore[]> {
+    const res = await this.query<VenueScore>({
+      dataset: 'venues',
+      symbol,
+      limit: 20,
+    });
+    return res.data;
+  }
+
+  async getLiquidity(symbol: string): Promise<Liquidity[]> {
+    const res = await this.query<Liquidity>({
+      dataset: 'liquidity',
+      symbol,
+      limit: 50,
+    });
+    return res.data;
+  }
+}
+
+export const api = new MarketSpineClient();
+export default api;

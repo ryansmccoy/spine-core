@@ -15,7 +15,7 @@ from typing import Any
 
 class ParamParser:
     """Parse and merge CLI parameters from multiple sources.
-    
+
     This is a stateless utility class for CLI-specific parsing.
     Does NOT apply business logic or normalization.
     """
@@ -39,12 +39,12 @@ class ParamParser:
     ) -> dict[str, Any]:
         """
         Merge parameters from all sources.
-        
+
         Precedence (highest to lowest):
         1. Friendly CLI options (--week-ending, --tier, --file)
         2. Positional key=value arguments
         3. -p key=value flags
-        
+
         Note: Tier normalization is handled by commands, not here.
         """
         params: dict[str, Any] = {}

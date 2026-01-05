@@ -5,7 +5,7 @@ Provides basic and detailed health check endpoints for
 monitoring and orchestration (K8s probes, load balancers, etc.).
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -54,7 +54,7 @@ async def health_check() -> HealthResponse:
     """
     return HealthResponse(
         status=HealthStatus.OK,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -80,7 +80,7 @@ async def detailed_health_check() -> HealthResponse:
 
     return HealthResponse(
         status=overall_status,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         checks=checks,
     )
 

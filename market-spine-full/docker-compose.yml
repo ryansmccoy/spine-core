@@ -2,13 +2,13 @@ services:
   # TimescaleDB (PostgreSQL with time-series extensions)
   timescaledb:
     image: timescale/timescaledb:latest-pg16
-    container_name: spine-timescaledb
+    container_name: spine-full-timescaledb
     environment:
       POSTGRES_USER: spine
       POSTGRES_PASSWORD: spine
       POSTGRES_DB: spine
     ports:
-      - "5432:5432"
+      - "5452:5432"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,9 +20,9 @@ services:
   # Redis (message broker)
   redis:
     image: redis:7-alpine
-    container_name: spine-redis
+    container_name: spine-full-redis
     ports:
-      - "6379:6379"
+      - "6389:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
   # API service
   api:
     build: .
-    container_name: spine-api
+    container_name: spine-full-api
     environment:
       DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
       REDIS_URL: redis://redis:6379/0
@@ -44,7 +44,7 @@ services:
       LOG_FORMAT: json
       METRICS_ENABLED: "true"
     ports:
-      - "8000:8000"
+      - "8030:8000"
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -55,7 +55,7 @@ services:
   # Celery worker
   worker:
     build: .
-    container_name: spine-worker
+    container_name: spine-full-worker
     environment:
       DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
       REDIS_URL: redis://redis:6379/0
@@ -73,7 +73,7 @@ services:
   # Celery beat scheduler
   beat:
     build: .
-    container_name: spine-beat
+    container_name: spine-full-beat
     environment:
       DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
       REDIS_URL: redis://redis:6379/0
@@ -89,7 +89,7 @@ services:
   # Migration runner (one-off)
   migrate:
     build: .
-    container_name: spine-migrate
+    container_name: spine-full-migrate
     environment:
       DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
     depends_on:
@@ -115,7 +115,7 @@ services:
     image: grafana/grafana:latest
     container_name: spine-grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:

@@ -100,8 +100,9 @@ class IngestResolver:
         return resolution
 
     def is_ingest_pipeline(self, pipeline: str) -> bool:
-        """Check if a pipeline is an ingest pipeline."""
-        return "ingest" in pipeline.lower()
+        """Check if a pipeline is a FINRA ingest pipeline that needs file resolution."""
+        # Only apply to FINRA ingest pipelines - other domains handle their own source resolution
+        return "finra" in pipeline.lower() and "ingest" in pipeline.lower()
 
     def _derive_file_path(self, params: dict[str, Any]) -> IngestResolution:
         """

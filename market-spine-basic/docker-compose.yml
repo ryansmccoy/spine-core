@@ -9,9 +9,9 @@ services:
     build:
       context: ..
       dockerfile: market-spine-basic/Dockerfile
-    container_name: market-spine-api
+    container_name: market-spine-basic-api
     ports:
-      - "8000:8000"
+      - "8010:8000"
     volumes:
       # Persistent storage for database
       - spine-db:/app/db
@@ -32,7 +32,7 @@ services:
     build:
       context: ..
       dockerfile: market-spine-basic/Dockerfile
-    container_name: market-spine-cli
+    container_name: market-spine-basic-cli
     volumes:
       - spine-db:/app/db
       - ./data:/app/data:ro
@@ -62,6 +62,43 @@ services:
     profiles:
       - schema
 
+  # ==========================================================================
+  # Trading Desktop Frontend (optional)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ../trading-desktop
+      dockerfile: Dockerfile
+    container_name: trading-desktop-basic
+    ports:
+      - "3110:8080"
+    depends_on:
+      - api
+    restart: unless-stopped
+    profiles:
+      - frontend
+
+  # Development frontend with hot reload
+  frontend-dev:
+    build:
+      context: ../trading-desktop
+      dockerfile: Dockerfile.dev
+    container_name: trading-desktop-basic-dev
+    ports:
+      - "3111:3000"
+    volumes:
+      - ../trading-desktop/src:/app/src:ro
+      - ../trading-desktop/index.html:/app/index.html:ro
+      - ../trading-desktop/vite.config.ts:/app/vite.config.ts:ro
+      - ../trading-desktop/tsconfig.json:/app/tsconfig.json:ro
+      - ../trading-desktop/tsconfig.app.json:/app/tsconfig.app.json:ro
+      - ../trading-desktop/tsconfig.node.json:/app/tsconfig.node.json:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    profiles:
+      - frontend-dev
+
 volumes:
   spine-db:
     name: market-spine-basic-db
@@ -73,8 +110,17 @@ volumes:
 #
 # Start everything (auto-inits database, starts API):
 #   docker compose up
-#   API at http://localhost:8000
-#   Docs at http://localhost:8000/docs
+#   API at http://localhost:8010
+#   Docs at http://localhost:8010/docs
+#
+# Start with frontend (production build):
+#   docker compose --profile frontend up
+#   Frontend at http://localhost:3110
+#   API at http://localhost:8010
+#
+# Start with frontend (development hot reload):
+#   docker compose --profile frontend-dev up
+#   Frontend at http://localhost:3111 (with hot reload)
 #
 # Start in background:
 #   docker compose up -d

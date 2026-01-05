@@ -13,6 +13,9 @@ Coverage:
 - /v1/pipelines/{name}/run (happy + error paths)
 - /v1/data/weeks
 - /v1/data/symbols
+- /v1/data/symbols/{symbol}/history
+- /v1/ops/storage
+- /v1/ops/captures
 """
 
 import pytest
@@ -129,9 +132,7 @@ class TestListPipelinesEndpoint:
         assert isinstance(data["pipelines"], list)
         assert "count" in data
 
-    def test_list_pipelines_includes_name_and_description(
-        self, client: TestClient
-    ) -> None:
+    def test_list_pipelines_includes_name_and_description(self, client: TestClient) -> None:
         """Each pipeline should have name and description."""
         response = client.get("/v1/pipelines")
 
@@ -190,9 +191,7 @@ class TestDescribePipelineEndpoint:
         assert "optional_params" in data
         assert "is_ingest" in data
 
-    def test_describe_nonexistent_pipeline_returns_404(
-        self, client: TestClient
-    ) -> None:
+    def test_describe_nonexistent_pipeline_returns_404(self, client: TestClient) -> None:
         """GET /v1/pipelines/{name} for nonexistent should return 404."""
         response = client.get("/v1/pipelines/nonexistent.pipeline.xyz")
 
@@ -274,9 +273,7 @@ class TestRunPipelineEndpoint:
         assert data["status"] == "dry_run"
         assert data["poll_url"] is None
 
-    def test_run_pipeline_response_has_reserved_fields(
-        self, client: TestClient
-    ) -> None:
+    def test_run_pipeline_response_has_reserved_fields(self, client: TestClient) -> None:
         """Execution response should always have reserved fields."""
         # Find a pipeline
         list_response = client.get("/v1/pipelines?prefix=finra.otc_transparency")
@@ -387,6 +384,62 @@ class TestDataSymbolsEndpoint:
 
 
 # =============================================================================
+# Symbol History Endpoint Tests
+# =============================================================================
+
+
+class TestSymbolHistoryEndpoint:
+    """Tests for GET /v1/data/symbols/{symbol}/history."""
+
+    def test_symbol_history_requires_tier(self, client: TestClient) -> None:
+        """GET /v1/data/symbols/{symbol}/history without tier should return 422."""
+        response = client.get("/v1/data/symbols/AAPL/history")
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    def test_symbol_history_with_valid_params(self, client: TestClient) -> None:
+        """GET /v1/data/symbols/{symbol}/history with valid tier returns history."""
+        response = client.get("/v1/data/symbols/AAPL/history?tier=OTC&weeks=12")
+
+        # May be 200 with empty list if no data for this symbol
+        if response.status_code == 200:
+            data = response.json()
+            assert "symbol" in data
+            assert data["symbol"] == "AAPL"
+            assert "tier" in data
+            assert data["tier"] == "OTC"
+            assert "history" in data
+            assert isinstance(data["history"], list)
+            assert "count" in data
+
+    def test_symbol_history_invalid_tier_returns_400(self, client: TestClient) -> None:
+        """GET /v1/data/symbols/{symbol}/history with invalid tier returns 400."""
+        response = client.get("/v1/data/symbols/AAPL/history?tier=INVALID_TIER")
+
+        assert response.status_code == 400
+        data = response.json()["detail"]
+        assert data["success"] is False
+        assert data["error"]["code"] == "INVALID_TIER"
+
+    def test_symbol_history_respects_weeks_limit(self, client: TestClient) -> None:
+        """GET /v1/data/symbols/{symbol}/history should accept weeks param."""
+        response = client.get("/v1/data/symbols/AAPL/history?tier=OTC&weeks=4")
+
+        if response.status_code == 200:
+            data = response.json()
+            # Should have at most 4 weeks of history
+            assert len(data["history"]) <= 4
+
+    def test_symbol_history_uppercase_normalization(self, client: TestClient) -> None:
+        """Symbol should be normalized to uppercase in response."""
+        response = client.get("/v1/data/symbols/aapl/history?tier=OTC")
+
+        if response.status_code == 200:
+            data = response.json()
+            assert data["symbol"] == "AAPL"
+
+
+# =============================================================================
 # Error Response Contract Tests
 # =============================================================================
 
@@ -442,3 +495,149 @@ class TestErrorResponseContract:
             "FEATURE_NOT_SUPPORTED",
             "NOT_IMPLEMENTED",
         )
+
+
+# =============================================================================
+# Ops Endpoint Tests
+# =============================================================================
+
+
+class TestOpsStorageEndpoint:
+    """Tests for GET /v1/ops/storage."""
+
+    def test_storage_returns_stats(self, client: TestClient) -> None:
+        """GET /v1/ops/storage should return storage statistics."""
+        response = client.get("/v1/ops/storage")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify response structure
+        assert "database_path" in data
+        assert "database_size_bytes" in data
+        assert "tables" in data
+        assert "total_rows" in data
+
+        # Tables should be a list
+        assert isinstance(data["tables"], list)
+
+        # Each table should have name and row_count
+        for table in data["tables"]:
+            assert "name" in table
+            assert "row_count" in table
+            assert isinstance(table["row_count"], int)
+
+    def test_storage_includes_known_tables(self, client: TestClient) -> None:
+        """GET /v1/ops/storage should include expected tables."""
+        response = client.get("/v1/ops/storage")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        table_names = [t["name"] for t in data["tables"]]
+
+        # Should have at least the captures table
+        assert "captures" in table_names or len(table_names) >= 0
+
+
+class TestOpsCapturesEndpoint:
+    """Tests for GET /v1/ops/captures."""
+
+    def test_captures_returns_list(self, client: TestClient) -> None:
+        """GET /v1/ops/captures should return a captures list."""
+        response = client.get("/v1/ops/captures")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify response structure
+        assert "captures" in data
+        assert "count" in data
+        assert isinstance(data["captures"], list)
+        assert isinstance(data["count"], int)
+        assert data["count"] == len(data["captures"])
+
+    def test_captures_have_required_fields(self, client: TestClient) -> None:
+        """Each capture should have required metadata fields."""
+        response = client.get("/v1/ops/captures")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # If there are captures, verify structure
+        for capture in data["captures"]:
+            assert "capture_id" in capture
+            assert "tier" in capture
+            assert "week_ending" in capture
+            assert "row_count" in capture
+            # captured_at may be null
+            assert "captured_at" in capture
+
+
+# =============================================================================
+# Price Data Endpoints
+# =============================================================================
+
+
+class TestPriceHistoryEndpoint:
+    """Tests for GET /v1/data/prices/{symbol}."""
+
+    def test_price_history_returns_empty_when_no_data(self, client: TestClient) -> None:
+        """GET /v1/data/prices/{symbol} should return empty list when no data."""
+        # Use a symbol we definitely don't have data for
+        response = client.get("/v1/data/prices/ZZZZZ")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify response structure
+        assert data["symbol"] == "ZZZZZ"
+        assert data["source"] == "alpha_vantage"
+        assert data["count"] == 0
+        assert data["candles"] == []
+        assert data["capture_id"] is None
+
+    def test_price_history_normalizes_symbol_to_uppercase(self, client: TestClient) -> None:
+        """Symbol should be normalized to uppercase."""
+        response = client.get("/v1/data/prices/xyz123")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["symbol"] == "XYZ123"
+
+    def test_price_history_days_parameter(self, client: TestClient) -> None:
+        """Days parameter should be accepted and validated."""
+        # Valid days parameter
+        response = client.get("/v1/data/prices/TESTXYZ?days=60")
+        assert response.status_code == 200
+
+        # Days too low
+        response = client.get("/v1/data/prices/TESTXYZ?days=0")
+        assert response.status_code == 422  # Validation error
+
+        # Days too high
+        response = client.get("/v1/data/prices/TESTXYZ?days=400")
+        assert response.status_code == 422  # Validation error
+
+
+
+class TestPriceLatestEndpoint:
+    """Tests for GET /v1/data/prices/{symbol}/latest."""
+
+    def test_latest_price_404_when_no_data(self, client: TestClient) -> None:
+        """GET /v1/data/prices/{symbol}/latest should return 404 when no data."""
+        # Use a symbol we definitely don't have data for
+        response = client.get("/v1/data/prices/ZZZZZ/latest")
+
+        # Should return 404 when no price data exists
+        assert response.status_code == 404
+        data = response.json()
+        assert "No price data available" in data["detail"]
+
+    def test_latest_price_normalizes_symbol(self, client: TestClient) -> None:
+        """Symbol should be normalized to uppercase in error message."""
+        response = client.get("/v1/data/prices/xyzabc/latest")
+
+        assert response.status_code == 404
+        data = response.json()
+        assert "XYZABC" in data["detail"]

@@ -1,13 +1,13 @@
 """Modern CLI for Market Spine using Typer."""
 
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
-from typing_extensions import Annotated
 
 # Configure logging FIRST, before any imports that trigger pipeline registration
 # This prevents debug logs from appearing during --help and --version
 from spine.framework.logging import configure_logging
+
 configure_logging()  # Uses SPINE_LOG_LEVEL env var (default: INFO)
 
 from market_spine import __version__
@@ -48,7 +48,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main_callback(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option("--version", callback=version_callback, help="Show version and exit"),
     ] = None,
     log_level: Annotated[
@@ -70,7 +70,7 @@ def main_callback(
 ) -> None:
     """
     Market Spine - Analytics Pipeline System.
-    
+
     Run without arguments to enter interactive mode.
     """
     # Configure logging based on options

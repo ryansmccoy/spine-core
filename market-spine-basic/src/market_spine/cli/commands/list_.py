@@ -1,10 +1,9 @@
 """Pipeline discovery and inspection commands."""
 
-from typing import Optional
+
+from typing import Annotated
 
 import typer
-from rich.panel import Panel
-from typing_extensions import Annotated
 
 from market_spine.app.commands.pipelines import (
     DescribePipelineCommand,
@@ -22,7 +21,7 @@ app = typer.Typer(no_args_is_help=False, help="Pipeline discovery and inspection
 @app.command("list")
 def list_pipelines_cmd(
     prefix: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--prefix", help="Filter by pipeline prefix"),
     ] = None,
 ) -> None:
@@ -40,7 +39,9 @@ def list_pipelines_cmd(
     if not result.pipelines:
         if prefix:
             console.print(f"[yellow]No pipelines found matching prefix: {prefix}[/yellow]")
-            console.print(f"\n[dim]Hint: Use 'spine pipelines list' to see all available pipelines[/dim]")
+            console.print(
+                "\n[dim]Hint: Use 'spine pipelines list' to see all available pipelines[/dim]"
+            )
         else:
             console.print("[yellow]No pipelines registered[/yellow]")
         return
@@ -133,11 +134,7 @@ def describe_pipeline(
         console.print(f"  spine run {pipeline} \\")
         console.print("    --week-ending 2025-12-19 \\")
         console.print("    --tier OTC\n")
-    elif "normalize" in pipeline:
-        console.print(f"  spine run {pipeline} \\")
-        console.print("    --week-ending 2025-12-19 \\")
-        console.print("    --tier NMS_TIER_1\n")
-    elif "aggregate" in pipeline:
+    elif "normalize" in pipeline or "aggregate" in pipeline:
         console.print(f"  spine run {pipeline} \\")
         console.print("    --week-ending 2025-12-19 \\")
         console.print("    --tier NMS_TIER_1\n")

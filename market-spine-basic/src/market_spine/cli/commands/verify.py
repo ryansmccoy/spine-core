@@ -1,15 +1,13 @@
 """Verification commands."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Annotated
 
 import typer
-from rich.table import Table
-from typing_extensions import Annotated
 
-from market_spine.db import get_connection, init_connection_provider
 from market_spine.app.services.data import DataSourceConfig
 from market_spine.app.services.tier import TierNormalizer
+from market_spine.db import get_connection, init_connection_provider
 
 from ..console import console, get_tier_values
 from ..ui import render_error_panel, render_info_panel
@@ -32,7 +30,7 @@ def verify_table(
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        
+
         # Check if table exists
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -47,10 +45,7 @@ def verify_table(
             cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
             count = cursor.fetchone()[0]
 
-            render_info_panel(
-                title="Table Info",
-                message=f"Table: {table_name}\nRows: {count:,}"
-            )
+            render_info_panel(title="Table Info", message=f"Table: {table_name}\nRows: {count:,}")
         else:
             console.print(f"[red]✗[/red] Table '{table_name}' not found")
             raise typer.Exit(1)
@@ -88,17 +83,17 @@ def verify_data(
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        
+
         issues = []
         table = _data_source.normalized_data_table
-        
+
         # Check if data exists
         cursor.execute(
             f"SELECT COUNT(*) FROM {table} WHERE week_ending = ? AND tier = ?",
             (week, normalized_tier),
         )
         count = cursor.fetchone()[0]
-        
+
         if count == 0:
             issues.append(f"No data found for {week} ({normalized_tier})")
         else:
@@ -112,12 +107,14 @@ def verify_data(
                 (week, normalized_tier),
             )
             null_count = cursor.fetchone()[0]
-            
+
             if null_count > 0:
                 issues.append(f"{null_count} rows have null values in required fields")
 
         if not issues:
-            console.print(f"[green]✓[/green] Data quality checks passed for {week} ({normalized_tier})")
+            console.print(
+                f"[green]✓[/green] Data quality checks passed for {week} ({normalized_tier})"
+            )
             console.print(f"[dim]{count} rows verified[/dim]")
         else:
             console.print(f"[yellow]⚠[/yellow] Found {len(issues)} issue(s):")

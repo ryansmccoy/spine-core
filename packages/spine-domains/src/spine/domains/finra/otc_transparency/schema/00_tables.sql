@@ -179,6 +179,12 @@ CREATE TABLE IF NOT EXISTS finra_otc_transparency_symbol_rolling_6w (
     weeks_in_window INTEGER NOT NULL,
     is_complete INTEGER NOT NULL,
     
+    -- Capture provenance (input data lineage)
+    input_min_capture_id TEXT,
+    input_max_capture_id TEXT,
+    input_min_captured_at TEXT,
+    input_max_captured_at TEXT,
+    
     -- Clock 3: From current week's capture
     captured_at TEXT NOT NULL,
     capture_id TEXT NOT NULL,

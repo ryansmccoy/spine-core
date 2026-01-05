@@ -12,16 +12,13 @@ The test that would FAIL if architecture were poorly modular:
 """
 
 import json
-import tempfile
-from datetime import date, datetime, UTC
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 from spine.domains.reference.exchange_calendar.calculations import (
     Holiday,
-    MonthlyTradingDays,
-    TradingDayResult,
     compute_monthly_trading_days,
     holidays_to_set,
     is_trading_day,
@@ -34,24 +31,20 @@ from spine.domains.reference.exchange_calendar.calculations import (
 )
 from spine.domains.reference.exchange_calendar.schema import (
     DOMAIN,
-    Exchange,
-    Stage,
     TABLES,
+    Exchange,
     partition_key,
 )
 from spine.domains.reference.exchange_calendar.sources import (
-    AnnualPeriod,
-    IngestionError,
-    IngestionMetadata,
-    JsonSource,
     PERIOD_REGISTRY,
-    Payload,
     SOURCE_REGISTRY,
+    AnnualPeriod,
+    JsonSource,
+    Payload,
     create_source,
     resolve_period,
     resolve_source,
 )
-
 
 # =============================================================================
 # TEST DATA
@@ -81,10 +74,10 @@ def holidays_file(tmp_path: Path) -> Path:
 def sample_holidays() -> set[date]:
     """Sample holiday set for testing."""
     return {
-        date(2025, 1, 1),   # New Year's Day (Wednesday)
+        date(2025, 1, 1),  # New Year's Day (Wednesday)
         date(2025, 1, 20),  # MLK Day (Monday)
-        date(2025, 7, 4),   # Independence Day (Friday)
-        date(2025, 12, 25), # Christmas (Thursday)
+        date(2025, 7, 4),  # Independence Day (Friday)
+        date(2025, 12, 25),  # Christmas (Thursday)
     }
 
 
@@ -99,7 +92,7 @@ class TestDomainIsolation:
     def test_finra_pipelines_unaffected_by_calendar_import(self):
         """
         CRITICAL TEST: Importing exchange_calendar should not modify FINRA registry.
-        
+
         This would FAIL if:
         - Exchange calendar polluted global registries
         - Source/Period registries were shared incorrectly
@@ -107,17 +100,17 @@ class TestDomainIsolation:
         """
         # Import FINRA first
         from spine.domains.finra.otc_transparency import sources as finra_sources
-        
+
         finra_source_count = len(finra_sources.SOURCE_REGISTRY)
         finra_period_count = len(finra_sources.PERIOD_REGISTRY)
-        
+
         # Now import exchange calendar
         from spine.domains.reference.exchange_calendar import sources as calendar_sources
-        
+
         # FINRA registries should be unchanged
         assert len(finra_sources.SOURCE_REGISTRY) == finra_source_count
         assert len(finra_sources.PERIOD_REGISTRY) == finra_period_count
-        
+
         # Calendar has its own separate registries
         assert calendar_sources.SOURCE_REGISTRY is not finra_sources.SOURCE_REGISTRY
         assert calendar_sources.PERIOD_REGISTRY is not finra_sources.PERIOD_REGISTRY
@@ -125,7 +118,7 @@ class TestDomainIsolation:
     def test_exchange_calendar_schema_independent(self):
         """Exchange calendar domain has its own schema constants."""
         from spine.domains.finra.otc_transparency.schema import DOMAIN as FINRA_DOMAIN
-        
+
         assert DOMAIN != FINRA_DOMAIN
         assert DOMAIN == "reference.exchange_calendar"
         assert "holidays" in TABLES
@@ -134,13 +127,13 @@ class TestDomainIsolation:
     def test_pipeline_registry_contains_both_domains(self):
         """Both domains register pipelines without conflict."""
         from spine.framework.registry import list_pipelines
-        
+
         pipelines = list_pipelines()
-        
+
         # FINRA pipelines present
         assert "finra.otc_transparency.ingest_week" in pipelines
         assert "finra.otc_transparency.normalize_week" in pipelines
-        
+
         # Exchange calendar pipelines present
         assert "reference.exchange_calendar.ingest_year" in pipelines
         assert "reference.exchange_calendar.compute_trading_days" in pipelines
@@ -167,7 +160,7 @@ class TestSourceRegistry:
             year=2025,
             exchange_code="XNYS",
         )
-        
+
         assert isinstance(source, JsonSource)
         assert source.source_type == "json"
 
@@ -177,14 +170,14 @@ class TestSourceRegistry:
             source_type="json",
             file_path=holidays_file,
         )
-        
+
         assert isinstance(source, JsonSource)
 
     def test_unknown_source_raises_helpful_error(self):
         """Unknown source type raises with available sources."""
         with pytest.raises(ValueError) as exc:
             resolve_source(source_type="unknown")
-        
+
         assert "unknown" in str(exc.value).lower()
         assert "json" in str(exc.value).lower()
 
@@ -192,7 +185,7 @@ class TestSourceRegistry:
         """JsonSource.fetch() returns proper Payload."""
         source = JsonSource(file_path=holidays_file)
         payload = source.fetch()
-        
+
         assert isinstance(payload, Payload)
         assert isinstance(payload.content, dict)
         assert payload.metadata.year == 2025
@@ -216,14 +209,14 @@ class TestPeriodRegistry:
     def test_resolve_period_returns_annual(self):
         """resolve_period() creates AnnualPeriod by default."""
         period = resolve_period()
-        
+
         assert isinstance(period, AnnualPeriod)
         assert period.period_type == "annual"
 
     def test_annual_period_derives_year_end(self):
         """AnnualPeriod.derive_period_end() returns Dec 31."""
         period = AnnualPeriod()
-        
+
         # Any date in 2025 should derive to Dec 31, 2025
         assert period.derive_period_end(date(2025, 1, 15)) == date(2025, 12, 31)
         assert period.derive_period_end(date(2025, 6, 15)) == date(2025, 12, 31)
@@ -232,7 +225,7 @@ class TestPeriodRegistry:
     def test_annual_period_validates_year_end_only(self):
         """AnnualPeriod.validate_date() only accepts Dec 31."""
         period = AnnualPeriod()
-        
+
         assert period.validate_date(date(2025, 12, 31)) is True
         assert period.validate_date(date(2025, 6, 30)) is False
         assert period.validate_date(date(2025, 1, 1)) is False
@@ -240,7 +233,7 @@ class TestPeriodRegistry:
     def test_annual_period_format_display(self):
         """AnnualPeriod.format_for_display() returns year string."""
         period = AnnualPeriod()
-        
+
         assert period.format_for_display(date(2025, 12, 31)) == "2025"
 
 
@@ -257,7 +250,7 @@ class TestCalculationLifecycle:
         # Same inputs always produce same outputs
         result1 = is_trading_day(date(2025, 1, 2), sample_holidays)
         result2 = is_trading_day(date(2025, 1, 2), sample_holidays)
-        
+
         assert result1 == result2
 
     def test_trading_days_between_deterministic(self, sample_holidays: set[date]):
@@ -272,7 +265,7 @@ class TestCalculationLifecycle:
             date(2025, 1, 31),
             sample_holidays,
         )
-        
+
         # Deterministic fields must match
         assert result1.trading_days == result2.trading_days
         assert result1.calendar_days == result2.calendar_days
@@ -286,14 +279,14 @@ class TestCalculationLifecycle:
             date(2025, 1, 31),
             sample_holidays,
         )
-        
+
         assert result.calc_name == "trading_days_between"
         assert result.calc_version == "1.0.0"
 
     def test_monthly_trading_days_has_calc_metadata(self, sample_holidays: set[date]):
         """MonthlyTradingDays includes calc metadata."""
         results = compute_monthly_trading_days(2025, "XNYS", sample_holidays)
-        
+
         for month_result in results:
             assert month_result.calc_name == "monthly_trading_days"
             assert month_result.calc_version == "1.0.0"
@@ -307,9 +300,9 @@ class TestCalculationLifecycle:
             "calculated_at": "2025-01-01T00:00:00",
             "id": 123,
         }
-        
+
         stripped = strip_audit_fields(row)
-        
+
         assert "calculated_at" not in stripped
         assert "id" not in stripped
         assert stripped["year"] == 2025
@@ -329,7 +322,7 @@ class TestDeterminismAndReplay:
         # Run calculation twice
         result1 = compute_monthly_trading_days(2025, "XNYS", sample_holidays)
         result2 = compute_monthly_trading_days(2025, "XNYS", sample_holidays)
-        
+
         # All deterministic fields must match
         for r1, r2 in zip(result1, result2):
             assert r1.year == r2.year
@@ -342,7 +335,7 @@ class TestDeterminismAndReplay:
         """next_trading_day is deterministic."""
         result1 = next_trading_day(date(2025, 1, 1), sample_holidays)
         result2 = next_trading_day(date(2025, 1, 1), sample_holidays)
-        
+
         assert result1 == result2
         assert result1 == date(2025, 1, 2)  # Jan 1 is holiday, Jan 2 is Thursday
 
@@ -350,7 +343,7 @@ class TestDeterminismAndReplay:
         """previous_trading_day is deterministic."""
         result1 = previous_trading_day(date(2025, 1, 2), sample_holidays)
         result2 = previous_trading_day(date(2025, 1, 2), sample_holidays)
-        
+
         assert result1 == result2
         assert result1 == date(2024, 12, 31)  # Jan 1 is holiday, go back to Dec 31
 
@@ -368,7 +361,7 @@ class TestCalculationCorrectness:
         # 2025-01-04 is Saturday, 2025-01-05 is Sunday
         assert is_weekend(date(2025, 1, 4)) is True
         assert is_weekend(date(2025, 1, 5)) is True
-        
+
         # Weekdays
         assert is_weekend(date(2025, 1, 6)) is False  # Monday
         assert is_weekend(date(2025, 1, 3)) is False  # Friday
@@ -376,15 +369,15 @@ class TestCalculationCorrectness:
     def test_is_trading_day_excludes_weekends(self):
         """is_trading_day returns False for weekends."""
         holidays: set[date] = set()
-        
+
         assert is_trading_day(date(2025, 1, 4), holidays) is False  # Saturday
         assert is_trading_day(date(2025, 1, 5), holidays) is False  # Sunday
-        assert is_trading_day(date(2025, 1, 6), holidays) is True   # Monday
+        assert is_trading_day(date(2025, 1, 6), holidays) is True  # Monday
 
     def test_is_trading_day_excludes_holidays(self, sample_holidays: set[date]):
         """is_trading_day returns False for holidays."""
         assert is_trading_day(date(2025, 1, 1), sample_holidays) is False  # Holiday
-        assert is_trading_day(date(2025, 1, 2), sample_holidays) is True   # Not holiday
+        assert is_trading_day(date(2025, 1, 2), sample_holidays) is True  # Not holiday
 
     def test_trading_days_between_simple_week(self, sample_holidays: set[date]):
         """Count trading days in a simple week."""
@@ -394,7 +387,7 @@ class TestCalculationCorrectness:
             date(2025, 1, 10),
             sample_holidays,
         )
-        
+
         assert result.trading_days == 5
         assert result.calendar_days == 5
         assert result.holidays_in_range == 0
@@ -408,7 +401,7 @@ class TestCalculationCorrectness:
             date(2025, 1, 7),
             sample_holidays,
         )
-        
+
         assert result.trading_days == 3  # Fri, Mon, Tue
         assert result.weekends_in_range == 2  # Sat, Sun
 
@@ -420,14 +413,14 @@ class TestCalculationCorrectness:
             date(2025, 1, 3),
             sample_holidays,
         )
-        
+
         assert result.trading_days == 2  # Thu, Fri
         assert result.holidays_in_range == 1  # Jan 1
 
     def test_monthly_trading_days_january_2025(self, sample_holidays: set[date]):
         """Compute trading days for January 2025."""
         results = compute_monthly_trading_days(2025, "XNYS", sample_holidays)
-        
+
         jan = results[0]  # Month 1
         assert jan.month == 1
         assert jan.calendar_days == 31
@@ -446,10 +439,10 @@ class TestParseHolidays:
     def test_parse_holidays_from_json(self):
         """parse_holidays extracts Holiday objects from JSON."""
         holidays = parse_holidays(SAMPLE_HOLIDAYS_JSON)
-        
+
         assert len(holidays) == 4
         assert all(isinstance(h, Holiday) for h in holidays)
-        
+
         # Check first holiday
         assert holidays[0].date == date(2025, 1, 1)
         assert holidays[0].name == "New Year's Day"
@@ -460,7 +453,7 @@ class TestParseHolidays:
         """holidays_to_set creates date set for fast lookup."""
         holidays = parse_holidays(SAMPLE_HOLIDAYS_JSON)
         holiday_set = holidays_to_set(holidays)
-        
+
         assert len(holiday_set) == 4
         assert date(2025, 1, 1) in holiday_set
         assert date(2025, 7, 4) in holiday_set
@@ -485,7 +478,7 @@ class TestSchema:
     def test_partition_key_format(self):
         """partition_key generates valid JSON."""
         pk = partition_key(2025, "XNYS")
-        
+
         # Should be valid JSON
         parsed = json.loads(pk)
         assert parsed["year"] == 2025

@@ -2,12 +2,11 @@
 
 import pytest
 
-from spine.framework.dispatcher import Dispatcher, Lane, TriggerSource
-from spine.framework.exceptions import BadParamsError, PipelineError, PipelineNotFoundError
+from market_spine.db import init_connection_provider, init_db
+from spine.framework.dispatcher import Dispatcher, TriggerSource
+from spine.framework.exceptions import BadParamsError, PipelineNotFoundError
 from spine.framework.pipelines import PipelineStatus
 from spine.framework.runner import PipelineRunner
-
-from market_spine.db import init_connection_provider, init_db
 
 # Initialize connection provider for tests
 init_connection_provider()

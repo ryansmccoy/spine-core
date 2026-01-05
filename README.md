@@ -229,6 +229,34 @@ git commit -m "feat(schema): Add new table"
 
 ---
 
+## API Documentation
+
+Market Spine provides both a **Control Plane** (operations API) and a **Data Plane** (query API). Full documentation is in `docs/api/`:
+
+| Document | Purpose |
+|----------|---------|
+| [00-api-overview.md](docs/api/00-api-overview.md) | Architecture, terminology, stable contract philosophy |
+| [01-data-access-patterns.md](docs/api/01-data-access-patterns.md) | Query patterns, pagination, response envelopes |
+| [02-basic-api-surface.md](docs/api/02-basic-api-surface.md) | Complete Basic tier endpoint reference |
+| [03-intermediate-advanced-full-roadmap.md](docs/api/03-intermediate-advanced-full-roadmap.md) | API evolution by tier |
+| [04-openapi-and-testing-strategy.md](docs/api/04-openapi-and-testing-strategy.md) | OpenAPI conventions, testing approach |
+
+### Quick API Reference (Basic Tier)
+
+**Control Plane:**
+- `GET /health` — Liveness check
+- `GET /v1/capabilities` — Feature flags
+- `GET /v1/pipelines` — List pipelines
+- `POST /v1/pipelines/{name}/run` — Execute pipeline
+
+**Data Plane:**
+- `GET /v1/data/weeks` — Available weeks by tier
+- `GET /v1/data/symbols` — Top symbols for a week
+
+See the [frontend integration guide](docs/frontend-backend-integration-map.md) for client adaptation strategies.
+
+---
+
 ## Package Documentation
 
 | Package | Description | README |

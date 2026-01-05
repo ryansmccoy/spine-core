@@ -1,11 +1,10 @@
 """Pipeline execution commands."""
 
-import time
-from typing import Optional
+
+from typing import Annotated
 
 import typer
 from rich.panel import Panel
-from typing_extensions import Annotated
 
 from market_spine.app.commands.executions import RunPipelineCommand, RunPipelineRequest
 from market_spine.app.commands.pipelines import DescribePipelineCommand, DescribePipelineRequest
@@ -27,21 +26,23 @@ app = typer.Typer(no_args_is_help=True)
 @app.command("run", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def run_pipeline(
     ctx: typer.Context,
-    pipeline: Annotated[str, typer.Argument(help="Pipeline name (e.g., finra.otc_transparency.normalize_week)")],
+    pipeline: Annotated[
+        str, typer.Argument(help="Pipeline name (e.g., finra.otc_transparency.normalize_week)")
+    ],
     param: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option("-p", "--param", help="Parameter as key=value (repeatable)"),
     ] = None,
     week_ending: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--week-ending", "--week", help="Week ending date (YYYY-MM-DD)"),
     ] = None,
     tier: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--tier", help=f"Tier: {', '.join(get_tier_values())}"),
     ] = None,
     file_path: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--file", help="File path for ingest"),
     ] = None,
     lane: Annotated[
@@ -67,7 +68,7 @@ def run_pipeline(
 ) -> None:
     """
     Run a pipeline with parameters.
-    
+
     Parameters can be provided in three ways:
     1. Friendly options: --week-ending 2025-12-05 --tier OTC
     2. Key=value args: week_ending=2025-12-05 tier=OTC
@@ -95,7 +96,7 @@ def run_pipeline(
         # Enhanced tier error messages (CLI-only formatting)
         error_msg = str(e)
         details = []
-        
+
         if "tier" in error_msg.lower():
             details.append(f"Valid tier values: {', '.join(tier_values)}")
             details.append("")
@@ -103,7 +104,7 @@ def run_pipeline(
             details.append("  Tier1, tier1 → NMS_TIER_1")
             details.append("  Tier2, tier2 → NMS_TIER_2")
             details.append("  OTC, otc → OTC")
-        
+
         render_error_panel("Parameter Error", error_msg, details=details)
         raise typer.Exit(1)
     except Exception as e:
@@ -135,7 +136,7 @@ def run_pipeline(
     # Handle errors
     if not result.success:
         error = result.error
-        
+
         if error.code == ErrorCode.PIPELINE_NOT_FOUND:
             render_error_panel(
                 "Unknown Pipeline",
@@ -145,7 +146,9 @@ def run_pipeline(
         elif error.code == ErrorCode.INVALID_PARAMS:
             details = []
             if error.details.get("missing"):
-                details.append(f"[red]Missing required:[/red] {', '.join(error.details['missing'])}")
+                details.append(
+                    f"[red]Missing required:[/red] {', '.join(error.details['missing'])}"
+                )
             if error.details.get("invalid"):
                 details.append(f"[yellow]Invalid:[/yellow] {', '.join(error.details['invalid'])}")
             details.append("")
@@ -164,7 +167,7 @@ def run_pipeline(
             render_error_panel("Invalid Tier", error.message, details=details)
         else:
             render_error_panel(error.code.value, error.message)
-        
+
         raise typer.Exit(1)
 
     # Render success summary
@@ -195,7 +198,7 @@ def show_ingest_resolution(pipeline_name: str, params: dict, is_ingest: bool) ->
     lines.append("[bold cyan]Ingest Source Resolution:[/bold cyan]")
     lines.append("")
 
-    if "file_path" in params and params["file_path"]:
+    if params.get("file_path"):
         # Explicit file mode
         lines.append("  Mode: [green]Explicit File[/green]")
         lines.append(f"  File: [cyan]{params['file_path']}[/cyan]")
@@ -205,19 +208,19 @@ def show_ingest_resolution(pipeline_name: str, params: dict, is_ingest: bool) ->
         # Derived mode - use IngestResolver for preview
         lines.append("  Mode: [yellow]Derived Local Resolution[/yellow]")
         lines.append("")
-        
+
         week = params.get("week_ending", "<unknown>")
         tier = params.get("tier", "<unknown>")
-        
+
         if week != "<unknown>" and tier != "<unknown>":
             # Use IngestResolver for consistent derivation
             resolver = IngestResolver()
             normalizer = TierNormalizer()
-            
+
             try:
                 canonical_tier = normalizer.normalize(tier)
                 derived_path = resolver.derive_file_path_preview(canonical_tier, week)
-                
+
                 lines.append(f"  Week ending: [cyan]{week}[/cyan]")
                 lines.append(f"  Tier: [cyan]{canonical_tier}[/cyan]")
                 lines.append("")
@@ -249,21 +252,21 @@ def show_pipeline_params(pipeline_name: str) -> None:
         raise typer.Exit(1)
 
     detail = result.pipeline
-    
+
     console.print(f"\n[bold cyan]Pipeline:[/bold cyan] {detail.name}")
     console.print(f"[bold cyan]Description:[/bold cyan] {detail.description}\n")
 
     has_params = detail.required_params or detail.optional_params
-    
+
     if has_params:
         console.print("[bold]Parameters:[/bold]")
-        
+
         # Show required params first
         for param in detail.required_params:
             console.print(f"  • {param.name} [red](required)[/red]")
             if param.description:
                 console.print(f"    {param.description}")
-                
+
         # Then optional params
         for param in detail.optional_params:
             console.print(f"  • {param.name} [dim](optional)[/dim]")

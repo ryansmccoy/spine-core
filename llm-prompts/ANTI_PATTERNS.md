@@ -1,0 +1,463 @@
+# Anti-Patterns Reference
+
+**Review this before implementing any feature. These patterns are FORBIDDEN.**
+
+---
+
+## Quick Reference Table
+
+| Anti-Pattern | Why Forbidden | Correct Pattern |
+|-------------|---------------|-----------------|
+| Standalone ingestion CLI commands | Bypasses pipeline framework, no dispatcher | `@register_pipeline` in domains |
+| Runtime `CREATE VIEW` | Schema drift, testing gaps | `schema/02_views.sql` |
+| Branching factories | Tight coupling, not extensible | Registry: `SOURCES.register()` |
+| `MAX(version)` queries | Non-deterministic with ties | `ROW_NUMBER() OVER (... ORDER BY ...)` |
+| Silent failures | Hides errors, breaks observability | Record anomaly, then handle |
+| Global anomaly filtering | Hides unrelated clean data | Scoped: `partition_key = ?` |
+| Audit fields in comparisons | False negatives in tests | Exclude: `captured_at`, `batch_id` |
+| Hardcoded week lists | Brittle, fails with changes | Generate from period utils |
+| Non-consecutive window checks | Mathematical incorrectness | Enforce ALL consecutive weeks |
+| Missing capture_id | Breaks lineage/replay | Every output needs capture_id |
+| Missing provenance | Can't audit rolled-up data | Track input_min/max_capture_id |
+
+---
+
+## Detailed Anti-Patterns
+
+### 1. Standalone Ingestion CLI Commands
+
+**❌ WRONG:**
+```python
+# In: market-spine-basic/src/market_spine/app/commands/fetch_prices.py
+def main():
+    source = AlphaVantageSource(config)
+    data = source.fetch(params)
+    conn = sqlite3.connect(db_path)
+    for row in data:
+        conn.execute("INSERT INTO prices ...")
+```
+
+**Why forbidden:**
+- Bypasses pipeline framework (no dispatcher, no execution_id)
+- No standard logging/metrics integration
+- No dry-run support
+- Can't be invoked via API
+- Not discoverable via `spine pipelines list`
+- Duplicates logic that should be in domains
+
+**✅ CORRECT:**
+```python
+# In: packages/spine-domains/src/spine/domains/market_data/pipelines.py
+@register_pipeline("market_data.ingest_prices")
+class IngestPricesPipeline(Pipeline):
+    def run(self) -> PipelineResult:
+        source = create_source()
+        data, anomalies = source.fetch(self.params)
+        # ... insert to database ...
+        return PipelineResult(status=PipelineStatus.COMPLETED, ...)
+
+# Invoked via:
+# spine run run market_data.ingest_prices -p symbol=AAPL
+```
+
+---
+
+### 2. Runtime CREATE VIEW
+
+**❌ WRONG:**
+```python
+# In Python code
+def setup_views(conn):
+    conn.execute("""
+        CREATE VIEW IF NOT EXISTS my_view AS
+        SELECT * FROM my_table WHERE is_active = 1
+    """)
+```
+
+**Why forbidden:**
+- Schema drift between environments
+- Views not tracked in migrations
+- Testing gaps (tests may not create views)
+- Deployment inconsistency
+
+**✅ CORRECT:**
+```sql
+-- In: spine-domains/src/spine/domains/{domain}/schema/02_views.sql
+CREATE VIEW IF NOT EXISTS my_view AS
+SELECT * FROM my_table WHERE is_active = 1;
+```
+
+Then run: `python scripts/build_schema.py`
+
+---
+
+### 2. Branching Factories
+
+**❌ WRONG:**
+```python
+def get_source(source_type):
+    if source_type == "finra":
+        return FinraSource()
+    elif source_type == "sec":
+        return SecSource()
+    elif source_type == "nasdaq":
+        return NasdaqSource()
+    else:
+        raise ValueError(f"Unknown source: {source_type}")
+```
+
+**Why forbidden:**
+- Tight coupling to all source types
+- Adding new source requires modifying factory
+- Violates Open/Closed principle
+- Hard to test in isolation
+
+**✅ CORRECT:**
+```python
+# In each source file:
+from spine.framework.registry import SOURCES
+
+@SOURCES.register("finra")
+class FinraSource(Source):
+    ...
+
+# Usage:
+source = SOURCES.get(source_type)
+```
+
+---
+
+### 3. MAX(version) Queries
+
+**❌ WRONG:**
+```sql
+SELECT * FROM calculations
+WHERE version = (SELECT MAX(version) FROM calculations)
+```
+
+**Why forbidden:**
+- Non-deterministic if multiple rows have same MAX
+- Race conditions during inserts
+- Unpredictable which row is returned
+
+**✅ CORRECT:**
+```sql
+SELECT * FROM (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY symbol, week_ending 
+               ORDER BY captured_at DESC
+           ) as rn
+    FROM calculations
+) WHERE rn = 1
+```
+
+---
+
+### 4. Silent Failures
+
+**❌ WRONG:**
+```python
+def process_item(item):
+    try:
+        return do_work(item)
+    except Exception:
+        pass  # Silently ignore
+    return None
+
+def process_batch(items):
+    try:
+        for item in items:
+            process_item(item)
+    except Exception:
+        return []  # Return empty on any error
+```
+
+**Why forbidden:**
+- Errors invisible to operators
+- No alerting possible
+- Data quality issues go undetected
+- Debugging nightmare
+
+**✅ CORRECT:**
+```python
+def process_item(item):
+    try:
+        return do_work(item)
+    except ValidationError as e:
+        record_anomaly(
+            domain="finra.otc_transparency",
+            stage="NORMALIZE",
+            partition_key=f"{item.week}|{item.tier}",
+            severity="ERROR",
+            category="VALIDATION",
+            message=str(e),
+            metadata={"item_id": item.id, "error_type": type(e).__name__}
+        )
+        return None  # Partial success - skip this item
+
+def process_batch(items):
+    results = []
+    errors = []
+    for item in items:
+        result = process_item(item)
+        if result:
+            results.append(result)
+        else:
+            errors.append(item.id)
+    
+    if errors:
+        log.warning(f"Skipped {len(errors)} items: {errors}")
+    
+    return results
+```
+
+---
+
+### 5. Global Anomaly Filtering
+
+**❌ WRONG:**
+```sql
+-- This hides ALL data when ANY error exists
+SELECT * FROM rolling_data r
+WHERE NOT EXISTS (
+    SELECT 1 FROM core_anomalies a
+    WHERE a.severity = 'ERROR'
+)
+```
+
+**Why forbidden:**
+- One error hides ALL data
+- Unrelated partitions affected
+- Can't debug which partition has issues
+
+**✅ CORRECT:**
+```sql
+-- Scoped to exact partition
+SELECT * FROM rolling_data r
+WHERE NOT EXISTS (
+    SELECT 1 FROM core_anomalies a
+    WHERE a.domain = 'finra.otc_transparency'
+      AND a.stage = 'ROLLING'
+      AND a.partition_key = r.week_ending || '|' || r.tier
+      AND a.severity IN ('ERROR', 'CRITICAL')
+      AND a.resolved_at IS NULL
+)
+```
+
+---
+
+### 6. Audit Fields in Determinism Checks
+
+**❌ WRONG:**
+```python
+def test_determinism():
+    result1 = run_pipeline(params)
+    result2 = run_pipeline(params)
+    assert result1 == result2  # FAILS: captured_at differs
+```
+
+**Why forbidden:**
+- Timestamps always differ between runs
+- False negatives (tests fail when code is correct)
+- batch_id/execution_id are runtime-generated
+
+**✅ CORRECT:**
+```python
+AUDIT_FIELDS = ["captured_at", "batch_id", "execution_id"]
+
+def test_determinism():
+    result1 = run_pipeline(params)
+    result2 = run_pipeline(params)
+    
+    # Remove audit fields before comparison
+    for r in [result1, result2]:
+        for field in AUDIT_FIELDS:
+            r.pop(field, None)
+    
+    assert result1 == result2
+```
+
+---
+
+### 7. Hardcoded Week Lists
+
+**❌ WRONG:**
+```python
+WEEKS_TO_PROCESS = [
+    "2025-12-26",
+    "2025-12-19",
+    "2025-12-12",
+    "2025-12-05",
+    "2025-11-28",
+    "2025-11-21",
+]
+
+def get_history_weeks():
+    return WEEKS_TO_PROCESS
+```
+
+**Why forbidden:**
+- Breaks when new weeks arrive
+- Requires code changes for schedule changes
+- Not portable across environments
+
+**✅ CORRECT:**
+```python
+from spine.framework.periods import get_week_range
+
+def get_history_weeks(reference_date, count=6):
+    """Generate N weeks ending before reference_date."""
+    return get_week_range(
+        end_date=reference_date,
+        weeks=count,
+        week_ending_day="Friday"
+    )
+
+# Or query from schedule table:
+def get_expected_weeks(conn, domain, stage, count=6):
+    return conn.execute("""
+        SELECT DISTINCT week_ending 
+        FROM core_data_readiness
+        WHERE domain = ? AND stage = ?
+        ORDER BY week_ending DESC
+        LIMIT ?
+    """, (domain, stage, count)).fetchall()
+```
+
+---
+
+### 8. Non-Consecutive Window Checks
+
+**❌ WRONG:**
+```python
+def has_enough_history(weeks_found, required=6):
+    # Just checks count, not consecutiveness
+    return len(weeks_found) >= required
+
+# Passes with [week1, week2, week5, week6, week7, week8] - gap at 3,4!
+```
+
+**Why forbidden:**
+- Mathematical incorrectness for rolling averages
+- Missing weeks corrupt statistics
+- Hidden data quality issues
+
+**✅ CORRECT:**
+```python
+def has_consecutive_history(weeks_found, reference_week, required=6):
+    """Enforce ALL consecutive weeks exist (no gaps)."""
+    expected_weeks = generate_expected_weeks(reference_week, required)
+    found_set = set(weeks_found)
+    missing = [w for w in expected_weeks if w not in found_set]
+    
+    if missing:
+        log.warning(f"Missing weeks: {missing}")
+        return False, missing
+    
+    return True, []
+```
+
+---
+
+### 9. Missing capture_id
+
+**❌ WRONG:**
+```python
+def write_output(conn, rows):
+    conn.executemany("""
+        INSERT INTO output_table (symbol, value, calculated_at)
+        VALUES (?, ?, ?)
+    """, rows)
+```
+
+**Why forbidden:**
+- Can't track data lineage
+- Can't replay/recompute
+- Can't implement idempotency
+- Can't do as-of queries
+
+**✅ CORRECT:**
+```python
+def write_output(conn, rows, capture_id, execution_id, batch_id):
+    now = datetime.utcnow().isoformat()
+    
+    for row in rows:
+        row["capture_id"] = capture_id
+        row["captured_at"] = now
+        row["execution_id"] = execution_id
+        row["batch_id"] = batch_id
+    
+    conn.executemany("""
+        INSERT INTO output_table 
+        (symbol, value, calculated_at, capture_id, captured_at, execution_id, batch_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, rows)
+    
+    # Track in manifest
+    conn.execute("""
+        INSERT INTO core_manifest 
+        (capture_id, domain, stage, partition_key, captured_at, status, row_count)
+        VALUES (?, ?, ?, ?, ?, 'complete', ?)
+    """, (capture_id, domain, stage, partition_key, now, len(rows)))
+```
+
+---
+
+### 10. Missing Provenance
+
+**❌ WRONG:**
+```python
+def compute_rolling(input_rows):
+    avg = sum(r["volume"] for r in input_rows) / len(input_rows)
+    return {"avg_volume": avg}  # No provenance tracking
+```
+
+**Why forbidden:**
+- Can't debug rolled-up data
+- Can't trace back to source captures
+- Can't handle restatements correctly
+
+**✅ CORRECT:**
+```python
+def compute_rolling(input_rows):
+    # Track which inputs contributed
+    capture_ids = [r["capture_id"] for r in input_rows]
+    captured_ats = [r["captured_at"] for r in input_rows]
+    
+    avg = sum(r["volume"] for r in input_rows) / len(input_rows)
+    
+    return {
+        "avg_volume": avg,
+        "input_min_capture_id": min(capture_ids),
+        "input_max_capture_id": max(capture_ids),
+        "input_min_captured_at": min(captured_ats),
+        "input_max_captured_at": max(captured_ats),
+        "input_row_count": len(input_rows),
+    }
+```
+
+---
+
+## Detection Checklist
+
+Use this during code review:
+
+- [ ] No `CREATE VIEW` in Python files
+- [ ] No `if/elif` chains for type dispatch
+- [ ] No `MAX(version)` or `MAX(captured_at)` without `ROW_NUMBER`
+- [ ] No `except: pass` or `except Exception: return`
+- [ ] No anomaly filtering without `partition_key` match
+- [ ] No `assert x == y` with raw timestamps
+- [ ] No hardcoded date/week lists
+- [ ] No window checks that only count (must verify consecutive)
+- [ ] All output tables have `capture_id` column
+- [ ] Rolled-up data tracks `input_min/max_capture_id`
+
+---
+
+## Related Documents
+
+- [CONTEXT.md](CONTEXT.md) - Correct patterns
+- [reference/SQL_PATTERNS.md](reference/SQL_PATTERNS.md) - SQL best practices
+- [prompts/E_REVIEW.md](prompts/E_REVIEW.md) - Review checklist

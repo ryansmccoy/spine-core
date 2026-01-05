@@ -12,7 +12,6 @@ Design principles:
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -173,6 +172,16 @@ class SymbolInfo:
     symbol: str
     volume: int
     avg_price: float | None
+
+
+@dataclass
+class SymbolWeekData:
+    """Trading data for a symbol in a specific week."""
+
+    week_ending: str
+    total_shares: int
+    total_trades: int
+    average_price: float | None
 
 
 # =============================================================================

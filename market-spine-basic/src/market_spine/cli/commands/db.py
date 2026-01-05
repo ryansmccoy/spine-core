@@ -1,10 +1,13 @@
 """Database management commands."""
 
+from typing import Annotated
+
 import typer
-from typing_extensions import Annotated
 
 from market_spine.db import (
     init_db as db_init,
+)
+from market_spine.db import (
     reset_db as db_reset,
 )
 
@@ -31,8 +34,7 @@ def init_db_command(
     try:
         db_init()
         render_info_panel(
-            title="Database Initialized",
-            message="Schema tables created successfully"
+            title="Database Initialized", message="Schema tables created successfully"
         )
     except Exception as e:
         render_error_panel("Initialization Error", str(e))
@@ -56,10 +58,7 @@ def reset_db_command(
 
     try:
         db_reset()
-        render_info_panel(
-            title="Database Reset",
-            message="All tables dropped and recreated"
-        )
+        render_info_panel(title="Database Reset", message="All tables dropped and recreated")
     except Exception as e:
         render_error_panel("Reset Error", str(e))
         raise typer.Exit(1)

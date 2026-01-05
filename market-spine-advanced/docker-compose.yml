@@ -4,13 +4,13 @@ services:
   # TimescaleDB Database (PostgreSQL with time-series extensions)
   postgres:
     image: timescale/timescaledb:latest-pg16
-    container_name: spine-timescaledb
+    container_name: spine-advanced-timescaledb
     environment:
       POSTGRES_USER: spine
       POSTGRES_PASSWORD: spine
       POSTGRES_DB: market_spine
     ports:
-      - "5432:5432"
+      - "5462:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,9 +22,9 @@ services:
   # Redis for Celery broker
   redis:
     image: redis:7-alpine
-    container_name: spine-redis
+    container_name: spine-advanced-redis
     ports:
-      - "6379:6379"
+      - "6399:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -49,7 +49,7 @@ services:
       OTC_API_USE_MOCK: "true"
       LOG_LEVEL: INFO
     ports:
-      - "8000:8000"
+      - "8040:8000"
     volumes:
       - ./data:/app/data
     depends_on:
@@ -63,7 +63,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: spine-worker
+    container_name: spine-advanced-worker
     command: ["python", "-m", "celery", "-A", "market_spine.celery_app", "worker", "--loglevel=INFO", "--concurrency=4"]
     environment:
       DATABASE_URL: postgresql://spine:spine@postgres:5432/market_spine
@@ -86,7 +86,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: spine-beat
+    container_name: spine-advanced-beat
     command: ["python", "-m", "celery", "-A", "market_spine.celery_app", "beat", "--loglevel=INFO"]
     environment:
       DATABASE_URL: postgresql://spine:spine@postgres:5432/market_spine
@@ -106,7 +106,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: spine-migrations
+    container_name: spine-advanced-migrations
     command: ["python", "-m", "market_spine.cli", "db", "migrate", "--migrations-dir", "/app/migrations"]
     environment:
       DATABASE_URL: postgresql://spine:spine@postgres:5432/market_spine

@@ -1,6 +1,5 @@
 """Tests for the IngestResolver service."""
 
-import pytest
 
 from market_spine.app.services.ingest import IngestResolver
 

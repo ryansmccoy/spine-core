@@ -1,0 +1,130 @@
+# ==============================================================================
+# Market Spine Full - Docker Compose Override
+# ==============================================================================
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.full.yml up
+#
+# Features: TimescaleDB, Redis, Celery workers, incidents, anomaly detection
+# ==============================================================================
+
+services:
+  # Frontend depends on Full API
+  frontend:
+    depends_on:
+      api:
+        condition: service_started
+
+  # TimescaleDB (PostgreSQL with time-series extensions)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: spine-timescaledb
+    environment:
+      POSTGRES_USER: spine
+      POSTGRES_PASSWORD: spine
+      POSTGRES_DB: spine
+    ports:
+      - "5432:5432"
+    volumes:
+      - spine-full-timescale:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis message broker
+  redis:
+    image: redis:7-alpine
+    container_name: spine-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - spine-full-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Full API
+  api:
+    build:
+      context: ./market-spine-full
+      dockerfile: Dockerfile
+    container_name: market-spine-api
+    environment:
+      DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      METRICS_ENABLED: "true"
+    ports:
+      - "8100:8000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Celery worker
+  worker:
+    build:
+      context: ./market-spine-full
+      dockerfile: Dockerfile
+    container_name: spine-worker
+    environment:
+      DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      LOG_LEVEL: INFO
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A market_spine.celery_app worker -l info -Q default,maintenance -c 4
+    restart: unless-stopped
+
+  # Celery beat scheduler
+  beat:
+    build:
+      context: ./market-spine-full
+      dockerfile: Dockerfile
+    container_name: spine-beat
+    environment:
+      DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SCHEDULE_INGEST_ENABLED: "true"
+      SCHEDULE_INGEST_INTERVAL_SECONDS: "60"
+      SCHEDULE_CLEANUP_ENABLED: "true"
+    depends_on:
+      - worker
+    command: celery -A market_spine.celery_app beat -l info
+    restart: unless-stopped
+
+  # CLI for management
+  cli:
+    build:
+      context: ./market-spine-full
+      dockerfile: Dockerfile
+    container_name: market-spine-cli
+    environment:
+      DATABASE_URL: postgresql://spine:spine@timescaledb:5432/spine
+    entrypoint: ["spine"]
+    command: ["--help"]
+    restart: "no"
+    profiles:
+      - cli
+
+volumes:
+  spine-full-timescale:
+    name: market-spine-full-timescale
+  spine-full-redis:
+    name: market-spine-full-redis

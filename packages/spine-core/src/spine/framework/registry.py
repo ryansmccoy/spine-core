@@ -22,7 +22,14 @@ def register_pipeline(name: str) -> Callable[[type["Pipeline"]], type["Pipeline"
         if name in _registry:
             raise ValueError(f"Pipeline '{name}' is already registered")
         _registry[name] = cls
-        logger.debug("pipeline_registered", name=name, cls=cls.__name__)
+        # Get description from class if available
+        description = getattr(cls, "description", "No description available")
+        logger.debug(
+            "pipeline_registered",
+            name=name,
+            cls=cls.__name__,
+            description=description,
+        )
         return cls
 
     return decorator
@@ -91,3 +98,12 @@ def _load_pipelines() -> None:
         logger.debug("domain_pipelines_loaded", domain="reference.exchange_calendar")
     except ImportError as e:
         logger.warning("domain_pipelines_not_found", domain="reference.exchange_calendar", error=str(e))
+
+    # Market Data: Price data from external sources
+    try:
+        import spine.domains.market_data.pipelines  # noqa: F401
+
+        logger.debug("domain_pipelines_loaded", domain="market_data")
+    except ImportError as e:
+        logger.warning("domain_pipelines_not_found", domain="market_data", error=str(e))
+

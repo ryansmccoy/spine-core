@@ -1,10 +1,10 @@
 """Query commands for data inspection."""
 
-from typing import Optional
+
+from typing import Annotated
 
 import typer
 from rich.table import Table
-from typing_extensions import Annotated
 
 from market_spine.app.commands.queries import (
     QuerySymbolsCommand,
@@ -26,7 +26,7 @@ _tier_values = get_tier_values()
 def query_weeks(
     tier: Annotated[
         str,
-        typer.Option("--tier", help=f"Tier: OTC, NMS_TIER_1, NMS_TIER_2"),
+        typer.Option("--tier", help="Tier: OTC, NMS_TIER_1, NMS_TIER_2"),
     ],
     limit: Annotated[
         int,
@@ -68,7 +68,7 @@ def query_symbols(
     ],
     tier: Annotated[
         str,
-        typer.Option("--tier", help=f"Tier: OTC, NMS_TIER_1, NMS_TIER_2"),
+        typer.Option("--tier", help="Tier: OTC, NMS_TIER_1, NMS_TIER_2"),
     ],
     top: Annotated[
         int,

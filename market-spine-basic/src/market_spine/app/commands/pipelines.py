@@ -7,8 +7,6 @@ for both CLI and API consumers.
 
 from dataclasses import dataclass, field
 
-from spine.framework.registry import get_pipeline, list_pipelines
-
 from market_spine.app.models import (
     CommandError,
     ErrorCode,
@@ -19,7 +17,7 @@ from market_spine.app.models import (
 )
 from market_spine.app.services.ingest import IngestResolver
 from market_spine.app.services.tier import TierNormalizer
-
+from spine.framework.registry import get_pipeline, list_pipelines
 
 # =============================================================================
 # List Pipelines Command

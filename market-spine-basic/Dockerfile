@@ -87,7 +87,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sqlite3; sqlite3.connect('/app/db/spine.db').execute('SELECT 1')" || exit 1
 
 # Default command: run API server
-CMD ["uvicorn", "spine.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "market_spine.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
 # =============================================================================

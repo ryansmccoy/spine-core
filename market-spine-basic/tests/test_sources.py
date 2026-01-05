@@ -8,7 +8,7 @@ Tests:
 4. Source factory validation
 """
 
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -25,7 +25,7 @@ from spine.domains.finra.otc_transparency.sources import (
 from spine.framework.db import get_connection
 from spine.framework.dispatcher import Dispatcher
 
-# Initialize connection provider for tests  
+# Initialize connection provider for tests
 init_connection_provider()
 
 
@@ -363,7 +363,7 @@ class TestOfflineAPIIngest:
 class TestSourceRegistryExtensibility:
     """
     Tests proving sources can be added without modifying pipeline code.
-    
+
     These tests document the extensibility contract:
     - Adding a new source is decorator + class only
     - resolve_source() handles lookup automatically
@@ -373,10 +373,9 @@ class TestSourceRegistryExtensibility:
     def test_source_registry_contains_file_and_api(self):
         """Registry contains built-in sources."""
         from spine.domains.finra.otc_transparency.sources import (
-            SOURCE_REGISTRY,
             list_sources,
         )
-        
+
         sources = list_sources()
         assert "file" in sources
         assert "api" in sources
@@ -387,7 +386,7 @@ class TestSourceRegistryExtensibility:
             SOURCE_REGISTRY,
             resolve_source,
         )
-        
+
         # Verify file source is resolved from registry
         file_source = resolve_source("file", file_path=Path(__file__))
         assert file_source.__class__ is SOURCE_REGISTRY["file"]
@@ -396,10 +395,10 @@ class TestSourceRegistryExtensibility:
     def test_resolve_source_unknown_raises_helpful_error(self):
         """Unknown source type raises clear error with known sources."""
         from spine.domains.finra.otc_transparency.sources import resolve_source
-        
+
         with pytest.raises(ValueError) as exc_info:
             resolve_source("nonexistent_source", file_path="test.psv")
-        
+
         error = str(exc_info.value)
         assert "Unknown source: nonexistent_source" in error
         assert "file" in error  # Lists known sources
@@ -408,31 +407,31 @@ class TestSourceRegistryExtensibility:
     def test_adding_source_requires_no_factory_edit(self):
         """
         Adding a new source only requires @register_source decorator.
-        
+
         This test simulates adding an S3 source and verifies:
         1. Registration works via decorator
         2. resolve_source can look it up
         3. No changes to resolve_source code needed
         """
         from spine.domains.finra.otc_transparency.sources import (
+            SOURCE_REGISTRY,
+            IngestionMetadata,
             IngestionSource,
             Payload,
-            IngestionMetadata,
-            SOURCE_REGISTRY,
             register_source,
             resolve_source,
         )
-        
+
         # Simulate adding a new S3 source
         @register_source("test_s3")
         class TestS3Source(IngestionSource):
             def __init__(self, bucket: str = "test", **kwargs):
                 self.bucket = bucket
-            
+
             @property
             def source_type(self) -> str:
                 return "test_s3"
-            
+
             def fetch(self) -> Payload:
                 return Payload(
                     content="test content",
@@ -443,20 +442,20 @@ class TestSourceRegistryExtensibility:
                         source_name="s3://test/data.csv",
                     ),
                 )
-        
+
         try:
             # Should be in registry now
             assert "test_s3" in SOURCE_REGISTRY
-            
+
             # Should be resolvable without any code changes
             source = resolve_source("test_s3", bucket="my-bucket")
             assert source.source_type == "test_s3"
             assert source.bucket == "my-bucket"
-            
+
             # Should fetch successfully
             payload = source.fetch()
             assert payload.content == "test content"
-            
+
         finally:
             # Cleanup: remove test source from registry
             del SOURCE_REGISTRY["test_s3"]
@@ -465,7 +464,7 @@ class TestSourceRegistryExtensibility:
 class TestPeriodRegistryExtensibility:
     """
     Tests proving periods can be added without modifying pipeline code.
-    
+
     These tests document the extensibility contract:
     - Adding a new period is decorator + class only
     - resolve_period() handles lookup automatically
@@ -475,10 +474,9 @@ class TestPeriodRegistryExtensibility:
     def test_period_registry_contains_weekly_and_monthly(self):
         """Registry contains built-in periods."""
         from spine.domains.finra.otc_transparency.sources import (
-            PERIOD_REGISTRY,
             list_periods,
         )
-        
+
         periods = list_periods()
         assert "weekly" in periods
         assert "monthly" in periods
@@ -486,16 +484,16 @@ class TestPeriodRegistryExtensibility:
     def test_resolve_period_defaults_to_weekly(self):
         """Default period is weekly for backward compatibility."""
         from spine.domains.finra.otc_transparency.sources import resolve_period
-        
+
         period = resolve_period()  # No arg = weekly
         assert period.period_type == "weekly"
 
     def test_weekly_period_derives_friday_from_monday(self):
         """WeeklyPeriod.derive_period_end gives Friday from Monday."""
         from spine.domains.finra.otc_transparency.sources import WeeklyPeriod
-        
+
         period = WeeklyPeriod()
-        
+
         # Monday 2025-12-22 → Friday 2025-12-19
         result = period.derive_period_end(date(2025, 12, 22))
         assert result == date(2025, 12, 19)
@@ -504,9 +502,9 @@ class TestPeriodRegistryExtensibility:
     def test_monthly_period_derives_month_end(self):
         """MonthlyPeriod.derive_period_end gives last day of prev month."""
         from spine.domains.finra.otc_transparency.sources import MonthlyPeriod
-        
+
         period = MonthlyPeriod()
-        
+
         # Jan 2, 2026 → Dec 31, 2025
         result = period.derive_period_end(date(2026, 1, 2))
         assert result == date(2025, 12, 31)
@@ -517,46 +515,46 @@ class TestPeriodRegistryExtensibility:
         Adding a new period only requires @register_period decorator.
         """
         from spine.domains.finra.otc_transparency.sources import (
-            PeriodStrategy,
             PERIOD_REGISTRY,
+            PeriodStrategy,
             register_period,
             resolve_period,
         )
-        
+
         # Simulate adding a quarterly period
         @register_period("test_quarterly")
         class TestQuarterlyPeriod(PeriodStrategy):
             @property
             def period_type(self) -> str:
                 return "test_quarterly"
-            
+
             def derive_period_end(self, publish_date: date) -> date:
                 # Quarter end logic (simplified)
                 month = ((publish_date.month - 1) // 3) * 3 + 3
                 if month > 12:
                     month = 12
                 return date(publish_date.year, month, 30)
-            
+
             def validate_date(self, period_end: date) -> bool:
                 return period_end.month in (3, 6, 9, 12) and period_end.day >= 28
-            
+
             def format_for_filename(self, period_end: date) -> str:
                 return f"Q{(period_end.month - 1) // 3 + 1}-{period_end.year}"
-            
+
             def format_for_display(self, period_end: date) -> str:
                 return f"Q{(period_end.month - 1) // 3 + 1} {period_end.year}"
-        
+
         try:
             # Should be in registry
             assert "test_quarterly" in PERIOD_REGISTRY
-            
+
             # Should be resolvable
             period = resolve_period("test_quarterly")
             assert period.period_type == "test_quarterly"
-            
+
             # Should format correctly
             assert "Q4" in period.format_for_filename(date(2025, 12, 31))
-            
+
         finally:
             # Cleanup
             del PERIOD_REGISTRY["test_quarterly"]
@@ -568,10 +566,10 @@ class TestBackwardCompatibility:
     def test_create_source_still_works(self, fixture_path):
         """create_source() backward-compat function still works."""
         from spine.domains.finra.otc_transparency.sources import create_source
-        
+
         source = create_source(source_type="file", file_path=fixture_path)
         assert source.source_type == "file"
-        
+
         payload = source.fetch()
         assert payload.metadata.week_ending is not None
 
@@ -580,7 +578,7 @@ class TestBackwardCompatibility:
         from spine.domains.finra.otc_transparency.sources import (
             derive_week_ending_from_publish_date,
         )
-        
+
         result = derive_week_ending_from_publish_date(date(2025, 12, 22))
         assert result == date(2025, 12, 19)
 
@@ -589,16 +587,16 @@ class TestBackwardCompatibility:
         from spine.domains.finra.otc_transparency.connector import (
             derive_week_ending_from_publish_date,
         )
-        
+
         result = derive_week_ending_from_publish_date(date(2025, 12, 22))
         assert result == date(2025, 12, 19)
 
     def test_metadata_has_period_end_alias(self, fixture_path):
         """IngestionMetadata.period_end aliases week_ending."""
         from spine.domains.finra.otc_transparency.sources import FileSource
-        
+
         source = FileSource(file_path=fixture_path)
         payload = source.fetch()
-        
+
         # Both should return same value
         assert payload.metadata.period_end == payload.metadata.week_ending

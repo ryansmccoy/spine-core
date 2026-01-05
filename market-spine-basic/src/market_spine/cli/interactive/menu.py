@@ -17,7 +17,6 @@ Design Intent:
     - Subprocess overhead (negligible for CLI use case)
 """
 
-from typing import Optional
 
 import questionary
 from questionary import Style
@@ -25,7 +24,6 @@ from questionary import Style
 from spine.framework.registry import list_pipelines
 
 from ..console import console, get_tier_values
-from ..params import ParamParser
 from .prompts import prompt_pipeline_params
 
 # Custom style for questionary
@@ -229,7 +227,19 @@ def query_data_interactive() -> None:
         ).ask()
 
         # Build command
-        cmd_parts = ["uv", "run", "spine", "query", "symbols", "--week", week, "--tier", tier, "--top", top]
+        cmd_parts = [
+            "uv",
+            "run",
+            "spine",
+            "query",
+            "symbols",
+            "--week",
+            week,
+            "--tier",
+            tier,
+            "--top",
+            top,
+        ]
 
     # Execute
     import subprocess

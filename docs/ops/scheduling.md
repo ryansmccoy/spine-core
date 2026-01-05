@@ -575,8 +575,354 @@ WHERE state = 'RUNNING'
 
 **Fix:** Check manifest or wait longer between phases
 
+## Multi-Week Scheduler with Revision Detection
+
+For production deployments, use the **multi-week scheduler** (`scripts/run_finra_weekly_schedule.py`) which provides:
+
+- **Lookback windows** - Process last N weeks (FINRA revises prior weeks)
+- **Revision detection** - Skip unchanged weeks (efficiency)
+- **Non-destructive restatements** - capture_id versioning (no deletions)
+- **Phased execution** - Ingest → normalize → calcs in order
+- **Failure isolation** - Continue processing other partitions when one fails
+
+See [Multi-Week Scheduler Design](multi-week-scheduler.md) for architecture details.
+
+### cron Example (Linux/macOS)
+
+```bash
+#!/bin/bash
+# /opt/market-spine/cron/weekly_finra_multiweek.sh
+# Crontab: 30 10 * * 1 /opt/market-spine/cron/weekly_finra_multiweek.sh
+
+cd /opt/market-spine/market-spine-basic
+
+# Activate environment (if using venv)
+source venv/bin/activate
+
+# Run scheduler with 6-week lookback
+python scripts/run_finra_weekly_schedule.py \
+  --lookback-weeks 6 \
+  --source file \
+  --db /opt/market-spine/data/market_spine.db \
+  --verbose
+
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 2 ]; then
+  # Critical failure - page on-call
+  echo "CRITICAL: FINRA scheduler failed" | mail -s "Market Spine CRITICAL" ops@company.com
+elif [ $EXIT_CODE -eq 1 ]; then
+  # Partial failure - email data ops
+  echo "WARN: FINRA scheduler partial failure" | mail -s "Market Spine Warning" data-ops@company.com
+fi
+
+exit $EXIT_CODE
+```
+
+**Crontab entry:**
+```cron
+# Market Spine FINRA OTC weekly scheduler (every Monday 10:30 AM)
+30 10 * * 1 /opt/market-spine/cron/weekly_finra_multiweek.sh
+```
+
+### Kubernetes CronJob Example
+
+```yaml
+# k8s/cronjobs/finra-multiweek-scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finra-otc-multiweek-scheduler
+  namespace: market-spine
+  labels:
+    app: market-spine
+    component: scheduler
+spec:
+  # Every Monday at 10:30 AM UTC
+  schedule: "30 10 * * 1"
+  timeZone: "America/New_York"
+  
+  # Keep last 5 successful and 3 failed jobs
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 3
+  
+  # Don't allow concurrent runs
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    spec:
+      # Retry up to 2 times on failure
+      backoffLimit: 2
+      
+      # Clean up pods after 1 hour
+      ttlSecondsAfterFinished: 3600
+      
+      template:
+        metadata:
+          labels:
+            app: market-spine
+            component: scheduler
+            job: finra-multiweek
+        
+        spec:
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: scheduler
+            image: market-spine:latest
+            imagePullPolicy: Always
+            
+            command:
+            - python
+            - scripts/run_finra_weekly_schedule.py
+            
+            args:
+            - --lookback-weeks=6
+            - --source=file
+            - --db=/data/market_spine.db
+            - --verbose
+            
+            env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            
+            volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: fixtures
+              mountPath: /app/data/fixtures
+            
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "2000m"
+          
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: market-spine-data
+          - name: fixtures
+            configMap:
+              name: finra-otc-fixtures
+```
+
+**Deploy:**
+```bash
+kubectl apply -f k8s/cronjobs/finra-multiweek-scheduler.yaml
+
+# Trigger manual run (testing)
+kubectl create job --from=cronjob/finra-otc-multiweek-scheduler test-run-1
+
+# View logs
+kubectl logs -f job/test-run-1
+
+# Check job status
+kubectl get jobs -l job=finra-multiweek
+```
+
+### OpenShift CronJob Example
+
+```yaml
+# openshift/cronjobs/finra-multiweek-scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finra-otc-multiweek-scheduler
+  namespace: market-spine
+  labels:
+    app: market-spine
+    component: scheduler
+spec:
+  schedule: "30 10 * * 1"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 3
+  
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 3600
+      
+      template:
+        metadata:
+          labels:
+            app: market-spine
+            component: scheduler
+        
+        spec:
+          # OpenShift: Use restricted SCC
+          serviceAccountName: market-spine-scheduler
+          
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: scheduler
+            image: image-registry.openshift-image-registry.svc:5000/market-spine/market-spine:latest
+            imagePullPolicy: Always
+            
+            command:
+            - python
+            - scripts/run_finra_weekly_schedule.py
+            
+            args:
+            - --lookback-weeks=6
+            - --source=file
+            - --db=/data/market_spine.db
+            - --verbose
+            
+            env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            
+            volumeMounts:
+            - name: data
+              mountPath: /data
+            
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "2000m"
+            
+            # OpenShift: Security context
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              capabilities:
+                drop:
+                - ALL
+              seccompProfile:
+                type: RuntimeDefault
+          
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: market-spine-data
+```
+
+**OpenShift-specific setup:**
+
+```bash
+# Create service account
+oc create serviceaccount market-spine-scheduler -n market-spine
+
+# Grant SCC permissions (if needed)
+oc adm policy add-scc-to-user restricted -z market-spine-scheduler -n market-spine
+
+# Deploy CronJob
+oc apply -f openshift/cronjobs/finra-multiweek-scheduler.yaml
+
+# Trigger manual run
+oc create job --from=cronjob/finra-otc-multiweek-scheduler test-run-1 -n market-spine
+
+# View logs
+oc logs -f job/test-run-1 -n market-spine
+
+# Check recent runs
+oc get jobs -l app=market-spine -n market-spine
+```
+
+### Local Manual Run (Development/Testing)
+
+```bash
+# Navigate to market-spine-basic
+cd market-spine-basic
+
+# Standard run (last 6 weeks)
+python scripts/run_finra_weekly_schedule.py --lookback-weeks 6
+
+# Dry-run mode (no database writes)
+python scripts/run_finra_weekly_schedule.py --mode dry-run --lookback-weeks 6
+
+# Backfill specific weeks
+python scripts/run_finra_weekly_schedule.py \
+  --weeks 2025-12-15,2025-12-22,2025-12-29 \
+  --force
+
+# Run only ingestion phase (skip normalize/calcs)
+python scripts/run_finra_weekly_schedule.py \
+  --only-stage ingest \
+  --lookback-weeks 4
+
+# Verbose output with custom database
+python scripts/run_finra_weekly_schedule.py \
+  --lookback-weeks 6 \
+  --db /custom/path/market_spine.db \
+  --verbose
+```
+
+### Monitoring & Alerting
+
+**Prometheus Metrics:**
+
+```python
+# Add to market_spine/metrics.py
+from prometheus_client import Counter, Gauge, Histogram
+
+scheduler_runs = Counter(
+    'market_spine_scheduler_runs_total',
+    'Total scheduler runs',
+    ['status']  # success, partial, critical
+)
+
+scheduler_weeks_processed = Counter(
+    'market_spine_scheduler_weeks_processed_total',
+    'Total weeks processed',
+    ['action']  # ingested, skipped, failed
+)
+
+scheduler_duration = Histogram(
+    'market_spine_scheduler_duration_seconds',
+    'Scheduler run duration'
+)
+```
+
+**Alert Rules:**
+
+```yaml
+# prometheus/alerts/market-spine.yaml
+groups:
+- name: market_spine_scheduler
+  rules:
+  - alert: SchedulerPartialFailure
+    expr: |
+      increase(market_spine_scheduler_runs_total{status="partial"}[1h]) > 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Market Spine scheduler partial failure"
+      description: "Some FINRA partitions failed to process"
+  
+  - alert: SchedulerCriticalFailure
+    expr: |
+      increase(market_spine_scheduler_runs_total{status="critical"}[1h]) > 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Market Spine scheduler critical failure"
+      description: "Scheduler failed to run (DB down, config invalid)"
+  
+  - alert: SchedulerNotRunning
+    expr: |
+      time() - market_spine_scheduler_last_run_timestamp > 86400 * 2
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Market Spine scheduler has not run in 2 days"
+```
+
 ## Next Steps
 
+- [Multi-Week Scheduler Design](multi-week-scheduler.md) - Architecture and design decisions
 - [Gap Detection](gap-detection.md) - Detect missing week/tier partitions
 - [DBA Guidance](../architecture/dba-guidance.md) - Schema evolution best practices
 - [Scheduler Fitness Tests](../../tests/test_scheduler_fitness.py) - Validate retry/idempotency

@@ -5,8 +5,8 @@ This module creates the FastAPI application instance and configures
 middleware, exception handlers, and router mounting.
 """
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 

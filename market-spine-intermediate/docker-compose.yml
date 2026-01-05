@@ -3,12 +3,13 @@ version: "3.9"
 services:
   db:
     image: postgres:16-alpine
+    container_name: spine-intermediate-postgres
     environment:
       POSTGRES_USER: spine
       POSTGRES_PASSWORD: spine_dev_password
       POSTGRES_DB: market_spine
     ports:
-      - "5432:5432"
+      - "5442:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,9 +22,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: spine-intermediate-api
     command: spine serve --host 0.0.0.0 --port 8000
     ports:
-      - "8000:8000"
+      - "8020:8000"
     environment:
       - DATABASE_URL=postgresql://spine:spine_dev_password@db:5432/market_spine
       - BACKEND_TYPE=local

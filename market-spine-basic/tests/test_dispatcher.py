@@ -4,7 +4,7 @@ import pytest
 
 from market_spine.db import init_connection_provider, init_db
 from spine.framework.dispatcher import Dispatcher, Lane, TriggerSource
-from spine.framework.exceptions import BadParamsError, PipelineError, PipelineNotFoundError
+from spine.framework.exceptions import PipelineNotFoundError
 from spine.framework.pipelines import PipelineStatus
 
 # Initialize connection provider for tests

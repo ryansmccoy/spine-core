@@ -7,19 +7,18 @@ allowing inspection of available weeks and symbol data.
 
 from dataclasses import dataclass, field
 
-from market_spine.db import get_connection
-
 from market_spine.app.models import (
     CommandError,
     ErrorCode,
     Result,
     SymbolInfo,
+    SymbolWeekData,
     WeekInfo,
 )
 from market_spine.app.services.data import DataSourceConfig
 from market_spine.app.services.params import ParameterResolver
 from market_spine.app.services.tier import TierNormalizer
-
+from market_spine.db import get_connection
 
 # =============================================================================
 # Query Weeks Command
@@ -264,6 +263,155 @@ class QuerySymbolsCommand:
 
         except Exception as e:
             return QuerySymbolsResult(
+                success=False,
+                error=CommandError(
+                    code=ErrorCode.DATABASE_ERROR,
+                    message=f"Query failed: {e}",
+                ),
+            )
+
+
+# =============================================================================
+# Query Symbol History Command
+# =============================================================================
+
+
+@dataclass
+class QuerySymbolHistoryRequest:
+    """Input for querying symbol history."""
+
+    symbol: str
+    tier: str
+    weeks: int = 12  # Default to 12 weeks of history
+
+
+@dataclass
+class QuerySymbolHistoryResult(Result):
+    """Output from querying symbol history."""
+
+    symbol: str | None = None
+    tier: str | None = None
+    history: list[SymbolWeekData] = field(default_factory=list)
+    count: int = 0
+
+
+class QuerySymbolHistoryCommand:
+    """
+    Query historical trading data for a specific symbol.
+
+    Returns weekly trading data for the specified symbol, sorted
+    chronologically (oldest to newest) for charting.
+
+    Example:
+        command = QuerySymbolHistoryCommand()
+        result = command.execute(QuerySymbolHistoryRequest(
+            symbol="AAPL",
+            tier="NMS_TIER_1",
+            weeks=12,
+        ))
+        for week in result.history:
+            print(f"{week.week_ending}: {week.total_shares} shares")
+    """
+
+    def __init__(
+        self,
+        tier_normalizer: TierNormalizer | None = None,
+        data_source: DataSourceConfig | None = None,
+    ) -> None:
+        """Initialize with optional service overrides."""
+        self._tier_normalizer = tier_normalizer or TierNormalizer()
+        self._data_source = data_source or DataSourceConfig()
+
+    def execute(self, request: QuerySymbolHistoryRequest) -> QuerySymbolHistoryResult:
+        """
+        Execute the query symbol history command.
+
+        Args:
+            request: Request with symbol, tier, and weeks limit
+
+        Returns:
+            Result containing weekly history data
+        """
+        # Validate symbol
+        if not request.symbol or not request.symbol.strip():
+            return QuerySymbolHistoryResult(
+                success=False,
+                error=CommandError(
+                    code=ErrorCode.MISSING_REQUIRED,
+                    message="Symbol is required",
+                ),
+            )
+
+        symbol = request.symbol.strip().upper()
+
+        # Normalize tier
+        try:
+            canonical_tier = self._tier_normalizer.normalize(request.tier)
+        except ValueError as e:
+            return QuerySymbolHistoryResult(
+                success=False,
+                error=CommandError(
+                    code=ErrorCode.INVALID_TIER,
+                    message=str(e),
+                ),
+            )
+
+        # Query database
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            table = self._data_source.normalized_data_table
+            # Aggregate by week since normalized table has per-MPID rows
+            cursor.execute(
+                f"""
+                SELECT 
+                    week_ending, 
+                    SUM(total_shares) as total_shares, 
+                    SUM(total_trades) as total_trades
+                FROM {table}
+                WHERE symbol = ? AND tier = ?
+                GROUP BY week_ending
+                ORDER BY week_ending DESC
+                LIMIT ?
+                """,
+                (symbol, canonical_tier, request.weeks),
+            )
+
+            rows = cursor.fetchall()
+
+            history = []
+            for row in rows:
+                # Handle both dict-like and tuple-like rows
+                if hasattr(row, "__getitem__") and not isinstance(row, tuple):
+                    week_ending = row["week_ending"]
+                    total_shares = row["total_shares"]
+                    total_trades = row["total_trades"]
+                else:
+                    week_ending, total_shares, total_trades = row
+
+                history.append(
+                    SymbolWeekData(
+                        week_ending=week_ending,
+                        total_shares=int(total_shares) if total_shares else 0,
+                        total_trades=int(total_trades) if total_trades else 0,
+                        average_price=None,  # Not available in normalized table
+                    )
+                )
+
+            # Reverse to get chronological order (oldest first) for charting
+            history.reverse()
+
+            return QuerySymbolHistoryResult(
+                success=True,
+                symbol=symbol,
+                tier=canonical_tier,
+                history=history,
+                count=len(history),
+            )
+
+        except Exception as e:
+            return QuerySymbolHistoryResult(
                 success=False,
                 error=CommandError(
                     code=ErrorCode.DATABASE_ERROR,

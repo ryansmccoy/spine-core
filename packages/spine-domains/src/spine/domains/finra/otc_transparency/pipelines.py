@@ -49,6 +49,10 @@ from spine.domains.finra.otc_transparency.connector import (
     parse_finra_file,
     parse_simple_psv,
 )
+from spine.domains.finra.otc_transparency.validators import (
+    get_symbols_with_sufficient_history,
+    require_history_window,
+)
 from spine.domains.finra.otc_transparency.normalizer import normalize_records
 from spine.domains.finra.otc_transparency.schema import DOMAIN, STAGES, TABLES, Tier
 from spine.domains.finra.otc_transparency.sources import (
@@ -112,7 +116,7 @@ class IngestWeekPipeline(Pipeline):
     """
 
     name = "finra.otc_transparency.ingest_week"
-    description = "Ingest FINRA OTC transparency data for one week"
+    description = "Fetch and validate raw FINRA OTC PSV files (Symbol|Venue|Date|Volume|Trades)"
     spec = PipelineSpec(
         required_params={},  # All params optional - source determined by what's provided
         optional_params={
@@ -411,7 +415,7 @@ class NormalizeWeekPipeline(Pipeline):
     """
 
     name = "finra.otc_transparency.normalize_week"
-    description = "Normalize raw FINRA OTC transparency data for one week"
+    description = "Deduplicate, validate, and create point-in-time venue_volume records"
     spec = PipelineSpec(
         required_params={
             "week_ending": ParamDef(
@@ -687,7 +691,7 @@ class AggregateWeekPipeline(Pipeline):
     """
 
     name = "finra.otc_transparency.aggregate_week"
-    description = "Compute FINRA OTC transparency aggregates for one week"
+    description = "Aggregate venue_volume → symbol_summary (total shares/trades/venue_count per symbol)"
     spec = PipelineSpec(
         required_params={
             "week_ending": ParamDef(
@@ -904,16 +908,27 @@ class AggregateWeekPipeline(Pipeline):
 @register_pipeline("finra.otc_transparency.compute_rolling")
 class ComputeRollingPipeline(Pipeline):
     """
-    Compute rolling metrics for all symbols.
+    Compute rolling metrics for all symbols with institutional-grade quality gates.
+    
+    CAPTURE SEMANTICS (Policy A: latest-per-week):
+    - Uses latest capture_id per historical week (tolerates restatements)
+    - Tracks input capture provenance (min/max capture_id, captured_at range)
+    - Ensures deterministic output for same input capture set
+    
+    QUALITY GATES:
+    - Tier-level: Requires ALL consecutive weeks (no gaps)
+    - Symbol-level: Filters symbols with incomplete windows
+    - Records ERROR for tier gaps, WARN for symbol gaps
 
     Params:
         week_ending: ISO Friday date (end of window)
         tier: Tier value
+        window_weeks: Rolling window size (default: 6)
         force: Re-compute (default: False)
     """
 
     name = "finra.otc_transparency.compute_rolling"
-    description = "Compute rolling metrics for FINRA OTC transparency"
+    description = "Compute 6-week rolling averages (avg_volume, avg_trades, min/max, trend %)"
     spec = PipelineSpec(
         required_params={
             "week_ending": ParamDef(
@@ -932,6 +947,15 @@ class ComputeRollingPipeline(Pipeline):
             ),
         },
         optional_params={
+            "window_weeks": ParamDef(
+                name="window_weeks",
+                type=int,
+                description="Rolling window size (default: 6)",
+                required=False,
+                default=6,
+                validator=positive_int,
+                error_message="window_weeks must be a positive integer",
+            ),
             "force": ParamDef(
                 name="force",
                 type=bool,
@@ -941,7 +965,8 @@ class ComputeRollingPipeline(Pipeline):
             ),
         },
         examples=[
-            "spine run finra.otc_transparency.compute_rolling -p week_ending=2024-01-05 tier=Tier1"
+            "spine run finra.otc_transparency.compute_rolling -p week_ending=2024-01-05 tier=Tier1",
+            "spine run finra.otc_transparency.compute_rolling -p week_ending=2024-01-05 tier=Tier1 window_weeks=4",
         ],
     )
 
@@ -954,6 +979,7 @@ class ComputeRollingPipeline(Pipeline):
 
         week = WeekEnding(self.params["week_ending"])
         tier = Tier(self.params["tier"])
+        window_size = self.params.get("window_weeks", 6)
         force = self.params.get("force", False)
 
         ctx = new_context(batch_id=self.params.get("batch_id") or new_batch_id("rolling"))
@@ -1004,25 +1030,122 @@ class ComputeRollingPipeline(Pipeline):
             (str(week), tier.value, output_capture_id),
         )
 
+        # QUALITY GATE: Check history window completeness
+        window_size = 6
+        has_sufficient_history, missing_weeks = require_history_window(
+            conn,
+            table=TABLES["symbol_summary"],
+            week_ending=week.value,
+            window_weeks=window_size,
+            tier=tier.value,
+            check_readiness=False,  # Don't require readiness, just data existence
+        )
+
+        if not has_sufficient_history:
+            # Record anomaly for insufficient history
+            quality = QualityRunner(
+                conn, domain=DOMAIN, execution_id=ctx.execution_id, batch_id=ctx.batch_id
+            )
+            quality.record_anomaly(
+                severity="ERROR",
+                category="INSUFFICIENT_HISTORY",
+                message=f"Rolling calculation requires {window_size} weeks, only {window_size - len(missing_weeks)} available",
+                details={
+                    "week_ending": str(week),
+                    "tier": tier.value,
+                    "window_weeks": window_size,
+                    "missing_weeks": missing_weeks,
+                    "found_weeks": window_size - len(missing_weeks),
+                },
+                partition_key=f"{week}|{tier.value}",
+                stage="ROLLING",
+            )
+            
+            log.error(
+                "rolling.insufficient_history",
+                week=str(week),
+                tier=tier.value,
+                window_weeks=window_size,
+                missing_weeks=missing_weeks,
+            )
+            
+            # Update manifest with partial status
+            manifest.advance_to(key, "ROLLING", execution_id=ctx.execution_id)
+            conn.commit()
+            
+            return PipelineResult(
+                status=PipelineStatus.COMPLETED,
+                started_at=started,
+                completed_at=datetime.now(),
+                metrics={
+                    "skipped": True,
+                    "reason": "insufficient_history",
+                    "missing_weeks": len(missing_weeks),
+                },
+            )
+
+        # Get symbols with sufficient history (per-symbol validation)
+        valid_symbols = get_symbols_with_sufficient_history(
+            conn,
+            table=TABLES["symbol_summary"],
+            week_ending=week.value,
+            window_weeks=window_size,
+            tier=tier.value,
+        )
+
+        log.info(
+            "rolling.symbols_validated",
+            week=str(week),
+            tier=tier.value,
+            valid_symbols=len(valid_symbols),
+            window_weeks=window_size,
+        )
+
         # Get window weeks
-        window_weeks = week.window(6)
+        window_weeks = week.window(window_size)
         week_strs = [str(w) for w in window_weeks]
 
-        # ROLLING SEMANTICS: Use LATEST capture per historical week
+        # CAPTURE SEMANTICS (Policy A: latest-per-week)
+        # - Use latest capture_id per historical week (tolerates restatements)
+        # - Track input capture provenance for auditability
         placeholders = ",".join("?" * len(week_strs))
         rows = conn.execute(
             f"""
             SELECT * FROM (
-                SELECT *, ROW_NUMBER() OVER (
-                    PARTITION BY week_ending, tier, symbol 
-                    ORDER BY captured_at DESC
-                ) as rn
+                SELECT *, 
+                       ROW_NUMBER() OVER (
+                           PARTITION BY week_ending, tier, symbol 
+                           ORDER BY captured_at DESC
+                       ) as rn
                 FROM {TABLES["symbol_summary"]}
                 WHERE tier = ? AND week_ending IN ({placeholders})
             ) WHERE rn = 1
         """,
             (tier.value, *week_strs),
         ).fetchall()
+        
+        # Compute capture provenance (for audit trail)
+        if rows:
+            capture_ids = [r["capture_id"] for r in rows if r["capture_id"]]
+            captured_ats = [r["captured_at"] for r in rows if r["captured_at"]]
+            
+            input_min_capture_id = min(capture_ids) if capture_ids else None
+            input_max_capture_id = max(capture_ids) if capture_ids else None
+            input_min_captured_at = min(captured_ats) if captured_ats else None
+            input_max_captured_at = max(captured_ats) if captured_ats else None
+            
+            log.debug(
+                "rolling.capture_provenance",
+                input_captures=len(set(capture_ids)),
+                input_min_capture_id=input_min_capture_id,
+                input_max_capture_id=input_max_capture_id,
+                input_captured_at_range=f"{input_min_captured_at} to {input_max_captured_at}",
+            )
+        else:
+            input_min_capture_id = None
+            input_max_capture_id = None
+            input_min_captured_at = None
+            input_max_captured_at = None
 
         # Convert to SymbolAggregateRow objects
         summaries = [
@@ -1042,9 +1165,21 @@ class ComputeRollingPipeline(Pipeline):
         # Get unique symbols
         symbols = {s.symbol for s in summaries}
 
-        # Compute rolling for each symbol (simplified for now)
+        # Compute rolling for each symbol (with history gate)
         count = 0
+        skipped_symbols = []
         for symbol in symbols:
+            # Skip symbols without sufficient history
+            if symbol not in valid_symbols:
+                skipped_symbols.append(symbol)
+                log.debug(
+                    "rolling.symbol_skipped",
+                    symbol=symbol,
+                    reason="insufficient_history",
+                    window_weeks=window_size,
+                )
+                continue
+            
             symbol_data = [s for s in summaries if s.symbol == symbol]
             if len(symbol_data) < 2:
                 continue
@@ -1069,9 +1204,11 @@ class ComputeRollingPipeline(Pipeline):
                     avg_volume, avg_trades, min_volume, max_volume,
                     trend_direction, trend_pct,
                     weeks_in_window, is_complete,
+                    input_min_capture_id, input_max_capture_id,
+                    input_min_captured_at, input_max_captured_at,
                     captured_at, capture_id,
                     execution_id, batch_id, calculated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     str(week),
@@ -1084,7 +1221,11 @@ class ComputeRollingPipeline(Pipeline):
                     trend_direction,
                     str(trend_pct),
                     len(symbol_data),
-                    1 if len(symbol_data) >= 6 else 0,
+                    1 if len(symbol_data) >= window_size else 0,
+                    input_min_capture_id,
+                    input_max_capture_id,
+                    input_min_captured_at,
+                    input_max_captured_at,
                     output_captured_at,
                     output_capture_id,
                     ctx.execution_id,
@@ -1093,6 +1234,27 @@ class ComputeRollingPipeline(Pipeline):
                 ),
             )
             count += 1
+
+        # Record anomalies for skipped symbols
+        if skipped_symbols:
+            quality = QualityRunner(
+                conn, domain=DOMAIN, execution_id=ctx.execution_id, batch_id=ctx.batch_id
+            )
+            quality.record_anomaly(
+                severity="WARN",
+                category="PARTIAL_COVERAGE",
+                message=f"{len(skipped_symbols)} symbols skipped due to insufficient history",
+                details={
+                    "week_ending": str(week),
+                    "tier": tier.value,
+                    "skipped_symbols": skipped_symbols[:50],  # Limit to first 50
+                    "total_skipped": len(skipped_symbols),
+                    "window_weeks": window_size,
+                },
+                partition_key=f"{week}|{tier.value}",
+                stage="ROLLING",
+                affected_records=len(skipped_symbols),
+            )
 
         conn.commit()
 
@@ -1104,7 +1266,11 @@ class ComputeRollingPipeline(Pipeline):
             status=PipelineStatus.COMPLETED,
             started_at=started,
             completed_at=datetime.now(),
-            metrics={"symbols_computed": count, "capture_id": output_capture_id},
+            metrics={
+                "symbols_computed": count,
+                "symbols_skipped": len(skipped_symbols),
+                "capture_id": output_capture_id,
+            },
         )
 
 
@@ -1126,7 +1292,7 @@ class BackfillRangePipeline(Pipeline):
     """
 
     name = "finra.otc_transparency.backfill_range"
-    description = "Orchestrate multi-week FINRA OTC transparency backfill"
+    description = "Orchestrate multi-week backfill (ingest → normalize → aggregate → rolling)"
     spec = PipelineSpec(
         required_params={
             "tier": ParamDef(
@@ -1388,7 +1554,7 @@ class ComputeVenueSharePipeline(Pipeline):
     """
 
     name = "finra.otc_transparency.compute_venue_share"
-    description = "Compute FINRA OTC venue market share for one week"
+    description = "Compute venue market share % per MPID (SUM(share_pct) = 100% per tier)"
     spec = PipelineSpec(
         required_params={
             "week_ending": ParamDef(
@@ -1644,7 +1810,7 @@ class ComputeVolumePerDayPipeline(Pipeline):
     """
 
     name = "finra.otc_transparency.compute_volume_per_day"
-    description = "Compute volume per trading day using exchange calendar"
+    description = "Compute avg daily volume adjusted for trading days (uses exchange calendar holidays)"
     
     # Explicit dependency declaration
     DEPENDENCIES = [

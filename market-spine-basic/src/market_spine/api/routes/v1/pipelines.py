@@ -18,13 +18,14 @@ from market_spine.app.commands.pipelines import (
     ListPipelinesRequest,
 )
 from market_spine.app.commands.queries import (
+    QuerySymbolHistoryCommand,
+    QuerySymbolHistoryRequest,
     QuerySymbolsCommand,
     QuerySymbolsRequest,
     QueryWeeksCommand,
     QueryWeeksRequest,
 )
 from market_spine.app.models import ErrorCode
-
 
 # =============================================================================
 # Response Models
@@ -125,6 +126,24 @@ class QuerySymbolsResponse(BaseModel):
     count: int
 
 
+class SymbolWeekDataResponse(BaseModel):
+    """Trading data for a symbol in a specific week."""
+
+    week_ending: str
+    total_shares: int
+    total_trades: int
+    average_price: float | None = None
+
+
+class QuerySymbolHistoryResponse(BaseModel):
+    """Response from querying symbol history."""
+
+    symbol: str
+    tier: str
+    history: list[SymbolWeekDataResponse]
+    count: int
+
+
 class RunPipelineBody(BaseModel):
     """Request body for running a pipeline."""
 
@@ -208,12 +227,8 @@ async def describe_pipeline(pipeline_name: str) -> PipelineDetailResponse:
     return PipelineDetailResponse(
         name=pipeline.name,
         description=pipeline.description,
-        required_params=[
-            ParameterDefResponse(**p.__dict__) for p in pipeline.required_params
-        ],
-        optional_params=[
-            ParameterDefResponse(**p.__dict__) for p in pipeline.optional_params
-        ],
+        required_params=[ParameterDefResponse(**p.__dict__) for p in pipeline.required_params],
+        optional_params=[ParameterDefResponse(**p.__dict__) for p in pipeline.optional_params],
         is_ingest=pipeline.is_ingest,
     )
 
@@ -339,9 +354,7 @@ async def list_symbols(
 
     if not result.success:
         status_code = (
-            400
-            if result.error.code in (ErrorCode.INVALID_TIER, ErrorCode.INVALID_DATE)
-            else 500
+            400 if result.error.code in (ErrorCode.INVALID_TIER, ErrorCode.INVALID_DATE) else 500
         )
         raise HTTPException(
             status_code=status_code,
@@ -360,6 +373,54 @@ async def list_symbols(
         symbols=[
             SymbolInfoResponse(symbol=s.symbol, volume=s.volume, avg_price=s.avg_price)
             for s in result.symbols
+        ],
+        count=result.count,
+    )
+
+
+@router.get("/data/symbols/{symbol}/history", response_model=QuerySymbolHistoryResponse)
+async def get_symbol_history(
+    symbol: str,
+    tier: str = Query(..., description="Tier: OTC, NMS_TIER_1, NMS_TIER_2"),
+    weeks: int = Query(12, ge=1, le=52, description="Number of weeks of history"),
+) -> QuerySymbolHistoryResponse:
+    """
+    Get historical trading data for a specific symbol.
+
+    Returns weekly trading data sorted chronologically (oldest to newest)
+    for charting purposes.
+    """
+    command = QuerySymbolHistoryCommand()
+    result = command.execute(QuerySymbolHistoryRequest(symbol=symbol, tier=tier, weeks=weeks))
+
+    if not result.success:
+        status_code = (
+            400
+            if result.error.code in (ErrorCode.INVALID_TIER, ErrorCode.MISSING_REQUIRED)
+            else 500
+        )
+        raise HTTPException(
+            status_code=status_code,
+            detail={
+                "success": False,
+                "error": {
+                    "code": result.error.code.value,
+                    "message": result.error.message,
+                },
+            },
+        )
+
+    return QuerySymbolHistoryResponse(
+        symbol=result.symbol,
+        tier=result.tier,
+        history=[
+            SymbolWeekDataResponse(
+                week_ending=h.week_ending,
+                total_shares=h.total_shares,
+                total_trades=h.total_trades,
+                average_price=h.average_price,
+            )
+            for h in result.history
         ],
         count=result.count,
     )

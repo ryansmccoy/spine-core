@@ -9,10 +9,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from spine.framework.dispatcher import Dispatcher, Lane, TriggerSource
-from spine.framework.exceptions import BadParamsError, PipelineNotFoundError
-from spine.framework.pipelines import PipelineStatus
-
 from market_spine.app.models import (
     CommandError,
     ErrorCode,
@@ -23,7 +19,9 @@ from market_spine.app.models import (
 from market_spine.app.services.ingest import IngestResolution, IngestResolver
 from market_spine.app.services.params import ParameterResolver
 from market_spine.app.services.tier import TierNormalizer
-
+from spine.framework.dispatcher import Dispatcher, Lane, TriggerSource
+from spine.framework.exceptions import BadParamsError, PipelineNotFoundError
+from spine.framework.pipelines import PipelineStatus
 
 # =============================================================================
 # Run Pipeline Command

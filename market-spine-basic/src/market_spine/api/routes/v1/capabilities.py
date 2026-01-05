@@ -17,9 +17,8 @@ Contract Guarantees (v1):
 - Existing boolean fields set to False may become True in higher tiers
 """
 
-from pydantic import BaseModel, Field
-
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from market_spine import __version__
 
@@ -39,34 +38,20 @@ class CapabilitiesResponse(BaseModel):
     api_version: str = Field(
         description="API version string (e.g., 'v1'). Use for contract compatibility."
     )
-    tier: str = Field(
-        description="Tier name: 'basic', 'intermediate', or 'full'"
-    )
+    tier: str = Field(description="Tier name: 'basic', 'intermediate', or 'full'")
     version: str = Field(
         description="Package version (semver). Use for debugging, not feature detection."
     )
 
     # Execution capabilities
-    sync_execution: bool = Field(
-        description="Synchronous blocking execution is supported"
-    )
-    async_execution: bool = Field(
-        description="Asynchronous non-blocking execution is supported"
-    )
-    execution_history: bool = Field(
-        description="Historical execution records can be queried"
-    )
+    sync_execution: bool = Field(description="Synchronous blocking execution is supported")
+    async_execution: bool = Field(description="Asynchronous non-blocking execution is supported")
+    execution_history: bool = Field(description="Historical execution records can be queried")
 
     # Security & operational capabilities
-    authentication: bool = Field(
-        description="API authentication is required/supported"
-    )
-    scheduling: bool = Field(
-        description="Scheduled/cron-based execution is supported"
-    )
-    rate_limiting: bool = Field(
-        description="Request rate limiting is enforced"
-    )
+    authentication: bool = Field(description="API authentication is required/supported")
+    scheduling: bool = Field(description="Scheduled/cron-based execution is supported")
+    rate_limiting: bool = Field(description="Request rate limiting is enforced")
     webhook_notifications: bool = Field(
         description="Webhook callbacks for execution events are supported"
     )

@@ -30,7 +30,7 @@ def configure_cli_logging(
 ) -> None:
     """
     Configure logging for CLI with proper output channels.
-    
+
     Args:
         log_level: Logging level (INFO, DEBUG, WARNING, ERROR)
         log_format: Format for logs (pretty or json)
@@ -45,7 +45,6 @@ def configure_cli_logging(
     # Configure framework logging
     # For now, we'll use the framework's configure_logging
     # but we could customize the stream based on log_to
-    import structlog
 
     # Determine output stream
     if log_to == LogDestination.STDERR:

@@ -3,10 +3,10 @@
 import pytest
 
 from market_spine.app.commands.pipelines import (
-    ListPipelinesCommand,
-    ListPipelinesRequest,
     DescribePipelineCommand,
     DescribePipelineRequest,
+    ListPipelinesCommand,
+    ListPipelinesRequest,
 )
 from market_spine.app.models import ErrorCode
 from market_spine.db import init_connection_provider
