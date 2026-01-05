@@ -36,7 +36,16 @@ ls data/fixtures/finra_otc/
 
 **Command:**
 ```bash
-python scripts/run_finra_weekly_schedule.py \
+# Using standardized thin wrapper script
+python scripts/schedule_finra.py \
+  --lookback-weeks 6 \
+  --source file \
+  -v
+```
+
+**Alternative (legacy script, deprecated):**
+```bash
+python market-spine-basic/scripts/run_finra_weekly_schedule.py \
   --lookback-weeks 6 \
   --source file \
   --verbose
@@ -49,6 +58,8 @@ python scripts/run_finra_weekly_schedule.py \
 - Updates data readiness flags
 
 **Expected duration:** 5-10 minutes
+
+**See:** [scripts/README.md](../../scripts/README.md) for cron/K8s/OpenShift examples
 
 ### 3. Monitor Execution
 
@@ -143,7 +154,7 @@ LIMIT 20;
 **Cause:** Ingestion failed for this tier  
 **Fix:** Re-run ingestion for that specific tier:
 ```bash
-python scripts/run_finra_weekly_schedule.py \
+python scripts/schedule_finra.py \
   --weeks 2026-01-09 \
   --tiers NMS_TIER_1 \
   --only-stage ingest
@@ -154,7 +165,7 @@ python scripts/run_finra_weekly_schedule.py \
 **Cause:** Not all tiers normalized yet  
 **Fix:** Complete normalization first:
 ```bash
-python scripts/run_finra_weekly_schedule.py \
+python scripts/schedule_finra.py \
   --weeks 2026-01-09 \
   --only-stage normalize
 ```
@@ -183,8 +194,10 @@ Then re-run scheduler with `--force` flag.
 
 ## References
 
-- **Script:** `scripts/run_finra_weekly_schedule.py`
-- **Init DB:** `scripts/init_database.py`
+- **Script (new):** `scripts/schedule_finra.py` (thin wrapper)
+- **Domain Logic:** `packages/spine-domains/src/spine/domains/finra/otc_transparency/scheduler.py`
+- **Legacy Script:** `market-spine-basic/scripts/run_finra_weekly_schedule.py` (deprecated)
+- **Scripts Guide:** `scripts/README.md`
 - **CLI Docs:** `docs/CLI.md`
 - **Revision Handling:** `docs/FINRA_REVISION_HANDLING.md`
 
