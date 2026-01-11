@@ -1,0 +1,49 @@
+# Golden Test - Expected Execution Plan
+# This YAML represents the expected output from resolving sample_group.yaml
+# Used for snapshot/golden testing of the planner
+
+group_name: finra.weekly_refresh
+group_version: 1
+batch_id: "group_finra.weekly_refresh_20260109T120000_00000000"
+
+steps:
+  - step_name: ingest
+    pipeline_name: finra.otc_transparency.ingest_week
+    params:
+      tier: NMS_TIER_1
+      week_ending: "2026-01-03"
+    depends_on: []
+    sequence_order: 0
+    
+  - step_name: normalize
+    pipeline_name: finra.otc_transparency.normalize_week
+    params:
+      tier: NMS_TIER_1
+      week_ending: "2026-01-03"
+    depends_on: [ingest]
+    sequence_order: 1
+    
+  - step_name: aggregate
+    pipeline_name: finra.otc_transparency.aggregate_week
+    params:
+      tier: NMS_TIER_1
+      week_ending: "2026-01-03"
+    depends_on: [normalize]
+    sequence_order: 2
+    
+  - step_name: rolling
+    pipeline_name: finra.otc_transparency.compute_rolling
+    params:
+      tier: NMS_TIER_1
+      week_ending: "2026-01-03"
+    depends_on: [aggregate]
+    sequence_order: 3
+
+policy:
+  execution: sequential
+  max_concurrency: 4
+  on_failure: stop
+  timeout_minutes: null
+
+params:
+  week_ending: "2026-01-03"

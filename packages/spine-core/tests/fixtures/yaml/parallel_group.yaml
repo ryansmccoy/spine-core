@@ -1,0 +1,33 @@
+# Parallel Independent Steps - YAML Format
+# All steps can run concurrently
+
+apiVersion: spine.io/v1
+kind: PipelineGroup
+
+metadata:
+  name: test.parallel
+  domain: test
+  version: 1
+  description: Independent steps for parallel execution
+
+spec:
+  defaults:
+    batch_size: 1000
+  
+  pipelines:
+    - name: task_a
+      pipeline: pipeline.a
+      
+    - name: task_b
+      pipeline: pipeline.b
+      
+    - name: task_c
+      pipeline: pipeline.c
+      
+    - name: task_d
+      pipeline: pipeline.d
+  
+  policy:
+    execution: parallel
+    max_concurrency: 4
+    on_failure: continue

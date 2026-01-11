@@ -1,0 +1,37 @@
+# Sample Pipeline Group - YAML Format
+# This file demonstrates the YAML schema for pipeline group definitions.
+# Used in tests for YAML loader validation.
+
+apiVersion: spine.io/v1
+kind: PipelineGroup
+
+metadata:
+  name: finra.weekly_refresh
+  domain: finra.otc_transparency
+  version: 1
+  description: Weekly FINRA OTC Transparency data refresh
+
+spec:
+  defaults:
+    tier: NMS_TIER_1
+    week_ending: "{{ params.week_ending }}"
+  
+  pipelines:
+    - name: ingest
+      pipeline: finra.otc_transparency.ingest_week
+      
+    - name: normalize
+      pipeline: finra.otc_transparency.normalize_week
+      depends_on: [ingest]
+      
+    - name: aggregate
+      pipeline: finra.otc_transparency.aggregate_week
+      depends_on: [normalize]
+      
+    - name: rolling
+      pipeline: finra.otc_transparency.compute_rolling
+      depends_on: [aggregate]
+  
+  policy:
+    execution: sequential
+    on_failure: stop

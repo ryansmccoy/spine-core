@@ -1,0 +1,32 @@
+# Diamond Dependency Pattern - YAML Format
+# Tests complex DAG resolution with multiple paths
+
+apiVersion: spine.io/v1
+kind: PipelineGroup
+
+metadata:
+  name: test.diamond
+  domain: test
+  version: 1
+  description: Diamond dependency pattern for testing DAG resolution
+
+spec:
+  pipelines:
+    - name: step_a
+      pipeline: pipeline.a
+      
+    - name: step_b
+      pipeline: pipeline.b
+      depends_on: [step_a]
+      
+    - name: step_c
+      pipeline: pipeline.c
+      depends_on: [step_a]
+      
+    - name: step_d
+      pipeline: pipeline.d
+      depends_on: [step_b, step_c]
+  
+  policy:
+    execution: parallel
+    max_concurrency: 2

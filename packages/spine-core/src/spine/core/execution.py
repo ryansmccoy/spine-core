@@ -7,7 +7,7 @@ the parent_execution_id links them. Batch operations share a batch_id.
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -62,6 +62,6 @@ def new_batch_id(prefix: str = "") -> str:
     Format: {prefix}_{timestamp}_{short_uuid}
     Example: backfill_20251226T150022_a1b2c3d4
     """
-    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     short_id = str(uuid.uuid4())[:8]
     return f"{prefix}_{ts}_{short_id}" if prefix else f"batch_{ts}_{short_id}"

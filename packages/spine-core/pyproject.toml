@@ -19,7 +19,9 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",
+    "pytest-xdist>=3.5",  # Parallel test execution
     "ruff>=0.8.0",
+    "pyyaml>=6.0",  # For YAML loading tests
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -30,6 +32,65 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+addopts = [
+    "-ra",           # Show extra test summary for all except passed
+    "-q",            # Quiet mode (less verbose)
+    "--strict-markers",   # Fail on unknown markers
+    "--strict-config",    # Fail on config errors
+    "-W", "error::pytest.PytestUnraisableExceptionWarning",
+]
+filterwarnings = [
+    "error",              # Treat warnings as errors
+    "ignore::DeprecationWarning:pydantic.*:",  # Ignore pydantic internal deprecations
+    "ignore:datetime.datetime.utcnow:DeprecationWarning",  # utcnow() deprecation
+]
+markers = [
+    "unit: Unit tests (fast, isolated, no external dependencies)",
+    "integration: Integration tests (may use temp files, slower)",
+    "slow: Slow tests (excluded from default runs)",
+    "golden: Golden/fixture-based tests for YAML and plans",
+]
+# Enable console output capture
+log_cli = false
+log_cli_level = "WARNING"
+
+[tool.coverage.run]
+source = ["src/spine"]
+branch = true
+parallel = true
+omit = [
+    "*/__pycache__/*",
+    "*/tests/*",
+    "*/.venv/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.paths]
+source = [
+    "src/",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "raise AssertionError",
+    "@abstractmethod",
+    '\\.\\.\\.\\s*$',  # Ellipsis (abstract methods)
+]
+fail_under = 65
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.ruff]
 line-length = 100
