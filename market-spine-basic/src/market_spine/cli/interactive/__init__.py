@@ -1,0 +1,1 @@
+"""Interactive menu module."""

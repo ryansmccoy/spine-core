@@ -1,0 +1,36 @@
+# Docker-specific ignores
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov/
+
+# Development files
+*.md
+!README.md
+docs/
+tests/
+.pre-commit-config.yaml
+justfile
+Makefile
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local database (use volume instead)
+*.db
+spine.db
+
+# Temporary files
+*.tmp
+*.log

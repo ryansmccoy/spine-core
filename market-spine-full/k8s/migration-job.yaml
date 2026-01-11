@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: spine-migration
+  labels:
+    app: market-spine
+    component: migration
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: market-spine
+        component: migration
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z spine-timescaledb 5432; do echo waiting for db; sleep 2; done']
+      containers:
+        - name: migrate
+          image: market-spine:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "market_spine.cli", "db", "migrate"]
+          envFrom:
+            - configMapRef:
+                name: spine-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      restartPolicy: Never
+  backoffLimit: 3

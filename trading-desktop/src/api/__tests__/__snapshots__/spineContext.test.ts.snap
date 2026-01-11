@@ -1,0 +1,64 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SpineContext logic > feature availability by tier > 'incidents' availability matches tier expectations 1`] = `
+{
+  "basic": false,
+  "feature": "incidents",
+  "full": true,
+  "intermediate": false,
+}
+`;
+
+exports[`SpineContext logic > feature availability by tier > 'orchestratorLab' availability matches tier expectations 1`] = `
+{
+  "basic": false,
+  "feature": "orchestratorLab",
+  "full": true,
+  "intermediate": true,
+}
+`;
+
+exports[`SpineContext logic > feature availability by tier > 'pipelines' availability matches tier expectations 1`] = `
+{
+  "basic": true,
+  "feature": "pipelines",
+  "full": true,
+  "intermediate": true,
+}
+`;
+
+exports[`SpineContext logic > feature availability by tier > 'querySymbols' availability matches tier expectations 1`] = `
+{
+  "basic": true,
+  "feature": "querySymbols",
+  "full": true,
+  "intermediate": true,
+}
+`;
+
+exports[`SpineContext logic > feature availability by tier > 'queryWeeks' availability matches tier expectations 1`] = `
+{
+  "basic": true,
+  "feature": "queryWeeks",
+  "full": true,
+  "intermediate": true,
+}
+`;
+
+exports[`SpineContext logic > feature availability by tier > 'queues' availability matches tier expectations 1`] = `
+{
+  "basic": false,
+  "feature": "queues",
+  "full": true,
+  "intermediate": true,
+}
+`;
+
+exports[`SpineContext logic > feature availability by tier > 'scheduler' availability matches tier expectations 1`] = `
+{
+  "basic": false,
+  "feature": "scheduler",
+  "full": true,
+  "intermediate": true,
+}
+`;

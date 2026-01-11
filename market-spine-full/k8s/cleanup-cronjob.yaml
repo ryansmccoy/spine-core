@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: spine-cleanup
+  labels:
+    app: market-spine
+    component: cleanup
+spec:
+  schedule: "0 2 * * *"  # Run at 2 AM daily
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: market-spine
+            component: cleanup
+        spec:
+          initContainers:
+            - name: wait-for-db
+              image: busybox:1.36
+              command: ['sh', '-c', 'until nc -z spine-timescaledb 5432; do echo waiting for db; sleep 2; done']
+          containers:
+            - name: cleanup
+              image: market-spine:latest
+              imagePullPolicy: IfNotPresent
+              command: ["python", "-m", "market_spine.cli", "cleanup", "--older-than", "90d"]
+              envFrom:
+                - configMapRef:
+                    name: spine-config
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "256Mi"
+                  cpu: "200m"
+          restartPolicy: OnFailure

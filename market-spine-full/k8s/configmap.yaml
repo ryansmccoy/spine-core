@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spine-config
+  labels:
+    app: market-spine
+data:
+  DATABASE_URL: "postgresql://spine:spine@spine-timescaledb:5432/spine"
+  REDIS_URL: "redis://spine-redis:6379/0"
+  CELERY_BROKER_URL: "redis://spine-redis:6379/0"
+  CELERY_RESULT_BACKEND: "redis://spine-redis:6379/1"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "false"
+  SCHEDULE_INGEST_ENABLED: "true"
+  SCHEDULE_INGEST_INTERVAL_SECONDS: "60"
+  SCHEDULE_CLEANUP_ENABLED: "true"
+  RETENTION_DAYS: "90"

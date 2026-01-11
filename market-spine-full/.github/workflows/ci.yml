@@ -1,0 +1,235 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run Ruff linter
+        run: uv run ruff check src/ tests/
+
+      - name: Run Ruff formatter check
+        run: uv run ruff format --check src/ tests/
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run MyPy
+        run: uv run mypy src/
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: spine
+          POSTGRES_PASSWORD: spine
+          POSTGRES_DB: spine
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://spine:spine@localhost:5432/spine
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run tests
+        run: uv run pytest --cov=market_spine --cov-report=xml --cov-report=html
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+  invariants:
+    name: Invariant Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Check dispatcher is single entrypoint
+        run: |
+          # Ensure only dispatcher.submit() creates executions
+          # No direct ExecutionLedger.create_execution() calls except in Dispatcher
+          if grep -r "ledger.create_execution" src/ --include="*.py" | grep -v "dispatcher.py" | grep -v "test_"; then
+            echo "ERROR: create_execution should only be called from Dispatcher"
+            exit 1
+          fi
+          echo "✓ Dispatcher is single entrypoint"
+
+      - name: Check run_pipeline is single processing point
+        run: |
+          # Ensure only run_pipeline() calls pipeline handlers
+          if grep -r "pipeline_def.handler" src/ --include="*.py" | grep -v "runner.py" | grep -v "test_"; then
+            echo "ERROR: pipeline handlers should only be called from run_pipeline"
+            exit 1
+          fi
+          echo "✓ run_pipeline is single processing point"
+
+      - name: Check API is enqueue-only
+        run: |
+          # Ensure API routes only call dispatcher.submit(), not run_pipeline
+          if grep -r "run_pipeline" src/market_spine/api/ --include="*.py"; then
+            echo "ERROR: API should not call run_pipeline directly"
+            exit 1
+          fi
+          echo "✓ API is enqueue-only"
+
+  integration:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: docker build -t market-spine:test .
+
+      - name: Start services
+        run: docker compose up -d timescaledb redis
+
+      - name: Wait for services
+        run: |
+          sleep 10
+          docker compose ps
+
+      - name: Run migrations
+        run: docker compose run --rm migrate
+
+      - name: Start API
+        run: docker compose up -d api
+
+      - name: Wait for API
+        run: |
+          sleep 10
+          curl -f http://localhost:8000/health/live || exit 1
+
+      - name: Run integration tests
+        run: |
+          # Test health endpoint
+          curl -f http://localhost:8000/health/ready
+          
+          # Test pipeline list
+          curl -f http://localhost:8000/executions/pipelines
+          
+          # Submit execution
+          EXEC_ID=$(curl -s -X POST http://localhost:8000/executions \
+            -H "Content-Type: application/json" \
+            -d '{"pipeline": "otc_ingest", "params": {"source": "synthetic", "count": 10}}' \
+            | jq -r '.id')
+          
+          echo "Execution ID: $EXEC_ID"
+          
+          # Check execution exists
+          curl -f "http://localhost:8000/executions/$EXEC_ID"
+
+      - name: Collect logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: market-spine:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

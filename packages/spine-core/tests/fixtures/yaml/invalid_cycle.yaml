@@ -1,0 +1,25 @@
+# Cycle Detection Test - Invalid YAML
+# This group contains a cycle and should fail validation
+
+apiVersion: spine.io/v1
+kind: PipelineGroup
+
+metadata:
+  name: test.cycle
+  domain: test
+  version: 1
+  description: Invalid group with cyclic dependencies
+
+spec:
+  pipelines:
+    - name: step_a
+      pipeline: pipeline.a
+      depends_on: [step_c]  # Creates cycle: A -> C -> B -> A
+      
+    - name: step_b
+      pipeline: pipeline.b
+      depends_on: [step_a]
+      
+    - name: step_c
+      pipeline: pipeline.c
+      depends_on: [step_b]
