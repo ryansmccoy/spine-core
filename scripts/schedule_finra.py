@@ -125,26 +125,35 @@ def parse_args() -> argparse.Namespace:
         help="Stop on first failure (for CI/CD)"
     )
     
-    # Database path
+    # Database path (with env fallback)
     parser.add_argument(
         "--db",
         type=str,
-        default="data/market_spine.db",
-        help="Database path (default: data/market_spine.db)"
+        default=None,
+        help="Database path (default: data/market_spine.db or DATABASE_URL env)"
     )
     
-    # Verbosity
+    # Log level
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Log level (default: INFO)"
+    )
+    
+    # Verbosity (legacy, sets log-level to DEBUG)
     parser.add_argument(
         "-v", "--verbose",
         action="store_true",
-        help="Enable verbose output"
+        help="Enable verbose output (sets --log-level DEBUG)"
     )
     
     # JSON output
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Output result as JSON"
+        help="Output result as JSON (for automation)"
     )
     
     return parser.parse_args()
@@ -152,8 +161,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     """Main entrypoint."""
+    import os
+    
     args = parse_args()
-    log_level = "DEBUG" if args.verbose else "INFO"
+    log_level = "DEBUG" if args.verbose else args.log_level
     log = setup_logging(log_level)
     
     try:
@@ -182,6 +193,9 @@ def main() -> int:
     # Parse tiers
     tiers = [t.strip() for t in args.tiers.split(",")]
     
+    # Resolve database path (CLI > env > default)
+    db_path = args.db or os.environ.get("DATABASE_URL", "data/market_spine.db")
+    
     log.info("=" * 60)
     log.info("FINRA OTC Scheduler")
     log.info("=" * 60)
@@ -194,6 +208,7 @@ def main() -> int:
         log.info(f"Lookback: {lookback_weeks} weeks")
     log.info(f"Force: {args.force}")
     log.info(f"Fail-fast: {args.fail_fast}")
+    log.info(f"Database: {db_path}")
     log.info("=" * 60)
     
     # Run scheduler
@@ -206,32 +221,58 @@ def main() -> int:
         force=args.force,
         only_stage=args.only_stage,
         fail_fast=args.fail_fast,
-        db_path=args.db,
+        db_path=db_path,
         verbose=args.verbose,
     )
     
     # Output result
     if args.json:
-        import json
-        print(json.dumps(result.as_dict(), indent=2))
+        # Use SchedulerResult.to_json() if available, fallback to as_dict()
+        if hasattr(result, 'to_json'):
+            print(result.to_json(indent=2))
+        else:
+            import json
+            print(json.dumps(result.as_dict(), indent=2, default=str))
     else:
         log.info("=" * 60)
         log.info("SUMMARY")
         log.info("=" * 60)
-        log.info(f"Success: {result.success_count}")
-        log.info(f"Failed: {result.failure_count}")
-        log.info(f"Skipped: {len(result.skipped)}")
-        log.info(f"Duration: {result.duration_seconds:.1f}s")
         
-        if result.failed:
+        # Handle both SchedulerResult and legacy result
+        if hasattr(result, 'stats'):
+            log.info(f"Attempted: {result.stats.attempted}")
+            log.info(f"Succeeded: {result.stats.succeeded}")
+            log.info(f"Failed: {result.stats.failed}")
+            log.info(f"Skipped: {result.stats.skipped}")
+        else:
+            log.info(f"Success: {result.success_count}")
+            log.info(f"Failed: {result.failure_count}")
+            log.info(f"Skipped: {len(result.skipped)}")
+        
+        if hasattr(result, 'warnings') and result.warnings:
+            for warn in result.warnings:
+                log.warning(warn)
+        
+        # Show failures
+        if hasattr(result, 'runs'):
+            failed_runs = [r for r in result.runs if r.status.value == "failed"]
+            if failed_runs:
+                log.error("Failed partitions:")
+                for r in failed_runs:
+                    log.error(f"  - {r.partition_key}: {r.error}")
+        elif hasattr(result, 'failed') and result.failed:
             log.error("Failed partitions:")
             for f in result.failed:
                 log.error(f"  - {f['week']}/{f['tier']}/{f['stage']}: {f['error']}")
     
-    # Determine exit code
-    if result.all_failed:
+    # Use SchedulerResult.exit_code if available
+    if hasattr(result, 'exit_code'):
+        return result.exit_code
+    
+    # Legacy exit code determination
+    if hasattr(result, 'all_failed') and result.all_failed:
         return EXIT_CRITICAL
-    elif result.has_failures:
+    elif hasattr(result, 'has_failures') and result.has_failures:
         return EXIT_PARTIAL
     else:
         return EXIT_SUCCESS
