@@ -1,44 +1,71 @@
 """
-Spine Orchestration - Pipeline grouping and simple DAG execution.
+Spine Orchestration - Pipeline grouping and workflow execution.
 
-This module provides first-class pipeline grouping with static DAG semantics:
-- PipelineGroup: Named collection of related pipelines with dependency edges
-- PipelineStep: Individual step within a group
-- ExecutionPolicy: Sequential/parallel execution with failure handling
-- PlanResolver: Resolves groups into executable plans with topological sort
-- GroupRegistry: Register, get, and list pipeline groups
+This module provides two orchestration models:
 
-This is an opt-in layer on top of the existing pipeline framework.
-Existing `spine run <pipeline>` workflows are unchanged.
+1. **PipelineGroups** (v1): Static DAG of registered pipelines
+   - PipelineGroup: Named collection with dependency edges
+   - GroupRunner: Executes groups with parallel/sequential policies
+   - No data passing between steps
 
-Example:
+2. **Workflows** (v2): Context-aware step execution
+   - Workflow: Ordered steps with context passing
+   - WorkflowRunner: Executes with data flow between steps
+   - Lambda steps (inline functions) + pipeline steps
+   - Quality gates and conditional branching (tier-dependent)
+
+Both models coexist. Use PipelineGroups for simple orchestration,
+Workflows when you need data passing, validation, or routing.
+
+Tier availability:
+- Basic: Workflow, Step (lambda, pipeline), WorkflowRunner
+- Intermediate: + ChoiceStep (conditional branching)
+- Advanced: + WaitStep, MapStep, Checkpointing, Resume
+
+Example (v2 Workflow):
     from spine.orchestration import (
-        PipelineGroup,
-        PipelineStep,
-        ExecutionPolicy,
-        register_group,
-        get_group,
+        Workflow,
+        Step,
+        StepResult,
+        WorkflowRunner,
     )
 
-    # Define a group
-    group = PipelineGroup(
+    def validate_fn(ctx, config):
+        count = ctx.get_output("ingest", "record_count", 0)
+        if count < 100:
+            return StepResult.fail("Too few records")
+        return StepResult.ok(output={"validated": True})
+
+    workflow = Workflow(
         name="finra.weekly_refresh",
-        domain="finra.otc_transparency",
         steps=[
-            PipelineStep("ingest", "finra.otc_transparency.ingest_week"),
-            PipelineStep("normalize", "finra.otc_transparency.normalize_week", depends_on=["ingest"]),
-            PipelineStep("aggregate", "finra.otc_transparency.aggregate_week", depends_on=["normalize"]),
+            Step.pipeline("ingest", "finra.otc_transparency.ingest_week"),
+            Step.lambda_("validate", validate_fn),
+            Step.pipeline("normalize", "finra.otc_transparency.normalize_week"),
         ],
     )
 
-    # Register it
-    register_group(group)
+    runner = WorkflowRunner()
+    result = runner.execute(workflow, params={"tier": "NMS_TIER_1"})
 
-    # Later, resolve into executable plan
-    from spine.orchestration import PlanResolver
-    resolver = PlanResolver()
-    plan = resolver.resolve(group, params={"tier": "NMS_TIER_1", "week_ending": "2026-01-03"})
+Example (v1 PipelineGroup - still supported):
+    from spine.orchestration import PipelineGroup, PipelineStep, GroupRunner
+
+    group = PipelineGroup(
+        name="finra.weekly_refresh",
+        steps=[
+            PipelineStep("ingest", "finra.otc_transparency.ingest_week"),
+            PipelineStep("normalize", "finra.otc_transparency.normalize_week", depends_on=["ingest"]),
+        ],
+    )
+
+    runner = GroupRunner()
+    result = runner.execute(group, params={...})
 """
+
+# =============================================================================
+# v1: PipelineGroups (static DAG, no data passing)
+# =============================================================================
 
 from spine.orchestration.models import (
     ExecutionPolicy,
@@ -75,12 +102,44 @@ from spine.orchestration.runner import (
     GroupRunner,
     GroupExecutionResult,
     GroupExecutionStatus,
-    StepExecution,
-    StepStatus,
-    get_runner,
+    StepExecution as GroupStepExecution,
+    StepStatus as GroupStepStatus,
+    get_runner as get_group_runner,
 )
 
+# Backwards-compatible aliases
+StepStatus = GroupStepStatus
+
+# =============================================================================
+# v2: Workflows (context-aware, data passing)
+# =============================================================================
+
+from spine.orchestration.workflow_context import WorkflowContext
+from spine.orchestration.step_result import (
+    StepResult,
+    QualityMetrics,
+    ErrorCategory,
+)
+from spine.orchestration.step_types import (
+    Step,
+    StepType,
+    ErrorPolicy,
+    RetryPolicy,
+)
+from spine.orchestration.workflow import Workflow
+from spine.orchestration.workflow_runner import (
+    WorkflowRunner,
+    WorkflowResult,
+    WorkflowStatus,
+    StepExecution,
+    get_workflow_runner,
+)
+
+
 __all__ = [
+    # ==========================================================================
+    # v1: PipelineGroups
+    # ==========================================================================
     # Models
     "PipelineGroup",
     "PipelineStep",
@@ -109,11 +168,34 @@ __all__ = [
     "load_group_from_yaml",
     "load_groups_from_directory",
     "group_to_yaml",
-    # Runner
+    # Group Runner
     "GroupRunner",
     "GroupExecutionResult",
     "GroupExecutionStatus",
+    "GroupStepExecution",
+    "GroupStepStatus",
+    "StepStatus",  # Backwards-compatible alias
+    "get_group_runner",
+    # ==========================================================================
+    # v2: Workflows
+    # ==========================================================================
+    # Context
+    "WorkflowContext",
+    # Step Result
+    "StepResult",
+    "QualityMetrics",
+    "ErrorCategory",
+    # Step Types
+    "Step",
+    "StepType",
+    "ErrorPolicy",
+    "RetryPolicy",
+    # Workflow
+    "Workflow",
+    # Workflow Runner
+    "WorkflowRunner",
+    "WorkflowResult",
+    "WorkflowStatus",
     "StepExecution",
-    "StepStatus",
-    "get_runner",
+    "get_workflow_runner",
 ]
