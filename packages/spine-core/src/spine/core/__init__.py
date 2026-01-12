@@ -8,6 +8,9 @@ SCHEMA OWNERSHIP: Core infrastructure tables (manifest, rejects, quality)
 are defined in spine.core.schema and shared by all domains.
 
 These modules are domain-agnostic and can be composed by any domain:
+- errors: Structured error types with categories (NEW)
+- result: Result[T] envelope for success/failure (NEW)
+- adapters: Database adapters (SQLite, PostgreSQL) (NEW)
 - schema: Core infrastructure tables (core_manifest, core_rejects, core_quality)
 - temporal: WeekEnding, date ranges, bucket utilities
 - execution: ExecutionContext for lineage tracking
@@ -35,6 +38,18 @@ from spine.core.rejects import Reject, RejectSink
 from spine.core.rolling import RollingResult, RollingWindow
 from spine.core.schema import CORE_DDL, CORE_TABLES, create_core_tables
 from spine.core.temporal import WeekEnding
+
+# New modules
+from spine.core.errors import (
+    SpineError,
+    TransientError,
+    SourceError,
+    ValidationError,
+    ConfigError,
+    ErrorCategory,
+    is_retryable,
+)
+from spine.core.result import Result, Ok, Err, try_result
 
 __all__ = [
     # schema
@@ -68,4 +83,17 @@ __all__ = [
     # rolling
     "RollingWindow",
     "RollingResult",
+    # errors (NEW)
+    "SpineError",
+    "TransientError",
+    "SourceError",
+    "ValidationError",
+    "ConfigError",
+    "ErrorCategory",
+    "is_retryable",
+    # result (NEW)
+    "Result",
+    "Ok",
+    "Err",
+    "try_result",
 ]
