@@ -122,6 +122,137 @@ spine run run market_data.ingest_prices -p symbol=AAPL
 
 ---
 
+## Orchestration: Workflow v2
+
+For multi-step operations with validation between steps, use the **Workflow** system.
+
+**Location**: `packages/spine-core/src/spine/orchestration/`
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Workflow: "finra.weekly_refresh"                            │
+│    Step.pipeline("ingest", "finra.otc.ingest_week")          │ ← References registered pipeline
+│    Step.lambda_("validate", check_record_count)              │ ← Lightweight validation
+│    Step.pipeline("normalize", "finra.otc.normalize_week")    │ ← References registered pipeline
+└─────────────────────────────────────────────────────────────┘
+                              ↓ looks up by name
+┌─────────────────────────────────────────────────────────────┐
+│  Spine Registry: Pipeline classes by name                    │
+│    "finra.otc.ingest_week" → IngestWeekPipeline             │
+│    "finra.otc.normalize_week" → NormalizeWeekPipeline       │
+└─────────────────────────────────────────────────────────────┘
+                              ↓ executes
+┌─────────────────────────────────────────────────────────────┐
+│  Pipelines: Do the actual work                               │
+│  (Sources → Transform → Write to DB → Update core_manifest)  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### When to Use
+
+| Scenario | Use |
+|----------|-----|
+| Single operation (fetch, transform, calculate) | Pipeline only |
+| Multiple steps with validation between them | Workflow + Pipelines |
+| Need quality gates before continuing | Workflow with lambda steps |
+| Need data passing between steps | Workflow with context |
+| Need observability per step | Workflow |
+
+### Step Types
+
+```python
+from spine.orchestration import Workflow, Step, StepResult
+
+# 1. Pipeline step - references registered pipeline
+Step.pipeline("ingest", "finra.otc.ingest_week")
+
+# 2. Lambda step - lightweight validation only
+def validate_records(ctx, config):
+    count = ctx.get_output("ingest", "row_count", 0)
+    if count < 100:
+        return StepResult.fail("Too few records", "QUALITY_GATE")
+    return StepResult.ok()
+
+Step.lambda_("validate", validate_records)
+
+# 3. Choice step - conditional branching (Intermediate tier)
+Step.choice("route",
+    condition=lambda ctx: ctx.params.get("full_refresh"),
+    then_step="full_ingest",
+    else_step="incremental_ingest",
+)
+```
+
+### Critical Pattern: Lambdas are LIGHTWEIGHT
+
+**Lambda steps should only:**
+- ✅ Check record counts
+- ✅ Validate outputs from previous step
+- ✅ Route to different paths
+- ✅ Log/notify
+
+**Lambda steps should NOT:**
+- ❌ Contain business logic
+- ❌ Fetch data
+- ❌ Transform data
+- ❌ Write to database
+- ❌ Duplicate pipeline logic
+
+### Example Workflow
+
+```python
+from spine.orchestration import Workflow, Step, StepResult
+
+def check_quality(ctx, config):
+    """Lambda: Validate ingest quality before normalize."""
+    metrics = ctx.get_output("ingest", "metrics", {})
+    if metrics.get("error_rate", 0) > 0.05:
+        return StepResult.fail("Error rate too high", "QUALITY_GATE")
+    return StepResult.ok(output={"validated": True})
+
+workflow = Workflow(
+    name="finra.weekly_refresh",
+    domain="finra.otc_transparency",
+    steps=[
+        Step.pipeline("ingest", "finra.otc_transparency.ingest_week"),
+        Step.lambda_("validate", check_quality),
+        Step.pipeline("normalize", "finra.otc_transparency.normalize_week"),
+        Step.pipeline("aggregate", "finra.otc_transparency.aggregate_week"),
+    ],
+)
+
+# Execute
+from spine.orchestration import WorkflowRunner
+runner = WorkflowRunner()
+result = runner.execute(workflow, params={"week_ending": "2025-01-09", "tier": "NMS_TIER_1"})
+```
+
+### Tracking Workflow Execution
+
+Use `core_manifest` to track workflow progress:
+
+```python
+from spine.core.manifest import WorkManifest
+
+manifest = WorkManifest(
+    conn,
+    domain="workflow.finra.weekly_refresh",
+    stages=["STARTED", "INGESTED", "VALIDATED", "NORMALIZED", "COMPLETED"]
+)
+
+# After workflow completes
+manifest.advance_to(
+    key={"week_ending": "2025-01-09", "tier": "NMS_TIER_1"},
+    stage="COMPLETED",
+    execution_id=result.run_id,
+    step_count=len(result.completed_steps),
+    duration_seconds=result.duration_seconds,
+)
+
+---
+
 ## Core Tables (Owned by spine-core)
 
 **DO NOT modify these schemas. Write to them, don't alter them.**

@@ -54,34 +54,42 @@ IMPLEMENTATION RULES:
    - spine-core changes require 2+ domain need + escalation
    - spine-app adapters stay thin (no business logic)
 
-2. **Schema Changes**:
+2. **Orchestration** (NEW):
+   - Single operation (fetch, transform, calculate)? → Pipeline only
+   - Multiple steps with validation between? → Workflow + Pipelines
+   - Workflow lambda steps: LIGHTWEIGHT validation only
+   - ❌ NEVER copy pipeline logic into workflow lambdas
+   - Reference pipelines via: `Step.pipeline("name", "registered.pipeline")`
+   - See [prompts/F_WORKFLOW.md](prompts/F_WORKFLOW.md) for workflow patterns
+
+3. **Schema Changes**:
    - Tables in `schema/00_tables.sql`
    - Views in `schema/02_views.sql`
    - Run `python scripts/build_schema.py` after changes
    - NO runtime CREATE VIEW in Python code
 
-3. **Capture ID Semantics**:
+4. **Capture ID Semantics**:
    - Every output row has: capture_id, captured_at, execution_id, batch_id
    - Format: `{domain}.{stage}.{partition_key}.{timestamp}`
    - Track in core_manifest
    - Idempotent: same capture_id reruns UPDATE (don't duplicate)
 
-4. **Error Handling**:
+5. **Error Handling**:
    - NO silent failures (try/except pass)
    - Record anomalies: INSERT INTO core_anomalies
    - Include: domain, stage, partition_key, severity, category, message
    - Allow partial success (skip bad items, process good ones)
 
-5. **Quality Gates**:
+6. **Quality Gates**:
    - Validate inputs before compute
    - Use scoped anomaly filtering (partition_key exact match)
    - Track provenance (input_min/max_capture_id)
 
-6. **Determinism**:
+7. **Determinism**:
    - Same inputs → same outputs
    - Exclude audit fields from comparisons: captured_at, batch_id, execution_id
 
-7. **Registry**:
+8. **Registry**:
    - Register classes in CALCS/SOURCES/PIPELINES
    - NO if/elif branching factories
 
@@ -94,6 +102,7 @@ REQUIRED TESTS:
 3. **Determinism Test**: Run twice, compare excluding audit fields
 4. **Idempotency Test**: Same capture_id twice, verify no duplicates
 5. **Fitness Test**: Multi-pipeline workflow (if applicable)
+6. **Workflow Test**: If using workflows, test full workflow execution
 
 ---
 
@@ -120,6 +129,9 @@ ANTI-PATTERNS TO AVOID:
 - ❌ Audit fields in determinism checks
 - ❌ Hardcoded week lists (use period utils)
 - ❌ Non-consecutive window checks (enforce all weeks)
+- ❌ **Copying pipeline logic into workflow lambdas** (use Step.pipeline())
+- ❌ **Business logic in workflow lambda steps** (lambdas validate only)
+- ❌ **Workflows without registered pipelines** (pipelines first, then workflow)
 
 ---
 
@@ -163,6 +175,7 @@ PROCEED by first creating the Change Surface Map, then implementing.
 | Adding scheduler, quality gate, monitoring | [prompts/C_OPERATIONAL.md](prompts/C_OPERATIONAL.md) |
 | Modifying spine-core framework | [prompts/D_CORE_CHANGE.md](prompts/D_CORE_CHANGE.md) |
 | Reviewing someone else's changes | [prompts/E_REVIEW.md](prompts/E_REVIEW.md) |
+| **Orchestrating multiple pipelines** | [prompts/F_WORKFLOW.md](prompts/F_WORKFLOW.md) |
 
 ---
 

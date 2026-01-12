@@ -431,8 +431,154 @@ PROCEED with Change Surface Map, then implementation.
 
 ---
 
+## Workflow-Based Scheduling
+
+For multi-step scheduled operations, use **Workflow** instead of PipelineGroup.
+
+### PipelineGroup vs Workflow
+
+| Feature | PipelineGroup (v1) | Workflow (v2) |
+|---------|-------------------|---------------|
+| Data passing between steps | ❌ No | ✅ Yes |
+| Validation between steps | ❌ No | ✅ Lambda steps |
+| Step-level metrics | ❌ No | ✅ Yes |
+| Conditional branching | ❌ No | ✅ Choice steps |
+| Context awareness | ❌ No | ✅ WorkflowContext |
+| Quality gates | ❌ External | ✅ Built-in |
+
+**Recommendation**: Use Workflow for new multi-step scheduled operations.
+
+### Example: Scheduled Workflow
+
+```python
+from spine.orchestration import Workflow, WorkflowRunner, Step, StepResult
+
+
+def check_data_readiness(ctx, config):
+    """Lambda: Check data readiness before processing."""
+    conn = config.get("conn")
+    date_str = ctx.params.get("date")
+    
+    # Query core_data_readiness (passed via context)
+    result = conn.execute("""
+        SELECT is_ready FROM core_data_readiness
+        WHERE domain = ? AND stage = 'INGEST' AND week_ending = ?
+    """, ("{domain}", date_str)).fetchone()
+    
+    if not result or not result[0]:
+        return StepResult.fail("Data not ready for processing", "SCHEDULE")
+    
+    return StepResult.ok(output={"data_ready": True})
+
+
+def check_quality(ctx, config):
+    """Lambda: Validate quality before final aggregation."""
+    result = ctx.get_output("validate_pipeline")
+    if result.get("error_count", 0) > 0:
+        return StepResult.fail("Quality check failed", "QUALITY_GATE")
+    return StepResult.ok()
+
+
+DAILY_REFRESH = Workflow(
+    name="daily.{domain}.refresh",
+    domain="{domain}",
+    description="Daily scheduled refresh: check → fetch → validate → aggregate",
+    steps=[
+        Step.lambda_("check_readiness", check_data_readiness),
+        Step.pipeline("fetch", "{domain}.fetch_daily"),
+        Step.pipeline("validate", "{domain}.quality_check"),
+        Step.lambda_("check_quality", check_quality),
+        Step.pipeline("aggregate", "{domain}.daily_aggregates"),
+    ],
+)
+```
+
+### Scheduler Integration
+
+```python
+from spine.orchestration import WorkflowRunner
+from spine.core.manifest import WorkManifest
+
+def run_scheduled_workflow(workflow, params, conn):
+    """Execute workflow with tracking."""
+    
+    # Initialize manifest
+    manifest = WorkManifest(
+        conn,
+        domain=f"workflow.{workflow.name}",
+        stages=["STARTED", "READY_CHECK", "FETCHED", "VALIDATED", "COMPLETED"]
+    )
+    
+    partition_key = {"date": params.get("date")}
+    
+    # Record start
+    manifest.advance_to(partition_key, "STARTED")
+    
+    # Execute workflow
+    runner = WorkflowRunner()
+    result = runner.execute(workflow, params=params, config={"conn": conn})
+    
+    if result.status == WorkflowStatus.COMPLETED:
+        manifest.advance_to(
+            partition_key, 
+            "COMPLETED",
+            execution_id=result.run_id,
+            step_count=len(result.completed_steps),
+            duration_seconds=result.duration_seconds,
+        )
+    else:
+        # Record failure to core_anomalies
+        conn.execute("""
+            INSERT INTO core_anomalies (
+                anomaly_id, domain, stage, partition_key,
+                severity, category, message, detected_at, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            str(uuid.uuid4()),
+            "{domain}",
+            f"workflow.{result.error_step}",
+            str(partition_key),
+            "ERROR",
+            "WORKFLOW_FAILURE",
+            result.error,
+            datetime.utcnow().isoformat(),
+            json.dumps({"workflow": workflow.name, "run_id": result.run_id}),
+        ))
+    
+    return result
+```
+
+### Monitoring Workflow Executions
+
+```sql
+-- Check workflow stage progress
+SELECT 
+    partition_key,
+    stage,
+    execution_id,
+    updated_at
+FROM core_manifest
+WHERE domain LIKE 'workflow.%'
+ORDER BY updated_at DESC
+LIMIT 20;
+
+-- Check workflow failures
+SELECT 
+    partition_key,
+    stage,
+    message,
+    detected_at
+FROM core_anomalies
+WHERE category = 'WORKFLOW_FAILURE'
+  AND resolved_at IS NULL
+ORDER BY detected_at DESC;
+```
+
+---
+
 ## Related Documents
 
 - [../CONTEXT.md](../CONTEXT.md) - Core tables reference
 - [../reference/QUALITY_GATES.md](../reference/QUALITY_GATES.md) - Quality gate patterns
 - [../ANTI_PATTERNS.md](../ANTI_PATTERNS.md) - Scoped filtering rules
+- [F_WORKFLOW.md](F_WORKFLOW.md) - Full workflow implementation guide

@@ -339,8 +339,97 @@ PROCEED with Change Surface Map, then implementation.
 
 ---
 
+## Workflow Integration (Calculation Chains)
+
+When orchestrating multiple calculation pipelines with quality gates between steps, use the **Workflow** system.
+
+### When to Use Workflow
+
+| Scenario | Use |
+|----------|-----|
+| Single calculation | Pipeline only |
+| Independent calculations | Multiple pipelines (CLI or scheduler) |
+| Dependent calculations (A before B) | Workflow |
+| Quality gates between calculations | Workflow with lambda steps |
+| Rolling calculations with aggregation prerequisites | Workflow |
+
+### Example: Calculation Chain Workflow
+
+```python
+from spine.orchestration import Workflow, Step, StepResult
+
+
+def validate_aggregates(ctx, config):
+    """Lambda: Check aggregation quality before rolling calcs."""
+    result = ctx.get_output("aggregate")
+    if not result:
+        return StepResult.fail("No aggregate output", "STEP_ERROR")
+    
+    null_rate = result.get("null_rate", 0)
+    if null_rate > 0.05:
+        return StepResult.fail(f"Null rate too high: {null_rate:.1%}", "DATA_QUALITY")
+    
+    return StepResult.ok(output={"quality_passed": True})
+
+
+def validate_rolling(ctx, config):
+    """Lambda: Check rolling calc quality before scoring."""
+    result = ctx.get_output("rolling")
+    if not result:
+        return StepResult.fail("No rolling output", "STEP_ERROR")
+    
+    coverage = result.get("symbol_coverage", 0)
+    if coverage < 0.90:
+        return StepResult.fail(f"Coverage too low: {coverage:.1%}", "QUALITY_GATE")
+    
+    return StepResult.ok()
+
+
+CALCULATION_CHAIN = Workflow(
+    name="{domain}.calculation_chain",
+    domain="{domain}",
+    description="Run calculation chain: aggregate → rolling → score",
+    steps=[
+        # Step 1: Aggregation (references registered pipeline)
+        Step.pipeline("aggregate", "{domain}.compute_aggregates"),
+        
+        # Validate aggregates (lightweight lambda)
+        Step.lambda_("validate_agg", validate_aggregates),
+        
+        # Step 2: Rolling calculations (references registered pipeline)
+        Step.pipeline("rolling", "{domain}.compute_rolling_avg"),
+        
+        # Validate rolling (lightweight lambda)
+        Step.lambda_("validate_rolling", validate_rolling),
+        
+        # Step 3: Scoring (references registered pipeline)
+        Step.pipeline("score", "{domain}.compute_scores"),
+    ],
+)
+```
+
+**Key Points:**
+- Lambda steps ONLY validate - they don't compute
+- Each `Step.pipeline()` references a REGISTERED calculation pipeline
+- Create all calculation pipelines first (using this prompt), then workflow
+- Quality metrics from pipeline outputs drive lambda validation
+- See [F_WORKFLOW.md](F_WORKFLOW.md) for full workflow implementation guide
+
+### Common Calculation Quality Checks for Lambdas
+
+| Metric | Check | Failure Threshold |
+|--------|-------|-------------------|
+| Null rate | `result.get("null_rate", 0)` | > 5% |
+| Symbol coverage | `result.get("symbol_coverage", 0)` | < 90% |
+| Row count | `result.get("row_count", 0)` | < minimum |
+| Error rate | `result.get("error_rate", 0)` | > 1% |
+| Missing weeks | `result.get("missing_weeks", [])` | Any gaps |
+
+---
+
 ## Related Documents
 
 - [../CONTEXT.md](../CONTEXT.md) - Repository structure
 - [../reference/CAPTURE_SEMANTICS.md](../reference/CAPTURE_SEMANTICS.md) - Capture ID patterns
 - [../reference/QUALITY_GATES.md](../reference/QUALITY_GATES.md) - Quality gate patterns
+- [F_WORKFLOW.md](F_WORKFLOW.md) - Workflow implementation guide

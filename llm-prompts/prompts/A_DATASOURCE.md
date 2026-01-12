@@ -340,8 +340,83 @@ PROCEED with Change Surface Map, then implementation.
 
 ---
 
+## Workflow Integration (Multi-Source Ingestion)
+
+When orchestrating multiple datasource pipelines with validation between steps, use the **Workflow** system.
+
+### When to Use Workflow
+
+| Scenario | Use |
+|----------|-----|
+| Single source ingestion | Pipeline only |
+| Multiple sources, independent | Multiple pipelines (CLI or scheduler) |
+| Multiple sources, dependent (A before B) | Workflow |
+| Quality gates between ingestions | Workflow with lambda steps |
+
+### Example: Multi-Source Workflow
+
+```python
+from spine.orchestration import Workflow, Step, StepResult
+
+
+def validate_base_data(ctx, config):
+    """Lambda: Validate base ingestion before enrichment."""
+    result = ctx.get_output("ingest_base")
+    if not result or result.get("row_count", 0) < 1000:
+        return StepResult.fail("Insufficient base data", "QUALITY_GATE")
+    return StepResult.ok(output={"base_ready": True})
+
+
+MULTI_SOURCE_REFRESH = Workflow(
+    name="{domain}.multi_source_refresh",
+    domain="{domain}",
+    description="Ingest from multiple sources with dependencies",
+    steps=[
+        # First: ingest base data (references registered pipeline)
+        Step.pipeline("ingest_base", "{domain}.ingest_base"),
+        
+        # Validate before enrichment (lightweight lambda)
+        Step.lambda_("validate_base", validate_base_data),
+        
+        # Second: ingest enrichment data (references registered pipeline)
+        Step.pipeline("ingest_enrichment", "{domain}.ingest_enrichment"),
+        
+        # Third: merge sources (references registered pipeline)
+        Step.pipeline("merge", "{domain}.merge_sources"),
+    ],
+)
+```
+
+**Key Points:**
+- Each `Step.pipeline()` references a REGISTERED pipeline by name
+- Lambda steps only VALIDATE - they don't fetch data
+- Create all pipelines first (using this prompt), then create the workflow
+- See [F_WORKFLOW.md](F_WORKFLOW.md) for full workflow implementation guide
+
+### Tracking Multi-Source Execution
+
+```python
+from spine.core.manifest import WorkManifest
+
+manifest = WorkManifest(
+    conn,
+    domain="workflow.{domain}.multi_source_refresh",
+    stages=["STARTED", "BASE_INGESTED", "VALIDATED", "ENRICHED", "MERGED", "COMPLETED"]
+)
+
+# After workflow completes
+manifest.advance_to(
+    key={"date": "2025-01-09"},
+    stage="COMPLETED",
+    execution_id=result.run_id,
+)
+```
+
+---
+
 ## Related Documents
 
 - [../CONTEXT.md](../CONTEXT.md) - Repository structure
 - [../ANTI_PATTERNS.md](../ANTI_PATTERNS.md) - What not to do
 - [../templates/pipeline.py](../templates/pipeline.py) - Pipeline template
+- [F_WORKFLOW.md](F_WORKFLOW.md) - Workflow implementation guide

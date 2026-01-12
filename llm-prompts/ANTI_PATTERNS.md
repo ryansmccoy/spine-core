@@ -19,6 +19,9 @@
 | Non-consecutive window checks | Mathematical incorrectness | Enforce ALL consecutive weeks |
 | Missing capture_id | Breaks lineage/replay | Every output needs capture_id |
 | Missing provenance | Can't audit rolled-up data | Track input_min/max_capture_id |
+| **Pipeline logic in workflow lambdas** | Duplicates code, bypasses registry | `Step.pipeline("name", "registered.pipeline")` |
+| **Business logic in lambda steps** | Wrong layer, hard to test | Put logic in registered pipelines |
+| **Workflows without pipelines** | Misses framework benefits | Create pipelines first, then workflow |
 
 ---
 
@@ -600,5 +603,176 @@ def run_schedule(lookback_weeks: int, force: bool = False):
 
 - [CONTEXT.md](CONTEXT.md) - Correct patterns
 - [reference/SQL_PATTERNS.md](reference/SQL_PATTERNS.md) - SQL best practices
+
+---
+
+## Workflow-Specific Anti-Patterns
+
+### 16. Pipeline Logic in Workflow Lambdas
+
+**❌ WRONG:**
+```python
+def fetch_data_lambda(ctx, config):
+    """Lambda step that does pipeline work."""
+    # This should be in a pipeline!
+    response = requests.get(url)
+    data = parse_response(response)
+    conn.executemany("INSERT INTO table...", data)
+    return StepResult.ok(output={"rows": len(data)})
+
+workflow = Workflow(
+    steps=[
+        Step.lambda_("fetch", fetch_data_lambda),  # Wrong!
+        Step.pipeline("process", "domain.process"),
+    ],
+)
+```
+
+**Why forbidden:**
+- Duplicates pipeline logic
+- Bypasses pipeline registry
+- No capture_id, execution_id tracking
+- Not testable in isolation
+- Can't be reused by other workflows
+
+**✅ CORRECT:**
+```python
+def validate_fetch(ctx, config):
+    """Lambda step that validates (not fetches)."""
+    result = ctx.get_output("fetch")
+    if result.get("row_count", 0) < 100:
+        return StepResult.fail("Too few records", "QUALITY_GATE")
+    return StepResult.ok()
+
+workflow = Workflow(
+    steps=[
+        Step.pipeline("fetch", "domain.fetch_data"),  # Correct!
+        Step.lambda_("validate", validate_fetch),      # Lightweight
+        Step.pipeline("process", "domain.process"),
+    ],
+)
+```
+
+---
+
+### 17. Business Logic in Lambda Steps
+
+**❌ WRONG:**
+```python
+def calculate_metrics_lambda(ctx, config):
+    """Lambda that computes (should be pipeline)."""
+    data = load_from_db()
+    
+    # This is business logic!
+    metrics = {}
+    for row in data:
+        metrics[row.symbol] = compute_rolling_avg(row)
+    
+    save_to_db(metrics)
+    return StepResult.ok()
+```
+
+**Why forbidden:**
+- Lambda steps should be stateless validators
+- Business logic belongs in pipelines
+- Makes testing and reuse harder
+- Bypasses calculation framework
+
+**✅ CORRECT:**
+```python
+def check_data_quality(ctx, config):
+    """Lambda validates quality metrics from previous step."""
+    result = ctx.get_output("aggregate")
+    null_rate = result.get("null_rate", 0)
+    if null_rate > 0.05:
+        return StepResult.fail(f"Null rate: {null_rate:.1%}", "DATA_QUALITY")
+    return StepResult.ok()
+
+# Business logic is in the pipeline:
+@register_pipeline("domain.compute_metrics")
+class ComputeMetricsPipeline(Pipeline):
+    def run(self):
+        # All calculation logic here
+        ...
+```
+
+---
+
+### 18. Workflows Without Registered Pipelines
+
+**❌ WRONG:**
+```python
+# Creating workflow with inline functions instead of registered pipelines
+workflow = Workflow(
+    steps=[
+        Step.lambda_("ingest", lambda ctx, cfg: do_ingest()),   # Wrong
+        Step.lambda_("normalize", lambda ctx, cfg: normalize()), # Wrong
+        Step.lambda_("aggregate", lambda ctx, cfg: aggregate()), # Wrong
+    ],
+)
+```
+
+**Why forbidden:**
+- No pipeline registration benefits (discovery, logging, metrics)
+- Can't invoke individual steps via CLI
+- No capture_id semantics
+- Harder to test
+
+**✅ CORRECT:**
+```python
+# First, create and register pipelines
+@register_pipeline("domain.ingest")
+class IngestPipeline(Pipeline): ...
+
+@register_pipeline("domain.normalize")
+class NormalizePipeline(Pipeline): ...
+
+# Then, workflow references them
+workflow = Workflow(
+    steps=[
+        Step.pipeline("ingest", "domain.ingest"),
+        Step.lambda_("validate", check_ingest_quality),  # Only validation
+        Step.pipeline("normalize", "domain.normalize"),
+    ],
+)
+```
+
+---
+
+### 19. Ignoring Workflow Tracking
+
+**❌ WRONG:**
+```python
+# Running workflow without manifest or anomaly tracking
+result = runner.execute(workflow, params)
+# Just checking result, not recording anything
+if result.status == WorkflowStatus.FAILED:
+    print(f"Failed: {result.error}")  # Lost to logs
+```
+
+**Why forbidden:**
+- No persistent record of execution
+- Can't query historical runs
+- No idempotency enforcement
+- Failures not auditable
+
+**✅ CORRECT:**
+```python
+manifest = WorkManifest(conn, domain=f"workflow.{workflow.name}", stages=[...])
+anomaly_recorder = AnomalyRecorder(conn, domain=workflow.name)
+
+manifest.advance_to(key, "STARTED", execution_id=run_id)
+result = runner.execute(workflow, params)
+
+if result.status == WorkflowStatus.COMPLETED:
+    manifest.advance_to(key, "COMPLETED", execution_id=run_id)
+else:
+    anomaly_recorder.record(
+        stage=f"step.{result.error_step}",
+        severity="ERROR",
+        category="WORKFLOW_FAILURE",
+        message=result.error,
+    )
+```
 - [prompts/E_REVIEW.md](prompts/E_REVIEW.md) - Review checklist
 - [docs/operations/SCHEDULER_OPERATIONS.md](../docs/operations/SCHEDULER_OPERATIONS.md) - Scheduler usage guide
