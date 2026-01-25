@@ -27,7 +27,7 @@ from spine.execution import (
     HandlerRegistry,
     RunStatus,
 )
-from spine.execution.executors import LocalExecutor
+from spine.execution.executors import MemoryExecutor
 
 
 # =============================================================================
@@ -338,8 +338,14 @@ async def main():
     print("SEC Filing Processing Pipeline")
     print("=" * 60)
     
+    # Build handler map from registry
+    handlers = {}
+    for kind, name in registry.list_handlers():
+        handler = registry.get(kind, name)
+        handlers[f"{kind}:{name}"] = handler
+    
     # Create executor and dispatcher
-    executor = LocalExecutor(handlers=registry.to_executor_handlers())
+    executor = MemoryExecutor(handlers=handlers)
     dispatcher = Dispatcher(executor=executor, registry=registry)
     
     # --- Demo 1: Single Filing Processing ---
@@ -435,8 +441,8 @@ async def main():
             RunStatus.PENDING: "⏳",
         }.get(run.status, "❓")
         
-        duration_ms = (run.finished_at - run.started_at).total_seconds() * 1000 if run.finished_at and run.started_at else 0
-        print(f"   {status_icon} {run.spec.kind}:{run.spec.name} - {duration_ms:.0f}ms")
+        duration_ms = (run.duration_seconds or 0) * 1000
+        print(f"   {status_icon} {run.kind}:{run.name} - {duration_ms:.0f}ms")
     
     print("\n" + "=" * 60)
     print("Demo complete!")
