@@ -6,6 +6,8 @@ This module provides:
 - Structured logging with context
 - Execution dispatching
 - Pipeline runner
+- Source protocol and adapters (NEW)
+- Alerting framework (NEW)
 
 All components are tier-agnostic and work with any backend.
 """
@@ -13,6 +15,10 @@ All components are tier-agnostic and work with any backend.
 from spine.framework.pipelines import Pipeline, PipelineResult, PipelineStatus
 from spine.framework.registry import clear_registry, get_pipeline, list_pipelines, register_pipeline
 from spine.framework.runner import PipelineRunner, get_runner
+
+# New modules - imported lazily to avoid circular imports
+# Use: from spine.framework.sources import FileSource, source_registry
+# Use: from spine.framework.alerts import SlackChannel, alert_registry
 
 __all__ = [
     # Pipelines
