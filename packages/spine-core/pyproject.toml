@@ -9,6 +9,18 @@ description = "Platform primitives and framework for temporal data processing"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
+authors = [{name = "Ryan McCoy"}]
+keywords = ["data-pipeline", "temporal", "registry", "capture", "quality-gates", "spine"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
 dependencies = [
     "structlog>=24.0.0",
@@ -23,6 +35,13 @@ dev = [
     "ruff>=0.8.0",
     "pyyaml>=6.0",  # For YAML loading tests
 ]
+
+[project.urls]
+Homepage = "https://github.com/mccoy-lab/py-sec-edgar"
+Repository = "https://github.com/mccoy-lab/py-sec-edgar"
+Documentation = "https://github.com/mccoy-lab/py-sec-edgar/tree/main/spine-core"
+Changelog = "https://github.com/mccoy-lab/py-sec-edgar/blob/main/spine-core/CHANGELOG.md"
+Issues = "https://github.com/mccoy-lab/py-sec-edgar/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spine"]
