@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "doc-automation"
+version = "0.1.0"
+description = "Knowledge graph-based documentation automation using EntitySpine"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "Spine Team" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Documentation",
+]
+
+dependencies = [
+    "jinja2>=3.1.0",
+    "click>=8.1.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+docbuilder = "doc_automation.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/your-org/py-sec-edgar"
+Documentation = "https://github.com/your-org/py-sec-edgar/tree/main/spine-core/packages/doc-automation"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/doc_automation"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
