@@ -24,6 +24,53 @@ Quick reference for what changes across tiers.
 
 ---
 
+## Orchestration Features by Tier
+
+| Feature | Basic | Intermediate | Advanced | Full |
+|---------|-------|--------------|----------|------|
+| **PipelineGroups (v1)** | ✓ | ✓ | ✓ | ✓ |
+| **Workflows (v2)** | ✓ | ✓ | ✓ | ✓ |
+| **Lambda Steps** | ✓ | ✓ | ✓ | ✓ |
+| **Pipeline Steps** | ✓ | ✓ | ✓ | ✓ |
+| **Context Passing** | ✓ | ✓ | ✓ | ✓ |
+| **Quality Gates** | ✓ | ✓ | ✓ | ✓ |
+| **Choice Steps** | - | ✓ | ✓ | ✓ |
+| **Run History** | - | ✓ | ✓ | ✓ |
+| **Map Steps** | - | - | ✓ | ✓ |
+| **Wait Steps** | - | - | ✓ | ✓ |
+| **Checkpointing** | - | - | ✓ | ✓ |
+| **Resume** | - | - | ✓ | ✓ |
+| **Sub-workflows** | - | - | - | ✓ |
+| **Workflow Versioning** | - | - | - | ✓ |
+
+### Orchestration Tier Details
+
+**Basic Tier:**
+- `Workflow` and `Step` types for defining execution flow
+- `Step.lambda_()` - inline Python function steps
+- `Step.pipeline()` - invoke registered pipelines
+- `WorkflowContext` - immutable context passed step-to-step
+- `StepResult` - result envelope with quality metrics
+- Sequential execution only
+
+**Intermediate Tier:**
+- `Step.choice()` - conditional branching based on context values
+- Persistent run history (workflow_runs table)
+- Run status tracking and querying
+
+**Advanced Tier:**
+- `Step.map()` - fan-out to parallel executions, fan-in results
+- `Step.wait()` - delay or scheduled continuation
+- Checkpointing - save/resume workflow state
+- Resume from last checkpoint after failure
+
+**Full Tier:**
+- Sub-workflow invocation (workflow calls workflow)
+- Workflow versioning for safe migrations
+- Distributed execution coordination
+
+---
+
 ## Status State Machine Evolution
 
 ### Basic
@@ -166,6 +213,7 @@ pending → queued → running → completed
 - Implement LocalBackend
 - Add execution_events table
 - Wrap CLI commands with API calls
+- **Orchestration:** Add workflow_runs table, enable Choice steps
 
 ### Intermediate → Advanced
 - Add dead_letters table
@@ -174,6 +222,7 @@ pending → queued → running → completed
 - Implement retry policy
 - Add doctor CLI
 - Add stage events
+- **Orchestration:** Enable Map/Wait steps, add checkpointing
 
 ### Advanced → Full
 - Add Helm chart + K8s manifests
@@ -183,3 +232,4 @@ pending → queued → running → completed
 - Add cleanup CronJob
 - Add backpressure guard
 - Add architecture tests
+- **Orchestration:** Enable sub-workflows, add workflow versioning

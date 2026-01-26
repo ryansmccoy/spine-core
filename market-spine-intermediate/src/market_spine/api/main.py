@@ -46,10 +46,21 @@ def create_app() -> FastAPI:
     )
 
     # Include routers
-    from market_spine.api.routes import health, executions
+    from market_spine.api.routes import (
+        health,
+        executions,
+        workflows,
+        schedules,
+        alerts,
+        sources,
+    )
 
     app.include_router(health.router, tags=["Health"])
     app.include_router(executions.router, prefix="/api/v1/executions", tags=["Executions"])
+    app.include_router(workflows.router, prefix="/api/v1/workflows", tags=["Workflows"])
+    app.include_router(schedules.router, prefix="/api/v1/schedules", tags=["Schedules"])
+    app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["Alerts"])
+    app.include_router(sources.router, prefix="/api/v1/sources", tags=["Sources"])
 
     # Domain routers are registered dynamically via domains/
 

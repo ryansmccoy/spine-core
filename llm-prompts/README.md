@@ -67,6 +67,7 @@
 ### Reference
 | File | Purpose |
 |------|---------|
+| [reference/DESIGN_PRINCIPLES.md](reference/DESIGN_PRINCIPLES.md) | **Core design principles for "write once, never rewrite"** |
 | [reference/SQL_PATTERNS.md](reference/SQL_PATTERNS.md) | Common SQL patterns (as-of, latest, provenance) |
 | [reference/CAPTURE_SEMANTICS.md](reference/CAPTURE_SEMANTICS.md) | Capture ID, idempotency, replay patterns |
 | [reference/QUALITY_GATES.md](reference/QUALITY_GATES.md) | Quality gate implementation patterns |
@@ -75,7 +76,28 @@
 
 ## Key Principles
 
-### 1. Layering is Sacred
+> **For the complete design principles guide with code examples, decision frameworks, and detailed explanations, see [reference/DESIGN_PRINCIPLES.md](reference/DESIGN_PRINCIPLES.md).**
+
+### Quick Summary
+
+| # | Principle | One-Liner |
+|---|-----------|-----------|
+| 1 | **Write Once** | Design for tomorrow's requirements today |
+| 2 | **Protocol-First** | Define contracts before implementations |
+| 3 | **Registry-Driven** | No branching factories, ever |
+| 4 | **Composition Over Inheritance** | Compose behaviors, don't inherit |
+| 5 | **Immutability by Default** | Frozen dataclasses, no mutation |
+| 6 | **Fail Fast** | Validate early, surface errors immediately |
+| 7 | **Errors as Values** | Return structured results, don't just raise |
+| 8 | **Idempotency** | Same inputs → same outputs, always |
+| 9 | **Explicit Over Implicit** | No magic, clear data flow |
+| 10 | **Separation of Concerns** | Each module does one thing well |
+| 11 | **Progressive Enhancement** | Basic works first, advanced enhances |
+| 12 | **Backward Compatibility** | Deprecate, don't delete |
+| 13 | **Observable by Default** | Everything traceable, nothing hidden |
+| 14 | **Test-Driven Contracts** | Tests define the contract |
+
+### Layering is Sacred
 ```
 spine-core    → Generic framework (AVOID CHANGES)
 spine-domains → Domain features (YOUR WORKSPACE)
@@ -83,7 +105,7 @@ spine-app     → Commands/services (thin adapters)
 trading-desktop → UI (API-driven only)
 ```
 
-### 2. Registry Over Branching
+### Registry Over Branching
 ```python
 # ❌ WRONG
 if source_type == "finra":
@@ -97,17 +119,7 @@ SOURCES.register(SecSource, name="sec")
 source = SOURCES.get(source_type)
 ```
 
-### 3. Determinism is Non-Negotiable
-```python
-# Same inputs → same outputs (excluding audit fields)
-assert_equal(
-    run_pipeline(params),
-    run_pipeline(params),
-    exclude=["captured_at", "batch_id", "execution_id"]
-)
-```
-
-### 4. Errors Must Surface
+### Errors Must Surface
 ```python
 # ❌ WRONG
 try:
@@ -121,16 +133,6 @@ try:
 except Exception as e:
     record_anomaly(severity="ERROR", category="PROCESSING", message=str(e))
     raise  # Or return partial result
-```
-
-### 5. Schema Lives in Files
-```sql
--- ❌ WRONG: Runtime view creation
-conn.execute("CREATE VIEW IF NOT EXISTS ...")
-
--- ✅ CORRECT: Schema module file
--- In: schema/02_views.sql
-CREATE VIEW IF NOT EXISTS my_view AS ...
 ```
 
 ---
