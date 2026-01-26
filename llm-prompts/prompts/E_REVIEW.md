@@ -140,8 +140,23 @@ AUDIT CHECKLIST:
 | Missing capture_id | ⬜ | |
 | Missing provenance | ⬜ | |
 | Non-consecutive window check | ⬜ | |
+| **Copying pipeline logic into workflow lambdas** | ⬜ | |
+| **Business logic in workflow lambda steps** | ⬜ | |
 
 **Verdict:** ⬜ Pass (none found) ⬜ Fail (anti-patterns present)
+
+### 11. Workflow Compliance (if applicable)
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Workflows reference registered pipelines? | ⬜ | |
+| Lambda steps are lightweight (no business logic)? | ⬜ | |
+| No pipeline logic duplicated in lambdas? | ⬜ | |
+| Context passing used correctly? | ⬜ | |
+| Workflow tracked in core_manifest? | ⬜ | |
+| Failures recorded in core_anomalies? | ⬜ | |
+
+**Verdict:** ⬜ Pass ⬜ Fail ⬜ N/A
 
 ---
 
