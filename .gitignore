@@ -1,3 +1,15 @@
+# Separate projects (not part of spine-core)
+trading-desktop/
+trading-desktop-temp/
+
+# Development/Session files
+archive/
+docs/archive/
+docs/sessions/
+prompts/
+*.backup
+*-temp/
+
 # Python
 __pycache__/
 *.py[cod]
