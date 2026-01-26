@@ -9,7 +9,7 @@ Key Features:
     - Idempotent execution (same symbol re-fetch is safe)
     - Anomaly recording for failures
     - Dry-run mode for testing
-    - Clear result reporting
+    - Returns standardized SchedulerResult contract
 
 Usage:
     from spine.domains.market_data.scheduler import run_price_schedule
@@ -20,8 +20,8 @@ Usage:
         db_path="data/market_spine.db",
     )
     
-    if result.has_failures:
-        sys.exit(1)
+    print(result.to_json())
+    sys.exit(result.exit_code)
 """
 
 import time
@@ -34,6 +34,14 @@ import logging
 import uuid
 
 log = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+DOMAIN = "market_data"
+SCHEDULER_NAME = "price_ingest"
 
 
 # =============================================================================
@@ -55,9 +63,10 @@ class PriceScheduleConfig:
     log_level: str = "INFO"
 
 
+# Legacy result type (deprecated, use SchedulerResult)
 @dataclass
 class PriceScheduleResult:
-    """Result of scheduled price ingestion."""
+    """DEPRECATED: Use SchedulerResult instead. Kept for backwards compatibility."""
     success: list[str] = field(default_factory=list)
     failed: list[dict] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
@@ -65,6 +74,7 @@ class PriceScheduleResult:
     new_captures: int = 0
     duration_seconds: float = 0.0
     anomalies_recorded: int = 0
+    _exit_code: int = 0
     
     @property
     def has_failures(self) -> bool:
@@ -75,6 +85,11 @@ class PriceScheduleResult:
     def all_failed(self) -> bool:
         """True if all symbols failed."""
         return len(self.success) == 0 and len(self.failed) > 0
+    
+    @property
+    def exit_code(self) -> int:
+        """Exit code for CLI: 0=success, 1=failure, 2=partial."""
+        return self._exit_code
     
     def as_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -89,6 +104,27 @@ class PriceScheduleResult:
             "has_failures": self.has_failures,
             "all_failed": self.all_failed,
         }
+
+
+# =============================================================================
+# Result Contract Import (lazy to avoid circular deps)
+# =============================================================================
+
+def _get_result_contract():
+    """Import result contract from market_spine.app.scheduling."""
+    try:
+        from market_spine.app.scheduling import (
+            SchedulerResult,
+            SchedulerStats,
+            SchedulerStatus,
+            RunResult,
+            RunStatus,
+            AnomalySummary,
+        )
+        return SchedulerResult, SchedulerStats, SchedulerStatus, RunResult, RunStatus, AnomalySummary
+    except ImportError:
+        # Fallback if market_spine not installed
+        return None, None, None, None, None, None
 
 
 # =============================================================================
@@ -262,11 +298,13 @@ def run_price_schedule(
     fail_fast: bool = False,
     db_path: str | None = None,
     run_date: date | None = None,
-) -> PriceScheduleResult:
+):
     """
     Run scheduled price ingestion for multiple symbols.
     
     This is the main entrypoint for scheduler scripts.
+    Returns a SchedulerResult (standardized contract) if available,
+    otherwise falls back to a compatible dict.
     
     Args:
         symbols: List of stock symbols to ingest
@@ -280,12 +318,22 @@ def run_price_schedule(
         run_date: Reference date for capture_id generation
     
     Returns:
-        PriceScheduleResult with success/failed/skipped lists
+        SchedulerResult with runs[], stats, anomalies, exit_code
     """
     import sqlite3
     
+    # Import result contract
+    SchedulerResult, SchedulerStats, SchedulerStatus, RunResult, RunStatus, AnomalySummary = _get_result_contract()
+    
+    started_at = datetime.now(UTC).isoformat()
     start_time = time.time()
     run_date = run_date or date.today()
+    
+    # Build result tracking
+    warnings = []
+    runs = []
+    anomalies = []
+    stats = {"attempted": 0, "succeeded": 0, "failed": 0, "skipped": 0}
     
     config = PriceScheduleConfig(
         symbols=symbols,
@@ -298,13 +346,25 @@ def run_price_schedule(
         db_path=db_path,
     )
     
-    result = PriceScheduleResult()
+    config_dict = {
+        "symbols_count": len(symbols),
+        "source_type": config.source_type,
+        "outputsize": config.outputsize,
+        "max_symbols_per_batch": config.max_symbols_per_batch,
+        "mode": config.mode,
+        "fail_fast": config.fail_fast,
+    }
+    
+    # Legacy result for backwards compatibility
+    legacy_result = PriceScheduleResult()
     
     # Limit symbols if needed
     symbols_to_process = symbols[:config.max_symbols_per_batch]
     if len(symbols) > len(symbols_to_process):
-        result.skipped = symbols[config.max_symbols_per_batch:]
-        log.warning(f"Skipping {len(result.skipped)} symbols (batch limit: {config.max_symbols_per_batch})")
+        legacy_result.skipped = symbols[config.max_symbols_per_batch:]
+        stats["skipped"] = len(legacy_result.skipped)
+        warnings.append(f"Skipping {len(legacy_result.skipped)} symbols (batch limit: {config.max_symbols_per_batch})")
+        log.warning(warnings[-1])
     
     # Open database connection
     db_path_resolved = db_path or "data/market_spine.db"
@@ -313,22 +373,49 @@ def run_price_schedule(
     try:
         for i, symbol in enumerate(symbols_to_process):
             log.info(f"[{i+1}/{len(symbols_to_process)}] Processing {symbol}...")
+            stats["attempted"] += 1
+            stage_start = time.time()
             
             success, details = process_symbol(symbol, config, conn, run_date)
+            duration_ms = int((time.time() - stage_start) * 1000)
             
             if success:
-                result.success.append(symbol)
-                result.total_rows += details.get("rows", 0)
+                legacy_result.success.append(symbol)
+                legacy_result.total_rows += details.get("rows", 0)
                 if details.get("capture_id"):
-                    result.new_captures += 1
+                    legacy_result.new_captures += 1
+                stats["succeeded"] += 1
+                
+                if RunResult:
+                    run_status = RunStatus.DRY_RUN if mode == "dry-run" else RunStatus.COMPLETED
+                    runs.append(RunResult(
+                        pipeline=f"{DOMAIN}.ingest_prices",
+                        partition_key=symbol,
+                        status=run_status,
+                        duration_ms=duration_ms,
+                        capture_id=details.get("capture_id"),
+                        rows_affected=details.get("rows", 0),
+                    ))
             else:
-                result.failed.append({"symbol": symbol, "error": details.get("error")})
-                result.anomalies_recorded += 1
+                legacy_result.failed.append({"symbol": symbol, "error": details.get("error")})
+                legacy_result.anomalies_recorded += 1
+                stats["failed"] += 1
+                
+                if RunResult:
+                    runs.append(RunResult(
+                        pipeline=f"{DOMAIN}.ingest_prices",
+                        partition_key=symbol,
+                        status=RunStatus.FAILED,
+                        duration_ms=duration_ms,
+                        error=details.get("error", "Unknown error")[:500],
+                    ))
                 
                 if fail_fast:
                     log.error(f"Fail-fast: stopping due to failure on {symbol}")
                     # Mark remaining as skipped
-                    result.skipped.extend(symbols_to_process[i+1:])
+                    remaining = symbols_to_process[i+1:]
+                    legacy_result.skipped.extend(remaining)
+                    stats["skipped"] += len(remaining)
                     break
             
             # Rate limiting (skip on last symbol)
@@ -339,10 +426,38 @@ def run_price_schedule(
     finally:
         conn.close()
     
-    result.duration_seconds = time.time() - start_time
+    finished_at = datetime.now(UTC).isoformat()
+    legacy_result.duration_seconds = time.time() - start_time
+    
+    # Determine status
+    if mode == "dry-run":
+        status = SchedulerStatus.DRY_RUN if SchedulerStatus else "dry_run"
+    elif stats["failed"] == 0:
+        status = SchedulerStatus.SUCCESS if SchedulerStatus else "success"
+    elif stats["succeeded"] > 0:
+        status = SchedulerStatus.PARTIAL if SchedulerStatus else "partial"
+    else:
+        status = SchedulerStatus.FAILURE if SchedulerStatus else "failure"
     
     # Log summary
-    log.info(f"Schedule complete: {len(result.success)} success, {len(result.failed)} failed, {len(result.skipped)} skipped")
-    log.info(f"Total rows: {result.total_rows}, Duration: {result.duration_seconds:.1f}s")
+    log.info(f"Schedule complete: {len(legacy_result.success)} success, {len(legacy_result.failed)} failed, {len(legacy_result.skipped)} skipped")
+    log.info(f"Total rows: {legacy_result.total_rows}, Duration: {legacy_result.duration_seconds:.1f}s")
     
-    return result
+    # Build and return SchedulerResult if available
+    if SchedulerResult:
+        return SchedulerResult(
+            domain=DOMAIN,
+            scheduler=SCHEDULER_NAME,
+            started_at=started_at,
+            finished_at=finished_at,
+            status=status,
+            stats=SchedulerStats(**stats),
+            runs=runs,
+            anomalies=anomalies,
+            warnings=warnings,
+            config=config_dict,
+        )
+    
+    # Fallback: return legacy result with added exit_code property
+    legacy_result._exit_code = 0 if status in ("success", "dry_run") else (2 if status == "partial" else 1)
+    return legacy_result

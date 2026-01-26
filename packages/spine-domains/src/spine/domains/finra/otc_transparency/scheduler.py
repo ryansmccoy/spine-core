@@ -12,6 +12,7 @@ Key Features:
     - Partition-level failure isolation
     - Dry-run mode for testing
     - Fail-fast mode for CI/CD
+    - Returns standardized SchedulerResult contract
 
 Usage:
     from spine.domains.finra.otc_transparency.scheduler import run_finra_schedule
@@ -22,8 +23,8 @@ Usage:
         db_path="data/market_spine.db",
     )
     
-    if result.has_failures:
-        sys.exit(1)
+    print(result.to_json())
+    sys.exit(result.exit_code)
 """
 
 import hashlib
@@ -47,7 +48,10 @@ log = logging.getLogger(__name__)
 # =============================================================================
 
 DOMAIN = "finra.otc_transparency"
+SCHEDULER_NAME = "weekly_ingest"
 DEFAULT_TIERS = ["NMS_TIER_1", "NMS_TIER_2", "OTC"]
+DEFAULT_LOOKBACK_WEEKS = 4
+MAX_LOOKBACK_WEEKS = 12  # Safety limit unless --force
 
 
 @dataclass
@@ -57,27 +61,66 @@ class FinraScheduleConfig:
     tiers: list[str] = field(default_factory=lambda: DEFAULT_TIERS.copy())
     source_type: str = "file"  # "api" or "file"
     mode: str = "run"  # "run" or "dry-run"
-    force: bool = False  # Ignore revision detection
+    force: bool = False  # Ignore revision detection and max lookback limit
     only_stage: str = "all"  # "ingest", "normalize", "calc", "all"
     fail_fast: bool = False  # Stop on first failure
     db_path: str = "data/market_spine.db"
     verbose: bool = False
     cli_module: str = "market_spine.cli"  # CLI module for subprocess calls
+    data_dir: str = "data/fixtures/finra_otc"
 
 
+# Legacy result type (deprecated, use SchedulerResult)
 @dataclass
 class FinraScheduleResult:
-    """Result of scheduled FINRA ingestion."""
+    """DEPRECATED: Use SchedulerResult instead. Kept for backwards compatibility."""
     success: list[dict] = field(default_factory=list)  # [{week, tier, stage}]
     failed: list[dict] = field(default_factory=list)   # [{week, tier, stage, error}]
     skipped: list[dict] = field(default_factory=list)  # [{week, tier, reason}]
     duration_seconds: float = 0.0
     anomalies_recorded: int = 0
+    _exit_code: int = 0
     
     @property
     def has_failures(self) -> bool:
         """True if any partitions failed."""
         return len(self.failed) > 0
+    
+    @property
+    def success_count(self) -> int:
+        """Number of successful operations."""
+        return len(self.success)
+    
+    @property
+    def failure_count(self) -> int:
+        """Number of failed operations."""
+        return len(self.failed)
+    
+    @property
+    def exit_code(self) -> int:
+        """Exit code for CLI: 0=success, 1=failure, 2=partial."""
+        return self._exit_code
+
+
+# =============================================================================
+# Result Contract Import (lazy to avoid circular deps)
+# =============================================================================
+
+def _get_result_contract():
+    """Import result contract from market_spine.app.scheduling."""
+    try:
+        from market_spine.app.scheduling import (
+            SchedulerResult,
+            SchedulerStats,
+            SchedulerStatus,
+            RunResult,
+            RunStatus,
+            AnomalySummary,
+        )
+        return SchedulerResult, SchedulerStats, SchedulerStatus, RunResult, RunStatus, AnomalySummary
+    except ImportError:
+        # Fallback if market_spine not installed
+        return None, None, None, None, None, None
     
     @property
     def all_failed(self) -> bool:
@@ -578,39 +621,59 @@ def run_finra_schedule(
     run_date: date | None = None,
     cli_module: str = "market_spine.cli",
     verbose: bool = False,
-) -> FinraScheduleResult:
+    data_dir: str = "data/fixtures/finra_otc",
+):
     """
     Run scheduled FINRA ingestion for multiple weeks and tiers.
     
     This is the main entrypoint for scheduler scripts.
+    Returns a SchedulerResult (standardized contract) if available,
+    otherwise falls back to a compatible dict.
     
     Args:
-        lookback_weeks: Number of weeks to process (mutually exclusive with weeks)
+        lookback_weeks: Number of weeks to process (default: 4, max: 12 unless force)
         weeks: Specific weeks to process (mutually exclusive with lookback_weeks)
         tiers: List of tiers to process (default: all)
         source_type: "api" or "file"
         mode: "run" or "dry-run"
-        force: Ignore revision detection, always restate
+        force: Ignore revision detection and max lookback limit
         only_stage: "ingest", "normalize", "calc", or "all"
         fail_fast: Stop on first failure
         db_path: Database path
         run_date: Reference date for capture_id generation
         cli_module: Python module for CLI subprocess calls
         verbose: Enable verbose logging
+        data_dir: Directory containing fixture files
     
     Returns:
-        FinraScheduleResult with success/failed/skipped lists
+        SchedulerResult with runs[], stats, anomalies, exit_code
     """
+    # Import result contract
+    SchedulerResult, SchedulerStats, SchedulerStatus, RunResult, RunStatus, AnomalySummary = _get_result_contract()
+    
+    started_at = datetime.now(UTC).isoformat()
     start_time = time.time()
     run_date = run_date or date.today()
+    
+    # Build result tracking
+    warnings = []
+    runs = []
+    anomalies = []
+    stats = {"attempted": 0, "succeeded": 0, "failed": 0, "skipped": 0}
     
     # Determine weeks to process
     if weeks:
         target_weeks = weeks
     elif lookback_weeks:
+        # Enforce max lookback unless --force
+        if lookback_weeks > MAX_LOOKBACK_WEEKS and not force:
+            warnings.append(
+                f"Lookback {lookback_weeks} exceeds max {MAX_LOOKBACK_WEEKS}, clamped. Use --force to override."
+            )
+            lookback_weeks = MAX_LOOKBACK_WEEKS
         target_weeks = calculate_target_weeks(lookback_weeks, run_date)
     else:
-        target_weeks = calculate_target_weeks(6, run_date)  # Default: 6 weeks
+        target_weeks = calculate_target_weeks(DEFAULT_LOOKBACK_WEEKS, run_date)
     
     config = FinraScheduleConfig(
         weeks=target_weeks,
@@ -623,121 +686,244 @@ def run_finra_schedule(
         db_path=db_path,
         cli_module=cli_module,
         verbose=verbose,
+        data_dir=data_dir,
     )
     
-    result = FinraScheduleResult()
+    config_dict = {
+        "lookback_weeks": len(target_weeks),
+        "weeks": [w.isoformat() for w in target_weeks],
+        "tiers": config.tiers,
+        "source_type": config.source_type,
+        "mode": config.mode,
+        "force": config.force,
+        "only_stage": config.only_stage,
+        "fail_fast": config.fail_fast,
+    }
+    
+    # Legacy result for backwards compatibility
+    legacy_result = FinraScheduleResult()
     
     # Open database connection
     conn = sqlite3.connect(db_path)
+    fail_fast_triggered = False
     
     try:
         # Process each week/tier combination
         for week_ending in target_weeks:
             for tier in config.tiers:
                 partition_id = f"{week_ending.isoformat()}/{tier}"
+                partition_key = f"{week_ending.isoformat()}|{tier}"
                 
                 # Ingest stage
                 if config.only_stage in ("all", "ingest"):
                     log.info(f"[INGEST] {partition_id}...")
+                    stats["attempted"] += 1
+                    stage_start = time.time()
+                    
                     success, msg = process_partition_ingest(
                         week_ending, tier, config, conn, run_date
                     )
+                    duration_ms = int((time.time() - stage_start) * 1000)
                     
                     if success:
                         if "Skipped" in msg:
-                            result.skipped.append({
+                            legacy_result.skipped.append({
                                 "week": week_ending.isoformat(),
                                 "tier": tier,
                                 "stage": "ingest",
                                 "reason": msg,
                             })
+                            stats["skipped"] += 1
+                            if RunResult:
+                                runs.append(RunResult(
+                                    pipeline=f"{DOMAIN}.ingest_week",
+                                    partition_key=partition_key,
+                                    status=RunStatus.SKIPPED,
+                                    duration_ms=duration_ms,
+                                ))
                         else:
-                            result.success.append({
+                            legacy_result.success.append({
                                 "week": week_ending.isoformat(),
                                 "tier": tier,
                                 "stage": "ingest",
                             })
+                            stats["succeeded"] += 1
+                            if RunResult:
+                                run_status = RunStatus.DRY_RUN if mode == "dry-run" else RunStatus.COMPLETED
+                                runs.append(RunResult(
+                                    pipeline=f"{DOMAIN}.ingest_week",
+                                    partition_key=partition_key,
+                                    status=run_status,
+                                    duration_ms=duration_ms,
+                                ))
                     else:
-                        result.failed.append({
+                        legacy_result.failed.append({
                             "week": week_ending.isoformat(),
                             "tier": tier,
                             "stage": "ingest",
                             "error": msg,
                         })
-                        result.anomalies_recorded += 1
+                        legacy_result.anomalies_recorded += 1
+                        stats["failed"] += 1
+                        
+                        if RunResult:
+                            runs.append(RunResult(
+                                pipeline=f"{DOMAIN}.ingest_week",
+                                partition_key=partition_key,
+                                status=RunStatus.FAILED,
+                                duration_ms=duration_ms,
+                                error=msg[:500] if msg else None,
+                            ))
                         
                         if config.fail_fast:
                             log.error(f"Fail-fast: stopping due to failure on {partition_id}")
+                            fail_fast_triggered = True
                             break
                         continue  # Skip subsequent stages for this partition
                 
                 # Normalize stage
                 if config.only_stage in ("all", "normalize"):
                     log.info(f"[NORMALIZE] {partition_id}...")
+                    stats["attempted"] += 1
+                    stage_start = time.time()
+                    
                     success, msg = process_partition_normalize(
                         week_ending, tier, config, conn
                     )
+                    duration_ms = int((time.time() - stage_start) * 1000)
                     
                     if success:
-                        result.success.append({
+                        legacy_result.success.append({
                             "week": week_ending.isoformat(),
                             "tier": tier,
                             "stage": "normalize",
                         })
+                        stats["succeeded"] += 1
+                        if RunResult:
+                            run_status = RunStatus.DRY_RUN if mode == "dry-run" else RunStatus.COMPLETED
+                            runs.append(RunResult(
+                                pipeline=f"{DOMAIN}.normalize_week",
+                                partition_key=partition_key,
+                                status=run_status,
+                                duration_ms=duration_ms,
+                            ))
                     else:
-                        result.failed.append({
+                        legacy_result.failed.append({
                             "week": week_ending.isoformat(),
                             "tier": tier,
                             "stage": "normalize",
                             "error": msg,
                         })
-                        result.anomalies_recorded += 1
+                        legacy_result.anomalies_recorded += 1
+                        stats["failed"] += 1
+                        
+                        if RunResult:
+                            runs.append(RunResult(
+                                pipeline=f"{DOMAIN}.normalize_week",
+                                partition_key=partition_key,
+                                status=RunStatus.FAILED,
+                                duration_ms=duration_ms,
+                                error=msg[:500] if msg else None,
+                            ))
                         
                         if config.fail_fast:
                             log.error(f"Fail-fast: stopping due to failure on {partition_id}")
+                            fail_fast_triggered = True
                             break
                         continue  # Skip subsequent stages for this partition
                 
                 # Calc stage
                 if config.only_stage in ("all", "calc"):
                     log.info(f"[CALC] {partition_id}...")
+                    stats["attempted"] += 1
+                    stage_start = time.time()
+                    
                     success, msg = process_partition_calc(
                         week_ending, tier, config, conn
                     )
+                    duration_ms = int((time.time() - stage_start) * 1000)
                     
                     if success:
-                        result.success.append({
+                        legacy_result.success.append({
                             "week": week_ending.isoformat(),
                             "tier": tier,
                             "stage": "calc",
                         })
+                        stats["succeeded"] += 1
+                        if RunResult:
+                            run_status = RunStatus.DRY_RUN if mode == "dry-run" else RunStatus.COMPLETED
+                            runs.append(RunResult(
+                                pipeline=f"{DOMAIN}.compute_analytics",
+                                partition_key=partition_key,
+                                status=run_status,
+                                duration_ms=duration_ms,
+                            ))
                     else:
-                        result.failed.append({
+                        legacy_result.failed.append({
                             "week": week_ending.isoformat(),
                             "tier": tier,
                             "stage": "calc",
                             "error": msg,
                         })
-                        result.anomalies_recorded += 1
+                        legacy_result.anomalies_recorded += 1
+                        stats["failed"] += 1
+                        
+                        if RunResult:
+                            runs.append(RunResult(
+                                pipeline=f"{DOMAIN}.compute_analytics",
+                                partition_key=partition_key,
+                                status=RunStatus.FAILED,
+                                duration_ms=duration_ms,
+                                error=msg[:500] if msg else None,
+                            ))
                         
                         if config.fail_fast:
                             log.error(f"Fail-fast: stopping due to failure on {partition_id}")
+                            fail_fast_triggered = True
                             break
             
             # Check fail-fast after inner loop
-            if config.fail_fast and result.has_failures:
+            if fail_fast_triggered:
                 break
     
     finally:
         conn.close()
     
-    result.duration_seconds = time.time() - start_time
+    finished_at = datetime.now(UTC).isoformat()
+    legacy_result.duration_seconds = time.time() - start_time
+    
+    # Determine status
+    if mode == "dry-run":
+        status = SchedulerStatus.DRY_RUN if SchedulerStatus else "dry_run"
+    elif stats["failed"] == 0:
+        status = SchedulerStatus.SUCCESS if SchedulerStatus else "success"
+    elif stats["succeeded"] > 0:
+        status = SchedulerStatus.PARTIAL if SchedulerStatus else "partial"
+    else:
+        status = SchedulerStatus.FAILURE if SchedulerStatus else "failure"
     
     # Log summary
     log.info(
-        f"Schedule complete: {result.success_count} success, "
-        f"{result.failure_count} failed, {len(result.skipped)} skipped"
+        f"Schedule complete: {stats['succeeded']} success, "
+        f"{stats['failed']} failed, {stats['skipped']} skipped"
     )
-    log.info(f"Duration: {result.duration_seconds:.1f}s")
+    log.info(f"Duration: {legacy_result.duration_seconds:.1f}s")
     
-    return result
+    # Build and return SchedulerResult if available
+    if SchedulerResult:
+        return SchedulerResult(
+            domain=DOMAIN,
+            scheduler=SCHEDULER_NAME,
+            started_at=started_at,
+            finished_at=finished_at,
+            status=status,
+            stats=SchedulerStats(**stats),
+            runs=runs,
+            anomalies=anomalies,
+            warnings=warnings,
+            config=config_dict,
+        )
+    
+    # Fallback: return legacy result with added exit_code property
+    legacy_result._exit_code = 0 if status in ("success", "dry_run") else (2 if status == "partial" else 1)
+    return legacy_result

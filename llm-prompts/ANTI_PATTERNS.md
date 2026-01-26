@@ -453,6 +453,146 @@ Use this during code review:
 - [ ] No window checks that only count (must verify consecutive)
 - [ ] All output tables have `capture_id` column
 - [ ] Rolled-up data tracks `input_min/max_capture_id`
+- [ ] Scheduler wrapper scripts remain thin (≤50 lines of logic)
+- [ ] Schedulers return `SchedulerResult` (not custom result types)
+- [ ] All scheduler runs use standard exit codes (0/1/2)
+
+---
+
+## Scheduler Anti-Patterns
+
+### 12. Custom Scheduler Result Types
+
+**❌ WRONG:**
+```python
+# Creating domain-specific result types
+@dataclass
+class MyDomainScheduleResult:
+    success: list[str]
+    failed: list[str]
+    duration: float
+    # ... non-standard fields
+```
+
+**Why forbidden:**
+- Inconsistent JSON schema across domains
+- Automation can't parse different result formats
+- Exit codes not standardized
+- No schema versioning
+
+**✅ CORRECT:**
+```python
+from market_spine.app.scheduling import SchedulerResult, SchedulerStatus, RunResult
+
+def run_my_schedule(...) -> SchedulerResult:
+    # ... business logic ...
+    return SchedulerResult(
+        domain="my.domain",
+        scheduler="my_scheduler",
+        started_at=started_at,
+        finished_at=finished_at,
+        status=SchedulerStatus.SUCCESS,
+        stats=SchedulerStats(...),
+        runs=runs,  # List of RunResult
+    )
+```
+
+---
+
+### 13. Fat Wrapper Scripts
+
+**❌ WRONG:**
+```python
+# scripts/schedule_my_domain.py
+def main():
+    # 100+ lines of business logic
+    conn = sqlite3.connect(db_path)
+    for week in weeks:
+        data = fetch_data(week)
+        # ... processing ...
+        insert_data(conn, data)
+    # ... more logic ...
+```
+
+**Why forbidden:**
+- Business logic in wrapper scripts (should be in domain scheduler)
+- Hard to test (subprocess required)
+- Duplicates logic across scripts
+- Violates thin wrapper principle
+
+**✅ CORRECT:**
+```python
+# scripts/schedule_my_domain.py
+def main() -> int:
+    args = parse_args()
+    log = setup_logging(args.log_level)
+    
+    # Import domain scheduler (all business logic is there)
+    from spine.domains.my_domain.scheduler import run_my_schedule
+    
+    result = run_my_schedule(**vars(args))
+    
+    if args.json:
+        print(result.to_json())
+    
+    return result.exit_code
+```
+
+---
+
+### 14. Non-Standard Exit Codes
+
+**❌ WRONG:**
+```python
+if success:
+    return 0
+elif partial:
+    return 1  # Wrong! Partial should be 2
+else:
+    return -1  # Non-standard
+```
+
+**Why forbidden:**
+- Breaks automation that expects standard codes
+- Inconsistent across schedulers
+- Negative codes don't work cross-platform
+
+**✅ CORRECT:**
+```python
+# Use SchedulerResult.exit_code (derived from status)
+return result.exit_code
+# 0 = SUCCESS or DRY_RUN
+# 1 = FAILURE (all failed)
+# 2 = PARTIAL (some failed)
+```
+
+---
+
+### 15. Unlimited Lookback
+
+**❌ WRONG:**
+```python
+def run_schedule(lookback_weeks: int):
+    weeks = calculate_weeks(lookback_weeks)  # No limit!
+    # Could process 100+ weeks, hitting rate limits, OOM, etc.
+```
+
+**Why forbidden:**
+- Accidental large backfills
+- API rate limit violations
+- Memory exhaustion
+- Unexpected long-running jobs
+
+**✅ CORRECT:**
+```python
+MAX_LOOKBACK_WEEKS = 12
+
+def run_schedule(lookback_weeks: int, force: bool = False):
+    if lookback_weeks > MAX_LOOKBACK_WEEKS and not force:
+        warnings.append(f"Clamped to {MAX_LOOKBACK_WEEKS}. Use --force to override.")
+        lookback_weeks = MAX_LOOKBACK_WEEKS
+    # ...
+```
 
 ---
 
@@ -461,3 +601,4 @@ Use this during code review:
 - [CONTEXT.md](CONTEXT.md) - Correct patterns
 - [reference/SQL_PATTERNS.md](reference/SQL_PATTERNS.md) - SQL best practices
 - [prompts/E_REVIEW.md](prompts/E_REVIEW.md) - Review checklist
+- [docs/operations/SCHEDULER_OPERATIONS.md](../docs/operations/SCHEDULER_OPERATIONS.md) - Scheduler usage guide
