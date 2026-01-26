@@ -1,0 +1,72 @@
+site_name: Spine-Core
+site_description: Core packages, utilities, and shared infrastructure for the Spine Ecosystem
+site_url: https://spine-core.readthedocs.io/
+repo_url: https://github.com/ryansmccoy/spine-core
+repo_name: spine-core
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [packages]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            members_order: source
+
+nav:
+  - Home: index.md
+  - Packages:
+    - Overview: packages/index.md
+    - doc-automation: packages/doc-automation.md
+    - Config Spine: packages/config-spine.md
+  - Generated:
+    - Architecture: generated/ARCHITECTURE.md
+    - Features: generated/FEATURES.md
+    - API Reference: generated/API_REFERENCE.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - admonition
+  - attr_list
+  - md_in_html
+  - def_list
+  - toc:
+      permalink: true
