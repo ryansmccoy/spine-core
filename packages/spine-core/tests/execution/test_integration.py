@@ -235,7 +235,8 @@ class TestDispatcher:
         assert run.spec.kind == "task"
         assert run.spec.name == "test"
         assert run.spec.params == {"x": 1}
-        assert run.status == RunStatus.QUEUED
+        # MemoryExecutor runs synchronously, so status is completed
+        assert run.status == RunStatus.COMPLETED
     
     @pytest.mark.asyncio
     async def test_convenience_wrappers_match_canonical(self):
@@ -378,11 +379,13 @@ class TestEndToEndWithMemoryExecutor:
         
         # Query
         run = await dispatcher.get_run(run_id)
-        assert run.status == RunStatus.QUEUED  # MemoryExecutor completes sync
+        # MemoryExecutor runs synchronously, so status should be completed
+        assert run.status == RunStatus.COMPLETED
+        assert run.result == {"result": 42}
         
         # Events
         events = await dispatcher.get_events(run_id)
-        assert len(events) >= 2  # created, queued
+        assert len(events) >= 3  # created, queued, completed
     
     @pytest.mark.asyncio
     async def test_registry_and_dispatcher_integration(self):
@@ -407,8 +410,13 @@ class TestEndToEndWithMemoryExecutor:
         task_run = await dispatcher.get_run(task_id)
         pipe_run = await dispatcher.get_run(pipe_id)
         
-        assert task_run.status == RunStatus.QUEUED
-        assert pipe_run.status == RunStatus.QUEUED
+        # MemoryExecutor runs synchronously, so status should be completed
+        assert task_run.status == RunStatus.COMPLETED
+        assert pipe_run.status == RunStatus.COMPLETED
+        
+        # Check results
+        assert task_run.result == {"message": "Hello, World!"}
+        assert pipe_run.result == {"processed": 3}
         
         # Check metadata
         metadata = registry.get_metadata("task", "greet")
