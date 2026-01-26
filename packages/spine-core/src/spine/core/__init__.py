@@ -50,6 +50,11 @@ from spine.core.errors import (
     is_retryable,
 )
 from spine.core.result import Result, Ok, Err, try_result
+from spine.core.anomalies import (
+    AnomalyRecorder,
+    Severity,
+    AnomalyCategory,
+)
 
 __all__ = [
     # schema
@@ -96,4 +101,8 @@ __all__ = [
     "Ok",
     "Err",
     "try_result",
+    # anomalies (NEW)
+    "AnomalyRecorder",
+    "Severity",
+    "AnomalyCategory",
 ]

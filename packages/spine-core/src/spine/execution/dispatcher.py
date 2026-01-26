@@ -138,6 +138,11 @@ class Dispatcher:
             await self._record_event(run_id, EventType.QUEUED, {
                 "external_ref": external_ref
             })
+            
+            # For synchronous executors (like MemoryExecutor), the work may
+            # already be complete. Check status and sync if needed.
+            await self._sync_from_executor(run)
+            
         except Exception as e:
             run.status = RunStatus.FAILED
             run.error = str(e)
@@ -468,6 +473,50 @@ class Dispatcher:
         if run_id:
             return self._memory_runs.get(run_id)
         return None
+    
+    async def _sync_from_executor(self, run: RunRecord) -> None:
+        """Sync run status from executor.
+        
+        For synchronous executors like MemoryExecutor, work completes during
+        submit(). This method checks the executor status and updates the
+        run record accordingly.
+        """
+        if not run.external_ref:
+            return
+        
+        # Check if executor has status method
+        if not hasattr(self.executor, 'get_status'):
+            return
+        
+        try:
+            status = await self.executor.get_status(run.external_ref)
+            
+            if status == "completed":
+                # Get result if available
+                result = None
+                if hasattr(self.executor, 'get_result'):
+                    result = await self.executor.get_result(run.external_ref)
+                
+                run.mark_completed(result)
+                await self._save_run(run)
+                await self._record_event(run.run_id, EventType.COMPLETED, {
+                    "duration_seconds": run.duration_seconds,
+                })
+                
+            elif status == "failed":
+                error = "Unknown error"
+                if hasattr(self.executor, 'get_error'):
+                    error = await self.executor.get_error(run.external_ref) or error
+                
+                run.mark_failed(error)
+                await self._save_run(run)
+                await self._record_event(run.run_id, EventType.FAILED, {
+                    "error": error,
+                })
+                
+        except Exception:
+            # Executor doesn't support status checking, that's fine
+            pass
     
     def clear(self) -> None:
         """Clear all in-memory data (for testing)."""

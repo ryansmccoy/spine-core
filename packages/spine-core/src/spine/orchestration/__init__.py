@@ -135,6 +135,13 @@ from spine.orchestration.workflow_runner import (
     get_workflow_runner,
 )
 
+# Tracked runner (with database persistence)
+from spine.orchestration.tracked_runner import (
+    TrackedWorkflowRunner,
+    get_workflow_state,
+    list_workflow_failures,
+)
+
 
 __all__ = [
     # ==========================================================================
@@ -198,4 +205,8 @@ __all__ = [
     "WorkflowStatus",
     "StepExecution",
     "get_workflow_runner",
+    # Tracked Runner (database persistence)
+    "TrackedWorkflowRunner",
+    "get_workflow_state",
+    "list_workflow_failures",
 ]
