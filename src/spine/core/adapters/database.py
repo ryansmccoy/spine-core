@@ -6,6 +6,108 @@ Provides a unified interface for database operations across:
 - PostgreSQL (Intermediate/Advanced/Full tiers)
 - DB2 (Enterprise integration)
 
+Manifesto:
+    Financial data pipelines need database portability:
+    - Development uses SQLite for simplicity
+    - Production uses PostgreSQL for scale
+    - Enterprise may require DB2 integration
+    
+    This module provides:
+    - **Protocol:** Unified interface for all databases
+    - **Registry:** Discover and create adapters by type
+    - **Adapters:** Concrete implementations per database
+    
+    Key principles:
+    - SYNC-ONLY: All adapters use synchronous APIs
+    - Registry-driven: Adapters registered by type (#3)
+    - Protocol over inheritance: Duck typing (#4)
+    - Explicit dialects: Clear SQL dialect handling (#7)
+
+Architecture:
+    ::
+    
+        ┌─────────────────────────────────────────────────────────────┐
+        │                  Database Adapter Architecture               │
+        └─────────────────────────────────────────────────────────────┘
+        
+        Adapter Registry:
+        ┌────────────────────────────────────────────────────────────┐
+        │ adapter_registry.create("sqlite", path="data.db")          │
+        │ adapter_registry.create("postgresql", host="...", ...)     │
+        │                                                             │
+        │ Registered Types:                                           │
+        │   sqlite     → SQLiteAdapter                                │
+        │   postgresql → PostgreSQLAdapter                            │
+        │   db2        → DB2Adapter                                   │
+        └────────────────────────────────────────────────────────────┘
+        
+        Adapter Protocol:
+        ┌────────────────────────────────────────────────────────────┐
+        │ DatabaseAdapter (Protocol)                                  │
+        │   connect()        → Establish connection                   │
+        │   close()          → Close connection                       │
+        │   transaction()    → Context manager for transaction        │
+        │   execute()        → Run SQL statement                      │
+        │   fetchone()       → Get single row                         │
+        │   fetchall()       → Get all rows                           │
+        └────────────────────────────────────────────────────────────┘
+        
+        Usage Flow:
+        ┌─────────────────────────────────────────────────────────────┐
+        │ adapter = get_adapter(DatabaseType.SQLITE, path="data.db") │
+        │                                                              │
+        │ with adapter.transaction() as conn:                         │
+        │     conn.execute("INSERT INTO users (name) VALUES (?)",    │
+        │                  ("Alice",))                                │
+        │     # Auto-commits on exit, auto-rollbacks on exception     │
+        └─────────────────────────────────────────────────────────────┘
+
+Features:
+    - **DatabaseType enum:** SQLITE, POSTGRESQL, DB2, MYSQL, ORACLE
+    - **DatabaseConfig:** Dataclass for connection configuration
+    - **DatabaseAdapter protocol:** Unified interface
+    - **Concrete adapters:** SQLiteAdapter, PostgreSQLAdapter, etc.
+    - **Registry pattern:** adapter_registry for dynamic adapter creation
+
+Examples:
+    Get adapter by type:
+    
+    >>> from spine.core.adapters.database import get_adapter, DatabaseType
+    >>> adapter = get_adapter(DatabaseType.SQLITE, path="data.db")
+    >>> with adapter.transaction() as conn:
+    ...     conn.execute("INSERT INTO users (name) VALUES (?)", ("Alice",))
+    
+    Via registry:
+    
+    >>> from spine.core.adapters.database import adapter_registry
+    >>> adapter = adapter_registry.create("sqlite", path="data.db")
+
+Performance:
+    - Connection pooling for PostgreSQL (configurable pool_size)
+    - SQLite uses single connection
+    - Transaction context manager handles commit/rollback
+
+Guardrails:
+    - SYNC-ONLY: No async methods
+    - Protocol-based: Adapters can be swapped transparently
+    - Error hierarchy: DatabaseError, ConnectionError, QueryError
+    - Config validation: Clear error messages for missing fields
+
+Context:
+    - Domain: Database access, storage abstraction
+    - Used By: All Spine domain code requiring database
+    - Implements: Connection, StorageBackend protocols
+    - Tiers: Basic (SQLite), Intermediate+ (PostgreSQL)
+
+Tags:
+    database, adapter, protocol, sqlite, postgresql, db2,
+    registry, spine-core, storage, sync
+
+Doc-Types:
+    - API Reference
+    - Database Integration Guide
+    - Configuration Documentation
+
 Design Principles:
 - #3 Registry-Driven: Adapters registered by type
 - #4 Protocol over Inheritance: Protocol defines interface
@@ -13,20 +115,6 @@ Design Principles:
 
 All adapters use SYNCHRONOUS APIs to keep domain code simple.
 Higher tiers wrap async drivers with sync adapters.
-
-Usage:
-    from spine.core.adapters.database import get_adapter, DatabaseType
-    
-    # Get adapter by type
-    adapter = get_adapter(DatabaseType.SQLITE, path="data.db")
-    
-    # Or via registry
-    from spine.core.adapters.database import adapter_registry
-    adapter = adapter_registry.create("sqlite", path="data.db")
-    
-    # Use connection
-    with adapter.transaction() as conn:
-        conn.execute("INSERT INTO users (name) VALUES (?)", ("Alice",))
 """
 
 from __future__ import annotations

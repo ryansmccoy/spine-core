@@ -11,8 +11,6 @@ from datetime import datetime, timezone
 EXAMPLES = [
     ("01_feedspine_pipeline.py", "FeedSpine - Market Data Feed Ingestion"),
     ("02_entityspine_workflow.py", "EntitySpine - SEC Filing Entity Resolution"),
-    ("03_genai_spine_tasks.py", "GenAI-Spine - Embeddings and RAG"),
-    ("04_document_spine_ingestion.py", "Document-Spine - Document Parsing"),
     ("05_workflow_architecture.py", "Cross-Spine Workflow Orchestration"),
 ]
 

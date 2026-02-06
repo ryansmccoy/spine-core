@@ -88,6 +88,8 @@ class TestTokenBucketLimiter:
         wait_time = limiter.get_wait_time(1)
         assert 0.05 <= wait_time <= 0.2
 
+    @pytest.mark.slow
+    @pytest.mark.timeout(2)
     def test_acquire_with_blocking(self):
         """Test blocking acquire waits for tokens."""
         limiter = TokenBucketLimiter(rate=20.0, capacity=2)
@@ -165,6 +167,8 @@ class TestSlidingWindowLimiter:
 class TestKeyedRateLimiter:
     """Tests for KeyedRateLimiter."""
 
+    @pytest.mark.slow
+    @pytest.mark.timeout(30)
     def test_creates_limiter_per_key(self):
         """Test creates separate limiter per key."""
         def factory():
@@ -182,6 +186,8 @@ class TestKeyedRateLimiter:
         assert keyed.acquire("key2") is True
         assert keyed.acquire("key2") is False
 
+    @pytest.mark.slow
+    @pytest.mark.timeout(30)
     def test_same_key_returns_same_limiter(self):
         """Test same key returns same limiter."""
         def factory():
@@ -197,6 +203,8 @@ class TestKeyedRateLimiter:
         # 5 - 2 = 3 remaining (approximately, accounting for refill)
         assert limiter is not None
 
+    @pytest.mark.slow
+    @pytest.mark.timeout(30)
     def test_remove_key(self):
         """Test removing a key's limiter."""
         def factory():

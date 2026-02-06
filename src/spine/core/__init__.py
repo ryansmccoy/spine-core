@@ -55,6 +55,24 @@ from spine.core.anomalies import (
     Severity,
     AnomalyCategory,
 )
+from spine.core.logging import (
+    configure_logging,
+    get_logger,
+    bind_context,
+    unbind_context,
+    clear_context,
+    LogContext,
+    STRUCTLOG_AVAILABLE,
+)
+
+# Database utilities (optional - requires asyncpg)
+# Import lazily to avoid import errors when asyncpg not installed
+def __getattr__(name):
+    """Lazy import for optional database module."""
+    if name in ("create_pool", "close_pool", "pool_health_check", "normalize_database_url"):
+        from spine.core import database
+        return getattr(database, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     # schema
@@ -105,4 +123,17 @@ __all__ = [
     "AnomalyRecorder",
     "Severity",
     "AnomalyCategory",
+    # logging (NEW)
+    "configure_logging",
+    "get_logger",
+    "bind_context",
+    "unbind_context",
+    "clear_context",
+    "LogContext",
+    "STRUCTLOG_AVAILABLE",
+    # database (NEW - requires asyncpg)
+    "create_pool",
+    "close_pool",
+    "pool_health_check",
+    "normalize_database_url",
 ]

@@ -1,15 +1,107 @@
 """
-Core infrastructure tables.
+Core infrastructure tables shared across all domains.
 
-These tables are shared across all domains. Each domain writes to them
-using its domain name as a partition key.
+Defines table names and DDL statements for the shared infrastructure
+tables that support manifest tracking, rejects, quality checks,
+anomalies, executions, and concurrency locks.
+
+Manifesto:
+    Financial data pipelines share common infrastructure needs:
+    - **Manifest:** Track workflow stage progression
+    - **Rejects:** Store validation failures for audit
+    - **Quality:** Record quality check results
+    - **Anomalies:** Log errors and warnings
+    - **Executions:** Pipeline execution ledger
+    
+    Rather than each domain creating its own tables, we share
+    infrastructure tables partitioned by domain name. This:
+    - Reduces schema proliferation
+    - Enables cross-domain queries (all rejects, all anomalies)
+    - Simplifies maintenance and migrations
+
+Architecture:
+    ::
+    
+        ┌─────────────────────────────────────────────────────────────┐
+        │                  Core Infrastructure Schema                  │
+        └─────────────────────────────────────────────────────────────┘
+        
+        Table Registry (CORE_TABLES):
+        ┌────────────────────────────────────────────────────────────┐
+        │ manifest         → core_manifest                           │
+        │ rejects          → core_rejects                            │
+        │ quality          → core_quality                            │
+        │ anomalies        → core_anomalies                          │
+        │ executions       → core_executions                         │
+        │ execution_events → core_execution_events                   │
+        │ dead_letters     → core_dead_letters                       │
+        │ concurrency_locks→ core_concurrency_locks                  │
+        └────────────────────────────────────────────────────────────┘
+        
+        Partitioning:
+        ┌────────────────────────────────────────────────────────────┐
+        │ All tables have 'domain' column for partitioning:          │
+        │                                                             │
+        │ SELECT * FROM core_manifest WHERE domain = 'otc'           │
+        │ SELECT * FROM core_rejects  WHERE domain = 'equity'        │
+        │                                                             │
+        │ Domains: otc, equity, options, finra.*, etc.               │
+        └────────────────────────────────────────────────────────────┘
+        
+        Key-Value Pattern:
+        ┌────────────────────────────────────────────────────────────┐
+        │ partition_key is JSON for flexible logical keys:           │
+        │                                                             │
+        │ {"week_ending": "2025-12-26", "tier": "NMS_TIER_1"}        │
+        │ {"date": "2025-12-26", "symbol": "AAPL"}                   │
+        │                                                             │
+        │ Enables arbitrary key combinations per domain.              │
+        └────────────────────────────────────────────────────────────┘
+
+Features:
+    - **CORE_TABLES:** Dict mapping logical names to table names
+    - **CORE_DDL:** Dict of CREATE TABLE statements
+    - **Indexes:** Pre-defined for common query patterns
+    - **create_tables():** Helper to create all tables
+
+Examples:
+    Get table name:
+    
+    >>> from spine.core.schema import CORE_TABLES
+    >>> CORE_TABLES["manifest"]
+    'core_manifest'
+    
+    Create all tables:
+    
+    >>> from spine.core.schema import create_tables
+    >>> create_tables(conn)
 
 Tables:
-- core_manifest: Multi-stage workflow tracking
-- core_rejects: Validation failures
-- core_quality: Quality check results
+    - **core_manifest:** Multi-stage workflow tracking (UPSERT per stage)
+    - **core_rejects:** Validation failures (append-only audit log)
+    - **core_quality:** Quality check results (append-only)
+    - **core_anomalies:** Error/warning tracking (append-only, resolvable)
+    - **core_executions:** Pipeline execution ledger
+    - **core_execution_events:** Execution lifecycle events
+    - **core_dead_letters:** Failed messages for retry
+    - **core_concurrency_locks:** Distributed locking
 
-Domains do NOT need their own manifest/rejects/quality tables.
+Context:
+    - Domain: Infrastructure, schema management
+    - Used By: All Spine primitives (WorkManifest, RejectSink, etc.)
+    - Storage: Shared across all domains
+    - Paired With: Primitives that read/write these tables
+
+Tags:
+    schema, ddl, infrastructure, tables, spine-core, database,
+    manifest, rejects, quality, anomalies
+
+Doc-Types:
+    - API Reference
+    - Schema Documentation
+    - Database Design
+
+Note: Domains do NOT need their own manifest/rejects/quality tables.
 """
 
 # =============================================================================

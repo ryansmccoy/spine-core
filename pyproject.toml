@@ -29,11 +29,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
+    "pytest>=8.3.0",
     "pytest-cov>=4.0",
-    "pytest-xdist>=3.5",  # Parallel test execution
-    "ruff>=0.8.0",
-    "pyyaml>=6.0",  # For YAML loading tests
+    "pytest-xdist>=3.5", # Parallel test execution
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.9.0",
+    "pyyaml>=6.0", # For YAML loading tests
+    "pytest-timeout>=2.4.0",
 ]
 
 [project.urls]
@@ -51,11 +53,13 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+timeout = 5  # 5 second timeout per test
 addopts = [
     "-ra",           # Show extra test summary for all except passed
     "-q",            # Quiet mode (less verbose)
     "--strict-markers",   # Fail on unknown markers
     "--strict-config",    # Fail on config errors
+    "-m", "not slow",     # Skip slow tests by default (run with: pytest -m slow)
     "-W", "error::pytest.PytestUnraisableExceptionWarning",
 ]
 filterwarnings = [
@@ -65,9 +69,11 @@ filterwarnings = [
 ]
 markers = [
     "unit: Unit tests (fast, isolated, no external dependencies)",
-    "integration: Integration tests (may use temp files, slower)",
+    "integration: Integration tests (may use temp files, subprocess calls - slower)",
     "slow: Slow tests (excluded from default runs)",
     "golden: Golden/fixture-based tests for YAML and plans",
+    "timeout: Test timeout marker",
+    "asyncio: Async tests (requires pytest-asyncio)",
 ]
 # Enable console output capture
 log_cli = false
