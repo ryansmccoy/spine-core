@@ -29,3 +29,11 @@ htmlcov/
 
 # UV
 uv.lock
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Demo/generated files
+execution_demo.db
